@@ -1,4 +1,4 @@
-package com.example.mqapp
+package com.mqapp
 
 import io.flutter.embedding.android.FlutterActivity
 
