@@ -105,6 +105,22 @@ VALUES (4, 'Agregar tabla plan_lectura para retos de lectura',
   fuente de verdad.
 - `anio_publicacion` puede ser NULL (versiones en proceso).
 
+### 7. Por qué triggers de validación `version_id ↔ libro_id`
+
+`libro` tiene `UNIQUE(version_id, numero)`, lo que significa que un
+`libro.id` pertenece a **una sola** versión. Sin embargo, las FKs de
+`favorito_versiculo` y `nota` (`FOREIGN KEY (libro_id) REFERENCES libro(id)`)
+solo verifican que el `libro_id` exista, **no** que pertenezca al mismo
+`version_id` declarado en la fila. Esto permitía insertar favoritos o
+notas con un `libro_id` "robado" de otra versión (datos inconsistentes).
+
+Los triggers `BEFORE INSERT/UPDATE` (`favorito_versiculo_bi/bu`,
+`nota_bi/bu`) rechazan cualquier escritura donde `libro_id` no
+pertenezca al `version_id` de la fila, lanzando `RAISE(ABORT)` con
+mensaje en español. Validación a nivel de esquema, no de aplicación:
+la regla de integridad se cumple **incluso** si el cliente Dart
+tiene un bug.
+
 ## Cardinalidad esperada (para dimensionar)
 
 | Tabla                | Filas por versión | Total 2 ver. |

@@ -179,6 +179,71 @@ CREATE TABLE IF NOT EXISTS nota (
 CREATE INDEX IF NOT EXISTS idx_nota_lookup ON nota(version_id, libro_id, capitulo, numero);
 CREATE INDEX IF NOT EXISTS idx_nota_fecha_mod ON nota(fecha_modificacion DESC);
 
+-- ============================================================
+-- VALIDACIÓN: consistencia version_id ↔ libro_id
+-- ============================================================
+-- Un libro (libro.id) pertenece a UNA versión (version.id), ya que
+-- `libro` tiene UNIQUE(version_id, numero). Sin embargo, el FK
+-- `favorito_versiculo.libro_id → libro.id` solo verifica que el id
+-- exista, NO que pertenezca a la misma versión declarada en la fila.
+--
+-- Esto permite datos corruptos del tipo:
+--   INSERT INTO favorito_versiculo (version_id=1, libro_id=42, ...)
+--   donde libro.id=42 pertenece a version_id=2.
+--
+-- Los triggers BEFORE INSERT/UPDATE de abajo rechazan cualquier
+-- escritura donde (NEW.version_id, NEW.libro_id) no sea coherente
+-- con la tabla `libro`. Mensajes en español para logs de usuario.
+-- ============================================================
+
+CREATE TRIGGER IF NOT EXISTS favorito_versiculo_bi
+BEFORE INSERT ON favorito_versiculo
+FOR EACH ROW
+WHEN NOT EXISTS (
+  SELECT 1 FROM libro
+  WHERE libro.id = NEW.libro_id
+    AND libro.version_id = NEW.version_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'favorito_versiculo: libro_id no pertenece a version_id');
+END;
+
+CREATE TRIGGER IF NOT EXISTS favorito_versiculo_bu
+BEFORE UPDATE ON favorito_versiculo
+FOR EACH ROW
+WHEN NOT EXISTS (
+  SELECT 1 FROM libro
+  WHERE libro.id = NEW.libro_id
+    AND libro.version_id = NEW.version_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'favorito_versiculo: libro_id no pertenece a version_id');
+END;
+
+CREATE TRIGGER IF NOT EXISTS nota_bi
+BEFORE INSERT ON nota
+FOR EACH ROW
+WHEN NOT EXISTS (
+  SELECT 1 FROM libro
+  WHERE libro.id = NEW.libro_id
+    AND libro.version_id = NEW.version_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'nota: libro_id no pertenece a version_id');
+END;
+
+CREATE TRIGGER IF NOT EXISTS nota_bu
+BEFORE UPDATE ON nota
+FOR EACH ROW
+WHEN NOT EXISTS (
+  SELECT 1 FROM libro
+  WHERE libro.id = NEW.libro_id
+    AND libro.version_id = NEW.version_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'nota: libro_id no pertenece a version_id');
+END;
+
 -- -----------------------------------------------------------------------------
 -- Tabla: historial_versiculo
 -- Append-only: registra cada versículo leído. Permite calcular:
