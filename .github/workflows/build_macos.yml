@@ -1,0 +1,77 @@
+name: Build macOS (.dmg)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Build version label (e.g. 2.0.1)'
+        required: false
+        default: 'latest'
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.41.9'
+          cache: true
+
+      - name: Enable macOS desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build macOS release (unsigned)
+        run: flutter build macos --release
+
+      - name: Package .dmg
+        run: |
+          APP_NAME="himnario_id_2"
+          APP_BUNDLE="build/macos/Build/Products/Release/${APP_NAME}.app"
+          DMG_NAME="MQ_App-macos-x64"
+          mkdir -p dist
+
+          # Fallback: hdiutil (viene instalado en macOS, mas confiable)
+          mkdir -p dmg_temp
+          cp -R "${APP_BUNDLE}" dmg_temp/
+          ln -s /Applications dmg_temp/Applications
+          hdiutil create \
+            -volname "MQ App" \
+            -srcfolder dmg_temp \
+            -ov -format UDZO \
+            "${DMG_NAME}.dmg"
+          rm -rf dmg_temp
+
+          mv "${DMG_NAME}.dmg" dist/
+          ls -lh dist/
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.version }}"
+          fi
+          gh release upload "$TAG" dist/MQ_App-macos-x64.dmg --clobber
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MQ_App-macos-x64_${{ github.event.inputs.version || github.ref_name }}
+          path: dist/MQ_App-macos-x64.dmg
+          compression-level: 0

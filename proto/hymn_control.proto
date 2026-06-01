@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package himnario;
+
+// ──────────────────────────────────────────────
+// Servicio de control remoto para HimnarioID 2.0
+// Comunicación LAN entre Controlador (móvil) y Display (PC/TV)
+// ──────────────────────────────────────────────
+
+service HymnControl {
+  // Comandos del controlador al display
+  rpc SendCommand (CommandRequest) returns (CommandResponse);
+
+  // Obtener estado actual del display
+  rpc GetStatus (Empty) returns (DisplayStatus);
+
+  // Streaming de estado (el display notifica cambios en tiempo real)
+  rpc WatchStatus (Empty) returns (stream DisplayStatus);
+
+  // Handshake de conexión inicial
+  rpc Handshake (HandshakeRequest) returns (HandshakeResponse);
+
+  // ─── NUEVOS RPCs ──────────────────────────────────────────
+  // Enviar contenido completo de un himno al display remoto.
+  // El controlador envía el payload completo (título + estrofas).
+  rpc SendHymnContent (HymnPayload) returns (CommandResponse);
+
+  // Obtener lista de fondos disponibles en el PC (dueño de los archivos multimedia).
+  rpc GetAvailableBackgrounds (Empty) returns (BackgroundList);
+}
+
+// ──────────────────────────────────────────────
+// Mensajes
+// ──────────────────────────────────────────────
+
+// ─── NUEVOS MENSAJES ───────────────────────────────────────
+
+// Payload completo de un himno enviado por el controlador al display.
+message HymnPayload {
+  int32 hymn_id = 1;
+  string titulo = 2;
+  optional int32 numero = 3;
+  string tipo = 4;             // "oficial" | "inspirada"
+  int32 version_pais_id = 5;
+  repeated StanzaPayload estrofas = 6;
+}
+
+// Una estrofa individual dentro del payload del himno.
+message StanzaPayload {
+  int32 id = 1;
+  int32 version_pais_id = 2;
+  string tipo = 3;             // "estrofa" | "coro" | "intro" | "amen"
+  int32 orden = 4;
+  string contenido = 5;
+}
+
+// Información de un fondo disponible en el PC.
+message BackgroundInfo {
+  int32 id = 1;
+  string nombre = 2;
+  string tipo = 3;             // "image" | "video" | "color"
+}
+
+// Lista de fondos disponibles en el PC.
+message BackgroundList {
+  repeated BackgroundInfo backgrounds = 1;
+}
+
+message Empty {}
+
+enum CommandType {
+  NEXT_STANZA = 0;
+  PREV_STANZA = 1;
+  GO_TO_CHORUS = 2;
+  GO_TO_STANZA = 3;
+  BLACKOUT = 4;
+  CLEAR_BLACKOUT = 5;
+  SET_TRANSPOSITION = 6;
+  JUMP_TO_HYMN = 7;
+  SET_BACKGROUND = 8;
+  SET_FONT_SIZE = 9;
+  PING = 10;
+  SET_APPEARANCE = 11;
+}
+
+message CommandRequest {
+  CommandType type = 1;
+  int32 stanza_index = 2;      // Para GO_TO_STANZA
+  int32 semitones = 3;         // Para SET_TRANSPOSITION
+  int32 hymn_id = 4;           // Para JUMP_TO_HYMN
+  string background_id = 5;    // Para SET_BACKGROUND
+  float font_size = 6;         // Para SET_FONT_SIZE
+  // Nuevos campos para SET_APPEARANCE
+  optional string text_color = 7;
+  optional string chord_color = 8;
+  optional string font_family = 9;
+  optional bool is_bold = 10;
+  optional bool show_chords = 11;
+  optional float card_opacity = 12;
+  optional float projection_font_scale = 13;
+  optional string bg_color = 14;
+}
+
+message CommandResponse {
+  bool success = 1;
+  string error_message = 2;
+}
+
+message DisplayStatus {
+  int32 current_hymn_id = 1;
+  string current_hymn_title = 2;
+  int32 current_stanza_index = 3;
+  int32 total_stanzas = 4;
+  int32 transposition_semitones = 5;
+  bool is_blackout = 6;
+  string current_background_id = 7;
+  float font_size = 8;
+  string display_name = 9;
+  // Nuevos campos de apariencia
+  optional string text_color = 10;
+  optional string chord_color = 11;
+  optional string font_family = 12;
+  optional bool is_bold = 13;
+  optional bool show_chords = 14;
+  optional float card_opacity = 15;
+  optional float projection_font_scale = 16;
+}
+
+message HandshakeRequest {
+  string client_name = 1;
+  string client_version = 2;
+  int32 protocol_version = 3;
+}
+
+message HandshakeResponse {
+  bool accepted = 1;
+  string server_name = 2;
+  string server_version = 3;
+  string display_name = 4;
+  int32 protocol_version = 5;
+  string session_id = 6;
+}

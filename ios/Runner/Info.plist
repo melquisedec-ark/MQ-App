@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>HimnarioID</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>himnario_id_2</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+
+	<!-- ═══════════════════════════════════════════════════════════
+	     PERMISOS DE RED (mDNS / Bonjour)
+	     ═══════════════════════════════════════════════════════════ -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>HimnarioID necesita acceso a la red local para descubrir y conectarse a displays de proyección en la misma red Wi-Fi.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_himnario._tcp</string>
+		<string>_http._tcp</string>
+	</array>
+
+	<!-- ═══════════════════════════════════════════════════════════
+	     PERMISOS DE FOTOS (fondos personalizados)
+	     ═══════════════════════════════════════════════════════════ -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>HimnarioID usa tus fotos para establecer fondos de pantalla personalizados en la vista de himnos.</string>
+
+	<!-- ═══════════════════════════════════════════════════════════
+	     MODO BACKGROUND (audio)
+	     ═══════════════════════════════════════════════════════════ -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+
+	<!-- ═══════════════════════════════════════════════════════════
+	     SEGURIDAD DE TRANSPORTE (App Transport Security)
+	     ═══════════════════════════════════════════════════════════
+	     Permitimos conexiones locales sin TLS para comunicación
+	     gRPC en la red LAN. Las conexiones a Internet usan HTTPS. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,20 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+    avoid_print: true
+    require_trailing_commas: true
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    prefer_final_locals: true
+
+analyzer:
+  errors:
+    missing_return: error
+    dead_code: warning
+    unused_import: error
+  exclude:
+    - "**/*.g.dart"
+    - "lib/proto/generated/**"

@@ -1,0 +1,56 @@
+import 'dart:ui'; // ⚠️ Súper importante importar esto para el ImageFilter
+import 'package:flutter/material.dart';
+
+// ... dentro de tu Stack o vista de proyección ...
+
+Stack(
+  fit: StackFit.expand,
+  children: [
+    // 1. Tu Imagen de Fondo
+    Image.asset(
+      'assets/fondos/paisaje.jpg',
+      fit: BoxFit.cover,
+    ),
+    
+    // 2. La Tarjeta de Vidrio Esmerilado (Glassmorphism)
+    Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.0), // Bordes curvos del vidrio
+        child: BackdropFilter(
+          // Aquí controlas qué tan borroso es el fondo (10 a 15 es ideal)
+          filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+            decoration: BoxDecoration(
+              // Un color blanco al 10% o 15% de opacidad le da el tono de cristal
+              color: Colors.white.withOpacity(0.15),
+              // El borde sutil le da el efecto de reflejo en la orilla del vidrio
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            child: const Text(
+              "Señor, mi Dios,\nal contemplar los cielos",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                // Le dejamos una sombrita muy leve al texto por si acaso
+                shadows: [
+                  Shadow(
+                    offset: Offset(1.0, 1.0),
+                    blurRadius: 3.0,
+                    color: Colors.black54,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  ],
+)

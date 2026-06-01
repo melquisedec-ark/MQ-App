@@ -1,0 +1,170 @@
+name: Build iOS (.ipa)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Build version label (e.g. 2.0.1)'
+        required: false
+        default: 'latest'
+      codesign:
+        description: 'Sign the .ipa (requires secrets: CERTIFICATE + PROVISIONING)'
+        type: boolean
+        required: false
+        default: false
+      export_method:
+        description: 'Export method for signed build'
+        required: false
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - app-store
+          - ad-hoc
+          - enterprise
+
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  FLUTTER_VERSION: '3.41.9'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Verify Dart analysis
+        run: flutter analyze lib/ --no-fatal-infos
+
+      # ═══════════════════════════════════════════════════════════
+      # REGENERAR XCODE PROJECT (Runner.xcodeproj)
+      # ═══════════════════════════════════════════════════════════
+      # El repo contiene los archivos fuente de iOS (Podfile, Info.plist,
+      # AppDelegate.swift) pero NO el proyecto Xcode. En Linux no se puede
+      # generar, pero en macOS `flutter create` lo crea sin perder los
+      # archivos existentes (es idempotente).
+      - name: Regenerate Xcode project
+        run: flutter create --platforms=ios --project-name=himnario_id_2 .
+
+      # ═══════════════════════════════════════════════════════════
+      # BUILD .app + EMPAQUETAR COMO .ipa (sin firma)
+      # ═══════════════════════════════════════════════════════════
+      # El .ipa es un zip con estructura Payload/Runner.app/.
+      # Al usar --no-codesign, el .app no tiene firma, pero herramientas
+      # como AltStore, Sideloadly, SideStore pueden inyectarle el
+      # certificado de una Apple ID gratuita al momento de instalar.
+      - name: Build iOS release (unsigned .app)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned .ipa
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r MQ_App-unsigned.ipa Payload/
+          rm -rf Payload
+          ls -lh MQ_App-unsigned.ipa
+
+      - name: Upload unsigned .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MQ_App-ios-unsigned_${{ github.event.inputs.version || github.ref_name }}
+          path: MQ_App-unsigned.ipa
+          compression-level: 0
+          if-no-files-found: error
+
+      # ═══════════════════════════════════════════════════════════
+      # BUILD .ipa CON CÓDIGOS DE SIGNATURA (opcional)
+      # ═══════════════════════════════════════════════════════════
+      - name: Import certificates and provisioning profiles
+        if: ${{ inputs.codesign == true }}
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.IOS_BUILD_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.IOS_BUILD_CERTIFICATE_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_BUILD_PROVISION_PROFILE }}
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          # Crear keychain temporal
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Importar certificado .p12
+          echo "$BUILD_CERTIFICATE_BASE64" | base64 --decode > cert.p12
+          security import cert.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          rm cert.p12
+
+          # Importar provisioning profile
+          echo "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
+          cp profile.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          rm profile.mobileprovision
+
+          # Configurar keychain para codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+      - name: Create ExportOptions.plist
+        if: ${{ inputs.codesign == true }}
+        env:
+          EXPORT_METHOD: ${{ inputs.export_method }}
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID || 'com.himnarioid.app' }}
+        run: |
+          cat > ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>${EXPORT_METHOD}</string>
+              <key>teamID</key>
+              <string>${TEAM_ID}</string>
+              <key>bundleID</key>
+              <string>${BUNDLE_ID}</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build and export .ipa (signed)
+        if: ${{ inputs.codesign == true }}
+        run: |
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath build/ios/Runner.xcarchive \
+            clean archive
+          xcodebuild -exportArchive \
+            -archivePath build/ios/Runner.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/ios/ipa
+
+      - name: Upload signed .ipa artifact
+        if: ${{ inputs.codesign == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: MQ_App-ios-signed-${{ inputs.export_method }}_${{ github.event.inputs.version || github.ref_name }}
+          path: build/ios/ipa/*.ipa
+          compression-level: 0
+          if-no-files-found: error
