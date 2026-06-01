@@ -72,6 +72,9 @@ dev_dependencies:
   freezed: ^2.5.0
   json_serializable: ^6.8.0
 
+  # Build tools (assets/db/tools/build_biblia_db.dart)
+  sqlite3: ^2.4.0
+
   # Testing
   mocktail: ^1.0.0
 
@@ -81,6 +84,8 @@ flutter:
   assets:
     - assets/db/mqapp.db
     - assets/db/db_version.json
+    # assets/db/biblia.db              # Pendiente: generado por @back (Fase 2)
+    # assets/db/biblia_version.json    # Pendiente: generado por @back (Fase 2)
     - assets/database/
     - assets/audio/
     - assets/images/logoApp.jpg

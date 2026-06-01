@@ -72,9 +72,11 @@ assets/images/backgrounds/*
 # Runtime database files (generated in Fase 2).
 # NOTA: `assets/db/himnario_id.db` ya está trackeado y NO se ve afectado por
 # esta regla (gitignore no des-trackea archivos existentes). Las nuevas DBs
-# que se generen en Fase 2 (ej. `biblia.db`) sí serán ignoradas.
+# que se generen en Fase 2 sí serán ignoradas, EXCEPTO `biblia.db` que se
+# trackea explícitamente porque es un asset de Flutter embebido en runtime.
 assets/db/*.db
 assets/db/*.db-journal
 assets/db/*.db-wal
 assets/db/*.db-shm
 !assets/db/.gitkeep
+!assets/db/biblia.db
