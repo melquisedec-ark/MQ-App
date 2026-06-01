@@ -42,7 +42,7 @@ Mostrar los 66 libros canónicos (39 AT + 27 NT) con navegación rápida por tab
 +------------------------------------------------------------------------------+
 | <- Biblia                                                  [buscar]          |  <- AppBar
 +------------------------------------------------------------------------------+
-| [ AT ] [ NT ] [ Favoritos ] [ Notas ]                          <- tabs        |
+| [ AT ] [ NT ] [ ⭐ Favoritos ] [ 📝 Notas ] [ 🕐 Historial ]    <- tabs        |
 +------------------------------------------------------------------------------+
 |                                                                              |
 |   +------------------------------------------------------------------------+ |
@@ -117,6 +117,65 @@ Mostrar los 66 libros canónicos (39 AT + 27 NT) con navegación rápida por tab
 - Cada nota muestra un **borde lateral del color** seleccionado (yellow/green/blue).
 - Tap en la nota → push `ReaderScreen` Y abre el `NoteEditorModal` automáticamente.
 - Filtro de color arriba (chips). "Todos" muestra todas las notas.
+
+### `Historial` tab (sub-pantalla)
+
+**Layout:**
+
+```
++------------------------------------------------------------------------------+
+|  <- Biblia                                                  [buscar]         |
++------------------------------------------------------------------------------+
+|  [AT] [NT] [⭐ Favoritos] [📝 Notas] [🕐 Historial]               <- tabs     |
++------------------------------------------------------------------------------+
+|                                                                              |
+|  +------------------------------------------------------------------------+   |
+|  |  🕐  Hace 5 minutos                                                     |   |
+|  |  Genesis 1:1                                                            |   |
+|  |  "En el principio creo Dios los cielos y la tierra..."                 |   |
+|  |                                                            [RV1909 v]  |   |
+|  +------------------------------------------------------------------------+   |
+|                                                                              |
+|  +------------------------------------------------------------------------+   |
+|  |  🕐  Hace 1 hora                                                        |   |
+|  |  Salmos 23:1                                                            |   |
+|  |  "Jehova es mi pastor; nada me faltara."                               |   |
+|  |                                                            [RV1909 v]  |   |
+|  +------------------------------------------------------------------------+   |
+|                                                                              |
+|  (mas items agrupados por Hoy / Ayer / Esta semana / Este mes / Mas antiguo)|
+|                                                                              |
++------------------------------------------------------------------------------+
+```
+
+**Empty state:**
+
+```
++------------------------------------------------------------------------------+
+|                                                                              |
+|                                🕐                                            |
+|                                                                              |
+|                       Tu historial esta vacio                                |
+|                                                                              |
+|       Los versiculos que leas apareceran aqui.                                |
+|                                                                              |
+|                          [ Ir a la Biblia ]                                   |
+|                                                                              |
++------------------------------------------------------------------------------+
+```
+
+**Comportamiento:**
+
+- **Tap en item** → push `ReaderScreen(libro, cap, vers)` en la version guardada.
+- **Long press** → menu contextual: `Eliminar` / `Marcar favorito` / `Agregar nota`.
+- **Swipe left** en la card → elimina del historial (con confirmacion: "¿Eliminar del historial?").
+- **Agrupado por secciones**: Hoy, Ayer, Esta semana, Este mes, Mas antiguo.
+- **Ordenado** por `fecha_lectura DESC`, `LIMIT 100` registros (los mas antiguos se purgan automaticamente).
+- **v1.0**: solo versiculos de Biblia (no incluye himnos ni devocionales — esos iran en modulos separados).
+- **Estilo**: cards con **glassmorphism** (decision @arqui — coherente con Favoritos y Notas).
+- **Persistencia automatica**: cada vez que el usuario abre un versiculo en el Reader, se inserta/actualiza un registro en `historial_versiculo` (upsert por `version_id + libro + cap + vers`).
+
+**Database:** Tabla `historial_versiculo` en `assets/db/schema/001_biblia_schema.sql` (lineas 256-265).
 
 ## Estado vacío (sin favoritos / sin notas)
 
