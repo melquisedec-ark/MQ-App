@@ -1,8 +1,7 @@
 import 'dart:io' show Platform, File, Directory;
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:sqflite/sqflite.dart' as mobile;
 import 'package:sqflite_common/sqlite_api.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart' as desktop;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
@@ -229,39 +228,84 @@ class DatabaseHelper {
   /// Útil para operaciones de backup/restore donde no se necesita
   /// onCreate/onUpgrade. Activa PRAGMA foreign_keys para mantener
   /// integridad referencial durante el restore.
+  ///
+  /// Desde MQ App 1.0.0, usa FFI en TODAS las plataformas (incluyendo
+  /// Android e iOS). Esto garantiza que siempre se disponga de
+  /// SQLite ≥ 3.46 (provisto por `sqlite3_flutter_libs`), evitando
+  /// depender de la libsqlite3 del sistema, que en iOS 12-15 y
+  /// Android < 14 es anterior a 3.39 y no soporta `remove_diacritics 2`
+  /// en FTS5.
   Future<Database> _openDatabaseRaw(String path) async {
-    final Database db;
-    if (Platform.isAndroid || Platform.isIOS) {
-      db = await mobile.openDatabase(path);
-    } else {
-      desktop.sqfliteFfiInit();
-      db = await desktop.databaseFactoryFfi.openDatabase(path);
-    }
+    _ensureFfiInit();
+    final db = await databaseFactoryFfi.openDatabase(path);
     await db.execute('PRAGMA foreign_keys = ON;');
+    await _checkSqliteVersion(db);
     return db;
   }
 
   /// Abre una base de datos SQLite con gestión completa de versiones
-  /// (onCreate + onUpgrade), seleccionando automáticamente el backend
-  /// adecuado según la plataforma.
+  /// (onCreate + onUpgrade), usando FFI en TODAS las plataformas.
+  ///
+  /// El backend FFI requiere `sqlite3_flutter_libs`, que bundlea una
+  /// libsqlite3 moderna (≥ 3.46) en el binario de la app. Esto unifica
+  /// el código entre plataformas y elimina la dependencia del SO.
   Future<Database> _openDatabasePlatform(String path) async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      return await mobile.openDatabase(
-        path,
+    _ensureFfiInit();
+    final db = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
         version: SCHEMA_VERSION,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
-      );
-    } else {
-      desktop.sqfliteFfiInit();
-      return await desktop.databaseFactoryFfi.openDatabase(
-        path,
-        options: OpenDatabaseOptions(
-          version: SCHEMA_VERSION,
-          onCreate: _onCreate,
-          onUpgrade: _onUpgrade,
-        ),
-      );
+      ),
+    );
+    await _checkSqliteVersion(db);
+    return db;
+  }
+
+  /// Inicializa el backend FFI una sola vez por proceso.
+  ///
+  /// `sqfliteFfiInit()` es idempotente pero cacheamos el resultado
+  /// para evitar la comprobación interna en cada apertura.
+  static bool _ffiInitialized = false;
+
+  static void _ensureFfiInit() {
+    if (!_ffiInitialized) {
+      sqfliteFfiInit();
+      _ffiInitialized = true;
+    }
+  }
+
+  /// Verifica la versión de SQLite en runtime y registra un warning
+  /// si es anterior a 3.39 (mínimo para `remove_diacritics 2` en FTS5).
+  ///
+  /// Con `sqlite3_flutter_libs` siempre se bundlea una lib ≥ 3.46, por
+  /// lo que este check es defensivo: nunca debería dispararse en
+  /// producción. Si lo hace, indica que `sqlite3_flutter_libs` no se
+  /// incluyó correctamente en la build nativa.
+  Future<void> _checkSqliteVersion(Database db) async {
+    try {
+      final result = await db.rawQuery('SELECT sqlite_version() AS v');
+      final versionStr = (result.first['v'] as String).trim();
+      _log.info('SQLite version: $versionStr');
+
+      final parts = versionStr
+          .split('.')
+          .map((s) => int.tryParse(s) ?? 0)
+          .toList();
+      if (parts.length < 2) return;
+      final major = parts[0];
+      final minor = parts[1];
+
+      if (major < 3 || (major == 3 && minor < 39)) {
+        _log.warning(
+          'SQLite $versionStr detectado. remove_diacritics 2 requiere 3.39+; '
+          'la búsqueda acento-insensible puede fallar. Verificar que '
+          'sqlite3_flutter_libs esté correctamente vinculada.',
+        );
+      }
+    } catch (e) {
+      _log.warning('No se pudo verificar la versión de SQLite: $e');
     }
   }
 

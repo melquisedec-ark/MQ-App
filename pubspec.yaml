@@ -15,9 +15,15 @@ dependencies:
   nsd: ^5.0.1
 
   # Base de datos local (SQLite)
+  # Importante: usamos FFI en TODAS las plataformas (incluyendo
+  # Android/iOS) para garantizar SQLite ≥ 3.46 con soporte de
+  # `remove_diacritics 2` en FTS5. La lib nativa se bundlea con
+  # `sqlite3_flutter_libs`, evitando depender de la libsqlite3
+  # del sistema (que en iOS < 16 y Android < 14 es < 3.39).
   sqflite: ^2.4.1
   sqflite_common: ^2.5.4
   sqflite_common_ffi: ^2.3.7
+  sqlite3_flutter_libs: ^0.5.0
 
   # Criptografía (SHA256 para hashing de contraseñas)
   crypto: ^3.0.0
