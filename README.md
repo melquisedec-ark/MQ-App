@@ -1,6 +1,6 @@
-# 🎵 MQ App (antes HimnarioID 2.0)
+# 📖 MQ App (Biblia + Himnario)
 
-Aplicación Flutter multiplataforma para himnos religiosos con modo personal, proyección, administración y descarga de pistas de audio.
+Aplicación Flutter multiplataforma que integra **Biblia** (Reina Valera 1909 + 1569) y **Himnario** religioso, con modo personal, modo proyección, administración y descarga de pistas de audio.
 
 ---
 
@@ -169,6 +169,36 @@ Registro de himnos reproducidos para mantener un historial reciente.
 
 ---
 
+## 📖 Módulo Biblia (en preparación)
+
+A partir de esta versión, MQ App integra también un módulo de **Biblia** que se almacenará en una base de datos independiente (`assets/db/biblia.db`) para mantenerlo desacoplado del himnario.
+
+### Versiones soportadas
+
+* **RV1909** — Reina Valera 1909 (revisión clásica de mayor uso hispano).
+* **RV1569** — Reina Valera 1569 (revisión histórica de la "Biblia del Oso").
+
+### Estructura de tablas (resumen)
+
+* `version` — Catálogo de versiones bíblicas (RV1909, RV1569, futuras).
+* `libro` — Los 66 libros canónicos (id, nombre, abreviatura, testamento, orden).
+* `capitulo` — Capítulos por libro (`UNIQUE(libro_id, numero)`).
+* `versiculo` — Texto completo por versículo (`UNIQUE(capitulo_id, numero)`).
+* `favorito` — Marcadores por versículo (`UNIQUE(usuario_id, version_id, libro_id, capitulo, numero)`).
+* `nota` — Notas personales por versículo (misma restricción UNIQUE que favoritos).
+* `historial_versiculo` — Versículos recientemente consultados.
+
+### Características técnicas
+
+* **Búsqueda full-text FTS5** con contenido externo sobre `versiculo` (no duplica texto en el índice).
+* **Triggers automáticos** que mantienen el índice FTS sincronizado al insertar/actualizar/borrar versículos.
+* **Favoritos y notas por versículo** con restricción `UNIQUE` para evitar duplicados sin código extra.
+* **`schema_version`** en la propia BD para migraciones incrementales.
+
+> Detalle del DDL, seeds y herramientas de construcción en `assets/db/schema/README.md` y `assets/db/tools/`.
+
+---
+
 ## 📂 Estructura de Carpetas Recomendada (Clean Architecture)
 
 Para que el equipo de trabajo o cualquier agente de IA entienda el código, se recomienda la siguiente estructura basada en *Clean Architecture* orientada a Flutter:
@@ -259,7 +289,12 @@ El .exe se llama **`MQ_App.exe`** (configurado en `windows/CMakeLists.txt`).
 
 ## 🗄️ Database Auto-Update
 
-El sistema soporta actualización automática de la base de datos precargada sin perder datos de usuario.
+El sistema soporta actualización automática de las bases de datos precargadas sin perder datos de usuario. Maneja **dos bases de datos independientes**:
+
+| Base de datos | Asset                  | Contenido                            | Estado          |
+|---------------|------------------------|--------------------------------------|-----------------|
+| Himnario      | `assets/db/mqapp.db`   | Himnos, estrofas, arreglos, config   | Activo          |
+| Biblia        | `assets/db/biblia.db`  | RV1909 + RV1569 (~62 000 versículos) | En preparación |
 
 ### Cómo funciona
 
@@ -282,17 +317,20 @@ El sistema soporta actualización automática de la base de datos precargada sin
 ### Para desarrollar/actualizar
 
 ```bash
-# 1. Reemplazar la BD precargada
-cp nueva_base.db assets/db/himnario_id.db
+# 1. Reemplazar la BD del himnario precargada
+cp nueva_base.db assets/db/mqapp.db
 
-# 2. Actualizar versión del asset
+# 2. (Fase 2) Reemplazar la BD de la biblia
+cp biblia_generada.db assets/db/biblia.db
+
+# 3. Actualizar versión del asset
 echo '{"version": 3}' > assets/db/db_version.json
 
-# 3. Si hay migraciones de esquema, actualizar SCHEMA_VERSION
+# 4. Si hay migraciones de esquema, actualizar SCHEMA_VERSION
 #    y agregar migración en _onUpgrade()
 
-# 4. Verificar que el asset esté listado en pubspec.yaml
-#    (ya incluido: assets/db/db_version.json, assets/db/himnario_id.db)
+# 5. Verificar que el asset esté listado en pubspec.yaml
+#    (ya incluido: assets/db/mqapp.db, assets/db/db_version.json)
 ```
 
 ### Pistas de Audio
