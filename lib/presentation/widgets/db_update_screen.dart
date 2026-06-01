@@ -15,7 +15,7 @@ import '../../core/theme/app_theme.dart';
 /// 2. **Sin botones de acción** — es puramente informativa (no blocker)
 /// 3. Al iniciar, ejecuta la inicialización completa de la app incluyendo
 ///    la copia de la BD desde assets (delegada a [AppInitializer])
-/// 4. Al terminar, transiciona automáticamente a [HimnarioApp] (app principal)
+/// 4. Al terminar, transiciona automáticamente a [MqApp] (app principal)
 /// 5. Si ocurre un error, igualmente transiciona para no dejar al usuario
 ///    atrapado — la app puede funcionar con la BD anterior o crear una nueva
 ///
@@ -231,7 +231,7 @@ class _DbUpdateScreenState extends State<DbUpdateScreen>
                 theme: AppTheme.lightTheme,
                 darkTheme: AppTheme.darkTheme,
                 themeMode: ThemeMode.system,
-                home: const HimnarioApp(),
+                home: const MqApp(),
               ),
             ),
           );

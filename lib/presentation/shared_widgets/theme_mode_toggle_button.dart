@@ -11,7 +11,7 @@ import 'providers/theme_mode_provider.dart';
 /// - 🤖 `brightness_auto` → seguir dispositivo
 ///
 /// Nota: el posicionamiento está a cargo del widget padre ([_BottomRightButtons]
-/// en himnario_dual_app.dart). Este widget solo devuelve el [FloatingActionButton].
+/// en mq_dual_app.dart). Este widget solo devuelve el [FloatingActionButton].
 class ThemeModeToggleButton extends ConsumerWidget {
   const ThemeModeToggleButton({super.key});
 

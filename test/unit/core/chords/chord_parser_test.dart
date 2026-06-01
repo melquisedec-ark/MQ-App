@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:himnario_id_2/core/chords/chord_line.dart';
-import 'package:himnario_id_2/core/chords/chord_parser.dart';
-import 'package:himnario_id_2/core/chords/chord_segment.dart';
+import 'package:mqapp/core/chords/chord_line.dart';
+import 'package:mqapp/core/chords/chord_parser.dart';
+import 'package:mqapp/core/chords/chord_segment.dart';
 
 void main() {
   group('ChordParser - parseChordProLine', () {

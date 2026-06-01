@@ -3,15 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:himnario_id_2/core/enums/himno_tipo.dart';
-import 'package:himnario_id_2/core/window_manager/window_service.dart';
-import 'package:himnario_id_2/domain/entities/estrofa.dart';
-import 'package:himnario_id_2/domain/entities/himno.dart';
-import 'package:himnario_id_2/domain/repositories/hymn_repository.dart';
-import 'package:himnario_id_2/presentation/shared_widgets/providers/appearance_provider.dart';
-import 'package:himnario_id_2/presentation/views_personal/providers/hymn_providers.dart';
-import 'package:himnario_id_2/presentation/views_projection/providers/projection_actions.dart';
-import 'package:himnario_id_2/core/window_manager/window_providers.dart';
+import 'package:mqapp/core/enums/himno_tipo.dart';
+import 'package:mqapp/core/window_manager/window_service.dart';
+import 'package:mqapp/domain/entities/estrofa.dart';
+import 'package:mqapp/domain/entities/himno.dart';
+import 'package:mqapp/domain/repositories/hymn_repository.dart';
+import 'package:mqapp/presentation/shared_widgets/providers/appearance_provider.dart';
+import 'package:mqapp/presentation/views_personal/providers/hymn_providers.dart';
+import 'package:mqapp/presentation/views_projection/providers/projection_actions.dart';
+import 'package:mqapp/core/window_manager/window_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Mocks

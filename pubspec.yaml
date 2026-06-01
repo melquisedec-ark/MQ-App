@@ -1,7 +1,7 @@
-name: himnario_id_2
-description: Himnario Digital Multiplataforma con control remoto LAN, transposición de acordes y sistema de arreglos personalizados.
+name: mqapp
+description: MQ App — Biblia + Himnario digital multiplataforma con control remoto LAN, transposición de acordes y sistema de arreglos personalizados.
 publish_to: 'none'
-version: 2.1.7+1
+version: 1.0.0-dev+1
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -73,7 +73,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/db/himnario_id.db
+    - assets/db/mqapp.db
     - assets/db/db_version.json
     - assets/database/
     - assets/audio/

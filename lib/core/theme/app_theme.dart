@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Temas de la aplicación HimnarioID 2.0.
+/// Temas de la aplicación MQ App 2.0.
 ///
 /// Paleta corporativa: Negro, Dorado, Blanco.
 /// NO usa [colorSchemeSeed] ni [ColorScheme.fromSeed] — todos los

@@ -319,7 +319,7 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
           Expanded(
             child: Text(
               'Permiso "Dispositivos WiFi cercanos" denegado. '
-              'Actívalo en Ajustes > Himnario ID > Permisos para '
+              'Actívalo en Ajustes > MQ App > Permisos para '
               'descubrir displays automáticamente.',
               style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onErrorContainer,

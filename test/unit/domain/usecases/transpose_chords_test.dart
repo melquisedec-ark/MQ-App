@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:himnario_id_2/core/errors/failures.dart';
-import 'package:himnario_id_2/domain/usecases/transposicion/transpose_chords_usecase.dart';
+import 'package:mqapp/core/errors/failures.dart';
+import 'package:mqapp/domain/usecases/transposicion/transpose_chords_usecase.dart';
 
 /// Suite de tests para [TransposeChordsUseCase].
 ///

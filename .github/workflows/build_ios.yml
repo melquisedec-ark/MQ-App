@@ -59,7 +59,7 @@ jobs:
       # generar, pero en macOS `flutter create` lo crea sin perder los
       # archivos existentes (es idempotente).
       - name: Regenerate Xcode project
-        run: flutter create --platforms=ios --project-name=himnario_id_2 .
+        run: flutter create --platforms=ios --project-name=mqapp .
 
       # ═══════════════════════════════════════════════════════════
       # BUILD .app + EMPAQUETAR COMO .ipa (sin firma)
@@ -123,7 +123,7 @@ jobs:
         env:
           EXPORT_METHOD: ${{ inputs.export_method }}
           TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
-          BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID || 'com.himnarioid.app' }}
+          BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID || 'com.mqappid.app' }}
         run: |
           cat > ExportOptions.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>

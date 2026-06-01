@@ -6,7 +6,7 @@ import 'package:nsd/nsd.dart';
 
 /// Servicio de broadcast mDNS vía `nsd`.
 ///
-/// Publica un servicio `_himnario._tcp` en la red local para que
+/// Publica un servicio `_mqapp._tcp` en la red local para que
 /// otros dispositivos puedan descubrirlo.
 ///
 /// NOTA: `nsd` NO soporta Linux. En Linux el broadcast se omite
@@ -35,7 +35,7 @@ class MdnsBroadcastService {
     try {
       final service = Service(
         name: name,
-        type: '_himnario._tcp',
+        type: '_mqapp._tcp',
         port: port,
         txt: {
           'sessionId': Uint8List.fromList(utf8.encode(sessionId)),
@@ -47,7 +47,7 @@ class MdnsBroadcastService {
 
       _log.info(
         'mDNS iniciado exitosamente: ${_registration!.service.name} '
-        '(_himnario._tcp) en puerto $port',
+        '(_mqapp._tcp) en puerto $port',
       );
     } catch (e) {
       _log.severe('Error crítico iniciando mDNS con nsd: $e');

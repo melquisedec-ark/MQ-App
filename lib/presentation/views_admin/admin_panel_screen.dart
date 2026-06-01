@@ -198,7 +198,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                             label: const Text('Ver en GitHub'),
                             onPressed: () {
                               launchUrl(
-                                Uri.parse('https://github.com/moy385/HimnarioID_2.0'),
+                                Uri.parse('https://github.com/moy385/MQ App_2.0'),
                                 mode: LaunchMode.externalApplication,
                               );
                             },

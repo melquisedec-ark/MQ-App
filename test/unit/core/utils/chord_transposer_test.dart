@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:himnario_id_2/core/utils/chord_transposer.dart';
+import 'package:mqapp/core/utils/chord_transposer.dart';
 
 void main() {
   group('ChordTransposer - transposeChordPro', () {

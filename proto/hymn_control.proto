@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package himnario;
+package mqapp;
 
 // ──────────────────────────────────────────────
-// Servicio de control remoto para HimnarioID 2.0
+// Servicio de control remoto para MQ App 2.0
 // Comunicación LAN entre Controlador (móvil) y Display (PC/TV)
 // ──────────────────────────────────────────────
 

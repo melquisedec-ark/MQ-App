@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide ConnectionState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:himnario_id_2/core/enums/himno_tipo.dart';
-import 'package:himnario_id_2/data/datasources/remote/grpc_control_datasource.dart';
-import 'package:himnario_id_2/domain/entities/categoria.dart';
-import 'package:himnario_id_2/domain/entities/himno.dart';
-import 'package:himnario_id_2/domain/entities/version_pais.dart';
-import 'package:himnario_id_2/presentation/dual_mode_wrapper/dual_mode_providers.dart';
-import 'package:himnario_id_2/presentation/views_personal/dashboard/home_screen.dart';
-import 'package:himnario_id_2/presentation/views_personal/providers/hymn_providers.dart';
-import 'package:himnario_id_2/presentation/views_projection/providers/connection_providers.dart';
+import 'package:mqapp/core/enums/himno_tipo.dart';
+import 'package:mqapp/data/datasources/remote/grpc_control_datasource.dart';
+import 'package:mqapp/domain/entities/categoria.dart';
+import 'package:mqapp/domain/entities/himno.dart';
+import 'package:mqapp/domain/entities/version_pais.dart';
+import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
+import 'package:mqapp/presentation/views_personal/dashboard/home_screen.dart';
+import 'package:mqapp/presentation/views_personal/providers/hymn_providers.dart';
+import 'package:mqapp/presentation/views_projection/providers/connection_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 /// Mock NavigatorObserver para verificar navegación.

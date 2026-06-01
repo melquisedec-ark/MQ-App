@@ -40,7 +40,7 @@ jobs:
 
       - name: Package .dmg
         run: |
-          APP_NAME="himnario_id_2"
+          APP_NAME="mqapp"
           APP_BUNDLE="build/macos/Build/Products/Release/${APP_NAME}.app"
           DMG_NAME="MQ_App-macos-x64"
           mkdir -p dist

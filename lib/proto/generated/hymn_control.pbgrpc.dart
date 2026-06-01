@@ -20,7 +20,7 @@ import 'hymn_control.pb.dart' as $0;
 
 export 'hymn_control.pb.dart';
 
-@$pb.GrpcServiceName('himnario.HymnControl')
+@$pb.GrpcServiceName('mqapp.HymnControl')
 class HymnControlClient extends $grpc.Client {
   /// The hostname for this service.
   static const $core.String defaultHost = '';
@@ -89,37 +89,37 @@ class HymnControlClient extends $grpc.Client {
 
   static final _$sendCommand =
       $grpc.ClientMethod<$0.CommandRequest, $0.CommandResponse>(
-          '/himnario.HymnControl/SendCommand',
+          '/mqapp.HymnControl/SendCommand',
           ($0.CommandRequest value) => value.writeToBuffer(),
           $0.CommandResponse.fromBuffer);
   static final _$getStatus = $grpc.ClientMethod<$0.Empty, $0.DisplayStatus>(
-      '/himnario.HymnControl/GetStatus',
+      '/mqapp.HymnControl/GetStatus',
       ($0.Empty value) => value.writeToBuffer(),
       $0.DisplayStatus.fromBuffer);
   static final _$watchStatus = $grpc.ClientMethod<$0.Empty, $0.DisplayStatus>(
-      '/himnario.HymnControl/WatchStatus',
+      '/mqapp.HymnControl/WatchStatus',
       ($0.Empty value) => value.writeToBuffer(),
       $0.DisplayStatus.fromBuffer);
   static final _$handshake =
       $grpc.ClientMethod<$0.HandshakeRequest, $0.HandshakeResponse>(
-          '/himnario.HymnControl/Handshake',
+          '/mqapp.HymnControl/Handshake',
           ($0.HandshakeRequest value) => value.writeToBuffer(),
           $0.HandshakeResponse.fromBuffer);
   static final _$sendHymnContent =
       $grpc.ClientMethod<$0.HymnPayload, $0.CommandResponse>(
-          '/himnario.HymnControl/SendHymnContent',
+          '/mqapp.HymnControl/SendHymnContent',
           ($0.HymnPayload value) => value.writeToBuffer(),
           $0.CommandResponse.fromBuffer);
   static final _$getAvailableBackgrounds =
       $grpc.ClientMethod<$0.Empty, $0.BackgroundList>(
-          '/himnario.HymnControl/GetAvailableBackgrounds',
+          '/mqapp.HymnControl/GetAvailableBackgrounds',
           ($0.Empty value) => value.writeToBuffer(),
           $0.BackgroundList.fromBuffer);
 }
 
-@$pb.GrpcServiceName('himnario.HymnControl')
+@$pb.GrpcServiceName('mqapp.HymnControl')
 abstract class HymnControlServiceBase extends $grpc.Service {
-  $core.String get $name => 'himnario.HymnControl';
+  $core.String get $name => 'mqapp.HymnControl';
 
   HymnControlServiceBase() {
     $addMethod($grpc.ServiceMethod<$0.CommandRequest, $0.CommandResponse>(

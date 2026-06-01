@@ -51,7 +51,7 @@ class HymnPayload extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'HymnPayload',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'hymnId')
     ..aOS(2, _omitFieldNames ? '' : 'titulo')
@@ -159,7 +159,7 @@ class StanzaPayload extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'StanzaPayload',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'id')
     ..aI(2, _omitFieldNames ? '' : 'versionPaisId')
@@ -258,7 +258,7 @@ class BackgroundInfo extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'BackgroundInfo',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'nombre')
@@ -333,7 +333,7 @@ class BackgroundList extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'BackgroundList',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..pPM<BackgroundInfo>(1, _omitFieldNames ? '' : 'backgrounds',
         subBuilder: BackgroundInfo.create)
@@ -376,7 +376,7 @@ class Empty extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'Empty',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..hasRequiredFields = false;
 
@@ -446,7 +446,7 @@ class CommandRequest extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'CommandRequest',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aE<CommandType>(1, _omitFieldNames ? '' : 'type',
         enumValues: CommandType.values)
@@ -636,7 +636,7 @@ class CommandResponse extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'CommandResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'success')
     ..aOS(2, _omitFieldNames ? '' : 'errorMessage')
@@ -734,7 +734,7 @@ class DisplayStatus extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'DisplayStatus',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'currentHymnId')
     ..aOS(2, _omitFieldNames ? '' : 'currentHymnTitle')
@@ -945,7 +945,7 @@ class HandshakeRequest extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'HandshakeRequest',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'clientName')
     ..aOS(2, _omitFieldNames ? '' : 'clientVersion')
@@ -1029,7 +1029,7 @@ class HandshakeResponse extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'HandshakeResponse',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'himnario'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
       createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'accepted')
     ..aOS(2, _omitFieldNames ? '' : 'serverName')

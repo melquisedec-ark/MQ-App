@@ -30,8 +30,8 @@ import 'dual_mode_providers.dart';
 /// - `/hymn-detail` → [HymnDetailScreen]
 /// - `/live-control` → [LiveControlScreen]
 /// - `/arrangement-editor` → [ArrangementEditorScreen]
-class HimnarioDualApp extends ConsumerWidget {
-  const HimnarioDualApp({super.key});
+class MqDualApp extends ConsumerWidget {
+  const MqDualApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

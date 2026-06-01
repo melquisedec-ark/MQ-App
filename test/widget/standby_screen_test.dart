@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:himnario_id_2/core/enums/himno_tipo.dart';
-import 'package:himnario_id_2/domain/entities/himno.dart';
-import 'package:himnario_id_2/presentation/dual_mode_wrapper/device_mode.dart';
-import 'package:himnario_id_2/presentation/dual_mode_wrapper/dual_mode_providers.dart';
-import 'package:himnario_id_2/presentation/views_projection/display/receptor_binding.dart';
-import 'package:himnario_id_2/presentation/views_projection/display/standby_screen.dart';
-import 'package:himnario_id_2/presentation/views_projection/providers/live_control_providers.dart';
+import 'package:mqapp/core/enums/himno_tipo.dart';
+import 'package:mqapp/domain/entities/himno.dart';
+import 'package:mqapp/presentation/dual_mode_wrapper/device_mode.dart';
+import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
+import 'package:mqapp/presentation/views_projection/display/receptor_binding.dart';
+import 'package:mqapp/presentation/views_projection/display/standby_screen.dart';
+import 'package:mqapp/presentation/views_projection/providers/live_control_providers.dart';
 
 // ─── Provider Overrides ───────────────────────────────────────
 
@@ -64,7 +64,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Título principal
-      expect(find.text('HimnarioID'), findsOneWidget);
+      expect(find.text('MQ App'), findsOneWidget);
 
       // Mensaje de espera
       expect(

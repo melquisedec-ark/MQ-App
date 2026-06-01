@@ -1,4 +1,4 @@
-package com.example.himnario_id_2
+package com.example.mqapp
 
 import io.flutter.embedding.android.FlutterActivity
 

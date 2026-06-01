@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>HimnarioID</string>
+	<string>MQ App</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>himnario_id_2</string>
+	<string>mqapp</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -52,10 +52,10 @@
 	     PERMISOS DE RED (mDNS / Bonjour)
 	     ═══════════════════════════════════════════════════════════ -->
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>HimnarioID necesita acceso a la red local para descubrir y conectarse a displays de proyección en la misma red Wi-Fi.</string>
+	<string>MQ App necesita acceso a la red local para descubrir y conectarse a displays de proyección en la misma red Wi-Fi.</string>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_himnario._tcp</string>
+		<string>_mqapp._tcp</string>
 		<string>_http._tcp</string>
 	</array>
 
@@ -63,7 +63,7 @@
 	     PERMISOS DE FOTOS (fondos personalizados)
 	     ═══════════════════════════════════════════════════════════ -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>HimnarioID usa tus fotos para establecer fondos de pantalla personalizados en la vista de himnos.</string>
+	<string>MQ App usa tus fotos para establecer fondos de pantalla personalizados en la vista de himnos.</string>
 
 	<!-- ═══════════════════════════════════════════════════════════
 	     MODO BACKGROUND (audio)

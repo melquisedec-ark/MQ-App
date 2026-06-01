@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:himnario_id_2/core/database/database_helper.dart';
-import 'package:himnario_id_2/core/utils/string_utils.dart';
-import 'package:himnario_id_2/data/datasources/local/hymn_local_datasource.dart';
-import 'package:himnario_id_2/data/repositories/hymn_repository_impl.dart';
+import 'package:mqapp/core/database/database_helper.dart';
+import 'package:mqapp/core/utils/string_utils.dart';
+import 'package:mqapp/data/datasources/local/hymn_local_datasource.dart';
+import 'package:mqapp/data/repositories/hymn_repository_impl.dart';
 
 /// Set para llevar registro de directorios temporales creados para limpieza.
 final Set<Directory> _tempDirs = {};
@@ -18,7 +18,7 @@ final Set<Directory> _tempDirs = {};
 /// [Directory.systemTemp.createTempSync] para evitar que sqflite_common_ffi
 /// cachee y comparta la misma BD entre distintos tests.
 Future<Database> createEmptyDatabase() async {
-  final dir = Directory.systemTemp.createTempSync('himnario_test_');
+  final dir = Directory.systemTemp.createTempSync('mqapp_test_');
   _tempDirs.add(dir);
   final dbPath = p.join(dir.path, 'test.db');
   final db = await databaseFactory.openDatabase(dbPath);

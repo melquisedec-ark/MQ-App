@@ -6,12 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:himnario_id_2/domain/repositories/control_repository.dart';
-import 'package:himnario_id_2/presentation/shared_widgets/providers/appearance_provider.dart';
-import 'package:himnario_id_2/presentation/views_projection/display/projection_app.dart';
-import 'package:himnario_id_2/presentation/views_projection/display/receptor_binding.dart';
-import 'package:himnario_id_2/presentation/views_projection/providers/connection_providers.dart';
-import 'package:himnario_id_2/presentation/views_projection/providers/projection_providers.dart';
+import 'package:mqapp/domain/repositories/control_repository.dart';
+import 'package:mqapp/presentation/shared_widgets/providers/appearance_provider.dart';
+import 'package:mqapp/presentation/views_projection/display/projection_app.dart';
+import 'package:mqapp/presentation/views_projection/display/receptor_binding.dart';
+import 'package:mqapp/presentation/views_projection/providers/connection_providers.dart';
+import 'package:mqapp/presentation/views_projection/providers/projection_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Mocks

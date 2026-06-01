@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'presentation/dual_mode_wrapper/himnario_dual_app.dart';
+import 'presentation/dual_mode_wrapper/mq_dual_app.dart';
 
-/// Widget raíz de la aplicación HimnarioID 2.0.
+/// Widget raíz de la aplicación MQ App 2.0.
 ///
-/// Envuelve [HimnarioDualApp] en un [ProviderScope] para que el
+/// Envuelve [MqDualApp] en un [ProviderScope] para que el
 /// árbol de widgets tenga acceso a los providers de Riverpod.
-class HimnarioApp extends StatelessWidget {
-  const HimnarioApp({super.key});
+class MqApp extends StatelessWidget {
+  const MqApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const ProviderScope(
-      child: HimnarioDualApp(),
+      child: MqDualApp(),
     );
   }
 }

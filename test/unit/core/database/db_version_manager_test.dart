@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:himnario_id_2/core/database/db_version_manager.dart';
+import 'package:mqapp/core/database/db_version_manager.dart';
 
 void main() {
   group('DbVersionManager — needsUpdate (función pura)', () {

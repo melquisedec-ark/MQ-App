@@ -57,7 +57,7 @@ class DatabaseHelper {
     if (kDebugMode && !Platform.isAndroid && !Platform.isIOS) {
       final projectDb = p.join(
         Directory.current.path,
-        'assets/db/himnario_id.db',
+        'assets/db/mqapp.db',
       );
       _log.info('Debug mode: using project DB at $projectDb');
       final db = await _openDatabasePlatform(projectDb);
@@ -70,7 +70,7 @@ class DatabaseHelper {
 
     // ── Modo release / mobile ───────────────────────────────────
     final dir = await getApplicationDocumentsDirectory();
-    final dbPath = p.join(dir.path, 'himnario_id.db');
+    final dbPath = p.join(dir.path, 'mqapp.db');
     final localFile = File(dbPath);
 
     // Leer versiones antes de tocar la BD

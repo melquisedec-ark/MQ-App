@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:himnario_id_2/core/errors/failures.dart';
-import 'package:himnario_id_2/domain/entities/pista_audio.dart';
-import 'package:himnario_id_2/domain/repositories/audio_repository.dart';
-import 'package:himnario_id_2/domain/usecases/audio/play_audio_usecase.dart';
+import 'package:mqapp/core/errors/failures.dart';
+import 'package:mqapp/domain/entities/pista_audio.dart';
+import 'package:mqapp/domain/repositories/audio_repository.dart';
+import 'package:mqapp/domain/usecases/audio/play_audio_usecase.dart';
 
 // --------------------------------------------------
 // Mocks

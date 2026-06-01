@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:himnario_id_2/core/enums/estrofa_tipo.dart';
-import 'package:himnario_id_2/core/errors/failures.dart';
-import 'package:himnario_id_2/domain/entities/arreglo_musical.dart';
-import 'package:himnario_id_2/domain/entities/estrofa_arreglo.dart';
-import 'package:himnario_id_2/domain/entities/estrofa.dart';
-import 'package:himnario_id_2/domain/repositories/arreglo_repository.dart';
-import 'package:himnario_id_2/domain/repositories/hymn_repository.dart';
-import 'package:himnario_id_2/domain/usecases/arreglo/create_fork_usecase.dart';
+import 'package:mqapp/core/enums/estrofa_tipo.dart';
+import 'package:mqapp/core/errors/failures.dart';
+import 'package:mqapp/domain/entities/arreglo_musical.dart';
+import 'package:mqapp/domain/entities/estrofa_arreglo.dart';
+import 'package:mqapp/domain/entities/estrofa.dart';
+import 'package:mqapp/domain/repositories/arreglo_repository.dart';
+import 'package:mqapp/domain/repositories/hymn_repository.dart';
+import 'package:mqapp/domain/usecases/arreglo/create_fork_usecase.dart';
 
 // --------------------------------------------------
 // Mocks

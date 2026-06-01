@@ -4,7 +4,7 @@ import 'package:path_provider/path_provider.dart';
 
 /// Servicio helper para copiar archivos de fondos al almacenamiento local de la app.
 ///
-/// Los fondos (imágenes) se copian a `{appDocsDir}/himnario_id/fondos/`
+/// Los fondos (imágenes) se copian a `{appDocsDir}/mqapp/fondos/`
 /// con un nombre único para evitar colisiones.
 ///
 /// Así la app es dueña del archivo y no depende de rutas externas (galería, URI temporal).
@@ -12,7 +12,7 @@ import 'package:path_provider/path_provider.dart';
 class FileStorageService {
   static final _log = Logger('FileStorageService');
 
-  static const _subdirectory = 'himnario_id/fondos';
+  static const _subdirectory = 'mqapp/fondos';
 
   /// Retorna la ruta del directorio de fondos, creándolo si no existe.
   static Future<String> get fondosDirectory async {

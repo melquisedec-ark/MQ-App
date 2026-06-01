@@ -56,7 +56,7 @@ const HymnPayload$json = {
       '3': 6,
       '4': 3,
       '5': 11,
-      '6': '.himnario.StanzaPayload',
+      '6': '.mqapp.StanzaPayload',
       '10': 'estrofas'
     },
   ],
@@ -114,7 +114,7 @@ const BackgroundList$json = {
       '3': 1,
       '4': 3,
       '5': 11,
-      '6': '.himnario.BackgroundInfo',
+      '6': '.mqapp.BackgroundInfo',
       '10': 'backgrounds'
     },
   ],
@@ -143,7 +143,7 @@ const CommandRequest$json = {
       '3': 1,
       '4': 1,
       '5': 14,
-      '6': '.himnario.CommandType',
+      '6': '.mqapp.CommandType',
       '10': 'type'
     },
     {'1': 'stanza_index', '3': 2, '4': 1, '5': 5, '10': 'stanzaIndex'},

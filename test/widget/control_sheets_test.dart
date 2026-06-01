@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:himnario_id_2/core/window_manager/window_service.dart';
-import 'package:himnario_id_2/presentation/shared_widgets/control_sheets.dart';
-import 'package:himnario_id_2/core/window_manager/window_providers.dart';
+import 'package:mqapp/core/window_manager/window_service.dart';
+import 'package:mqapp/presentation/shared_widgets/control_sheets.dart';
+import 'package:mqapp/core/window_manager/window_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Mocks

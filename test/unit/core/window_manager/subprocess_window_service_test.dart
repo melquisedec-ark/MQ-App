@@ -5,8 +5,8 @@ import 'dart:io' show IOSink, Process, ProcessException, ProcessStartMode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:himnario_id_2/core/window_manager/window_service.dart';
-import 'package:himnario_id_2/core/window_manager/window_state.dart';
+import 'package:mqapp/core/window_manager/window_service.dart';
+import 'package:mqapp/core/window_manager/window_state.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Mocks

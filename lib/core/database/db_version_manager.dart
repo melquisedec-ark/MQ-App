@@ -66,7 +66,7 @@ class DbVersionManager {
   /// Retorna `Uint8List` vacío si el asset no existe.
   static Future<Uint8List> assetDbBytes() async {
     try {
-      final byteData = await rootBundle.load('assets/db/himnario_id.db');
+      final byteData = await rootBundle.load('assets/db/mqapp.db');
       return byteData.buffer.asUint8List(
         byteData.offsetInBytes,
         byteData.lengthInBytes,

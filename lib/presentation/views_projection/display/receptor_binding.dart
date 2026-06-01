@@ -119,7 +119,7 @@ class _ReceptorBindingState extends ConsumerState<ReceptorBinding> {
   ///
   /// Cuando se carga un himno por primera vez (`hymn` pasa de `null` a
   /// un valor), se notifica para que el widget padre (p.ej.
-  /// [HimnarioDualApp]) pueda transicionar de [StandbyScreen] a
+  /// [MqDualApp]) pueda transicionar de [StandbyScreen] a
   /// [LiveProjectionScreen].
   void _setupListener() {
     _subscription = ref.listenManual(liveControlProvider, (

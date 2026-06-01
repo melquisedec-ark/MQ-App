@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'package:himnario_id_2/core/enums/himno_tipo.dart';
-import 'package:himnario_id_2/core/enums/estrofa_tipo.dart';
-import 'package:himnario_id_2/domain/entities/himno.dart';
-import 'package:himnario_id_2/core/errors/failures.dart';
+import 'package:mqapp/core/enums/himno_tipo.dart';
+import 'package:mqapp/core/enums/estrofa_tipo.dart';
+import 'package:mqapp/domain/entities/himno.dart';
+import 'package:mqapp/core/errors/failures.dart';
 
 import 'helpers/db_test_helper.dart';
 

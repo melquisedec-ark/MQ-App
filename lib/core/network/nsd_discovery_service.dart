@@ -9,7 +9,7 @@ import 'domain/bonsoir_discovered_service.dart';
 
 /// Servicio de descubrimiento mDNS vía `nsd`.
 ///
-/// Escanea servicios `_himnario._tcp` en la red local y emite
+/// Escanea servicios `_mqapp._tcp` en la red local y emite
 /// [BonsoirDiscoveredService] cada vez que un servicio es descubierto
 /// o eliminado.
 ///
@@ -27,7 +27,7 @@ class NsdDiscoveryService {
     if (_discovery != null) return;
     try {
       _discovery = await startDiscovery(
-        '_himnario._tcp',
+        '_mqapp._tcp',
         ipLookupType: IpLookupType.any,
       );
 
@@ -68,7 +68,7 @@ class NsdDiscoveryService {
         }
       });
 
-      _log.info('NsdDiscovery iniciado para _himnario._tcp');
+      _log.info('NsdDiscovery iniciado para _mqapp._tcp');
     } catch (e) {
       _log.severe('Error iniciando NsdDiscovery: $e');
       rethrow;

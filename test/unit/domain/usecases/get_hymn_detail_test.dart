@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:himnario_id_2/core/enums/himno_tipo.dart';
-import 'package:himnario_id_2/core/errors/failures.dart';
-import 'package:himnario_id_2/domain/entities/himno.dart';
-import 'package:himnario_id_2/domain/entities/version_pais.dart';
-import 'package:himnario_id_2/domain/entities/estrofa.dart';
-import 'package:himnario_id_2/domain/entities/categoria.dart';
-import 'package:himnario_id_2/core/enums/estrofa_tipo.dart';
-import 'package:himnario_id_2/domain/repositories/hymn_repository.dart';
-import 'package:himnario_id_2/domain/usecases/himno/get_hymn_detail_usecase.dart';
+import 'package:mqapp/core/enums/himno_tipo.dart';
+import 'package:mqapp/core/errors/failures.dart';
+import 'package:mqapp/domain/entities/himno.dart';
+import 'package:mqapp/domain/entities/version_pais.dart';
+import 'package:mqapp/domain/entities/estrofa.dart';
+import 'package:mqapp/domain/entities/categoria.dart';
+import 'package:mqapp/core/enums/estrofa_tipo.dart';
+import 'package:mqapp/domain/repositories/hymn_repository.dart';
+import 'package:mqapp/domain/usecases/himno/get_hymn_detail_usecase.dart';
 
 // --------------------------------------------------
 // Mocks

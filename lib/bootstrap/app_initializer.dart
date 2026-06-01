@@ -40,7 +40,7 @@ class AppInitializer {
     ProviderContainer? container,
     bool skipNetwork = false,
   }) async {
-    _log.info('Inicializando HimnarioID 2.0...');
+    _log.info('Inicializando MQ App 2.0...');
 
     // 1. Configurar logging
     Logger.root.level = Level.ALL;

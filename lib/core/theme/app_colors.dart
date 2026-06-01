@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Constantes de color centralizadas para HimnarioID 2.0.
+/// Constantes de color centralizadas para MQ App 2.0.
 ///
 /// Paleta corporativa: Negro, Dorado, Blanco.
 /// Todos los colores de la aplicación deben referenciarse desde aquí

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:himnario_id_2/core/utils/string_utils.dart';
+import 'package:mqapp/core/utils/string_utils.dart';
 
 void main() {
   group('StringUtils', () {
@@ -23,8 +23,8 @@ void main() {
         expect(StringUtils.normalizeForSort('¿Qué?'), 'Que?');
       });
 
-      test('conserva caracteres válidos: "Himnario" → Himnario', () {
-        expect(StringUtils.normalizeForSort('Himnario'), 'Himnario');
+      test('conserva caracteres válidos: "MQ App" → MQ App', () {
+        expect(StringUtils.normalizeForSort('MQ App'), 'MQ App');
       });
 
       test('texto vacío retorna vacío', () {

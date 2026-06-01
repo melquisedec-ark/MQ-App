@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
-import 'package:himnario_id_2/core/database/user_data_backup.dart';
+import 'package:mqapp/core/database/user_data_backup.dart';
 
 void main() {
   // Inicializar sqflite_ffi para tests (no requiere plataforma nativa)

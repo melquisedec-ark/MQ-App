@@ -12,7 +12,7 @@ import 'core/theme/app_theme.dart';
 import 'presentation/views_projection/display/projection_app.dart';
 import 'presentation/widgets/db_update_screen.dart';
 
-/// Punto de entrada principal de HimnarioID 2.0.
+/// Punto de entrada principal de MQ App 2.0.
 ///
 /// ## Multi-ventana (Bug 3)
 /// Cuando se lanza con el argumento `--projection`, la aplicación inicia
@@ -36,7 +36,7 @@ import 'presentation/widgets/db_update_screen.dart';
 ///       ├─ Leer localVersion (db_version_applied.txt)
 ///       ├─ ¿assetVersion > localVersion?
 ///       │   ├─ Sí → runApp(DbUpdateScreen) — copia BD con feedback visual
-///       │   └─ No → AppInitializer.initialize() + runApp(HimnarioApp)
+///       │   └─ No → AppInitializer.initialize() + runApp(MqApp)
 /// ```
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,10 +79,10 @@ Future<void> _startProjectionWindow() async {
 /// 3. Si necesita actualización:
 ///    - Muestra [DbUpdateScreen] con feedback visual inmediato.
 ///    - La pantalla ejecuta la copia de BD e inicialización completa.
-///    - Al terminar, transiciona automáticamente a [HimnarioApp].
+///    - Al terminar, transiciona automáticamente a [MqApp].
 /// 4. Si NO necesita actualización:
 ///    - Inicializa todos los servicios (incluyendo BD, mDNS, gRPC).
-///    - Lanza [HimnarioApp] directamente.
+///    - Lanza [MqApp] directamente.
 Future<void> _startMainApp() async {
   // ── Inicializar window_manager para desktop ──
   if (!kIsWeb) {
@@ -102,14 +102,14 @@ Future<void> _startMainApp() async {
   final needsUpdate = await _quickCheckDbUpdate();
 
   // Crear MaterialApp compartido para evitar anidamiento de navegadores.
-  // DbUpdateScreen y HimnarioApp comparten el mismo tema y navigator.
+  // DbUpdateScreen y MqApp comparten el mismo tema y navigator.
   final appTheme = AppTheme.lightTheme;
   final darkTheme = AppTheme.darkTheme;
 
   if (needsUpdate) {
     // Mostrar pantalla de actualización con feedback visual.
     // DbUpdateScreen ejecuta AppInitializer.initialize() internamente
-    // y transiciona a HimnarioApp al completar (vía runApp).
+    // y transiciona a MqApp al completar (vía runApp).
     runApp(
       UncontrolledProviderScope(
         container: container,
@@ -136,7 +136,7 @@ Future<void> _startMainApp() async {
           theme: appTheme,
           darkTheme: darkTheme,
           themeMode: ThemeMode.system,
-          home: const HimnarioApp(),
+          home: const MqApp(),
         ),
       ),
     );
