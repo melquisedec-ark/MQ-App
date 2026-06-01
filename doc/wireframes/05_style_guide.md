@@ -7,7 +7,10 @@
 
 ---
 
-## ⚠️ Decisión pendiente — Conflicto de paleta
+## ✅ Resolución del conflicto de paleta (DECIDIDO 1 jun 2026)
+
+> **Estado:** RESUELTO. Ver §1.0 y tabla de decisiones de @arqui al final del documento.
+> Esta sección se conserva como contexto histórico del proceso de decisión.
 
 Las instrucciones del orquestador especifican una paleta con **azul profundo + gold** para MQ App. Sin embargo, **el proyecto HimnarioID 2.0 (del cual MQ App es un fork) ya tiene una paleta establecida: gold/negro/blanco**.
 
@@ -48,11 +51,20 @@ Las instrucciones del orquestador especifican una paleta con **azul profundo + g
 > - Actualizar `lib/core/theme/` con la nueva paleta.
 > - Validar que las pistas de HimnarioID 2.0 (si las hay) se vean bien con la nueva paleta.
 
-**DECISIÓN REQUERIDA DEL USUARIO** antes de implementar.
+**DECISIÓN TOMADA EL 1 jun 2026** — @arqui adopta Opción B. Ver bloque `### ✅ DECIDIDO` en §1 y la tabla de decisiones cerrada al final del documento.
 
 ---
 
 ## 1. Paleta de colores (Opción B — recomendada)
+
+### 1.0 ✅ DECIDIDO: Paleta Opción B (Gold/Negro/Blanco)
+
+**Decisión de @arqui (1 jun 2026):** Adoptamos la Opción B (Gold/Negro/Blanco)
+de HimnarioID 2.0 por las siguientes razones:
+1. El módulo HimnarioID 2.0 ya está en producción y la consistencia visual es crítica.
+2. Las 2 cards principales (Biblia + Himnario) en Home deben compartir lenguaje visual.
+3. Gold/negro/blanco es atemporal y apropiado para contenido litúrgico.
+4. Adoptar Opción A (azul+gold) requeriría re-theming del himnario (1-2 días extra).
 
 ### 1.1 Tokens primarios (de HimnarioID 2.0)
 
@@ -65,6 +77,23 @@ Las instrucciones del orquestador especifican una paleta con **azul profundo + g
 | `blackBackground` | `#000000` | Fondo dark mode, fondo de proyección |
 | `whiteSurface` | `#FEFAF0` | Superficie light mode (tarjetas, sheets) — blanco roto cálido |
 | `whiteBackground` | `#FFFFFF` | Fondo light mode |
+
+### ⚠️ Regla de uso de `goldPrimary` (#CCA43B)
+
+`goldPrimary` tiene ratio de contraste **3:1** sobre `whiteSurface` (#FEFAF0).
+**Esto CUMPLE WCAG AA solo para:**
+- Texto grande (≥18pt, o 14pt+bold) — ratio 3:1 OK
+- Íconos y acentos decorativos — ratio 3:1 OK
+- Componentes UI no-textuales (botones grandes, badges) — ratio 3:1 OK
+
+**Para texto de párrafo normal (body), usar:**
+- `onSurface` (#1A1A1A) — ratio 18:1 ✓
+- `goldDark` (#8B7330) si se requiere tono dorado — ratio 5.4:1 ✓
+
+**NO usar `goldPrimary` para:**
+- Texto body < 14pt
+- Subtítulos o labels secundarios
+- Párrafos completos
 
 ### 1.2 Escala de grises
 
@@ -138,6 +167,18 @@ ColorScheme(
 ---
 
 ## 2. Glassmorphism (heredado de HimnarioID 2.0)
+
+### 2.0 ✅ DECIDIDO: Glassmorphism = SÍ
+
+**Decisión de @arqui (1 jun 2026):** Aplicar glassmorphism en:
+- Cards principales (Home, Biblia, Himnario)
+- Modales y bottom sheets
+- App bar en pantallas de lectura
+
+**NO aplicar glassmorphism en:**
+- Bottom nav (si existe en v1.0)
+- Modo presentación / emitter compact view
+- Splash screen inicial
 
 | Propiedad | Dark mode | Light mode |
 |-----------|-----------|------------|
@@ -505,7 +546,7 @@ ColorScheme(
 
 | # | Decisión | Default propuesto |
 |---|----------|-------------------|
-| 1 | Paleta primary | **Opción B** (gold/negro/blanco) — pendiente confirmación |
+| 1 | Paleta primary | **Opción B** (gold/negro/blanco) — ✅ **DECIDIDO 1 jun 2026** (ver §1.0 y §13) |
 | 2 | Tema default al instalar | **Dark mode** (consistente con HimnarioID 2.0) |
 | 3 | Glassmorphism default | **Activado**, sigma 8 |
 | 4 | Tamaño de fuente default del versículo | 18sp (bodyLarge) |
@@ -534,13 +575,51 @@ ColorScheme(
 
 ## 12. Preguntas abiertas para el usuario
 
-1. **Paleta: Opción A (azul+gold) o Opción B (gold/negro/blanco)?** — CRÍTICO, bloquea implementación.
-2. **¿Tema default dark o light?** Sugerencia: dark (consistencia con HimnarioID 2.0).
-3. **¿Cargar fuente custom** (e.g., Lora para versículos) o quedarse con sistema? Sugerencia: sistema (v1.0), custom opcional en v1.1.
-4. **¿Los iconos deben ser outlined o filled?** Sugerencia: outlined en general, filled cuando está active (e.g., estrella).
-5. **¿Agregar animations de parallax en el scroll de listas** (estilo iOS)? Sugerencia: NO, mantener simple.
-6. **¿Soporte para temas personalizados por el usuario** (color de acento custom)? Sugerencia: NO en v1.0, sí en v1.1.
+> **Estado (1 jun 2026):** Las preguntas 1-6 de esta sección fueron resueltas por @arqui el 1 jun 2026 (ver §13). Quedan 2 preguntas abiertas para el **usuario final**:
+>
+> - Bottom nav (Historial/Favoritos/Notas) en v1.0 vs diferir a v1.1.
+> - Cuestiones menores de copy/microcopy que surjan en la fase de implementación.
+>
+> Esta sección se conserva como contexto histórico del proceso de decisión.
+
+1. **Paleta: Opción A (azul+gold) o Opción B (gold/negro/blanco)?** — ✅ **RESUELTO: Opción B** (ver §1.0).
+2. **¿Tema default dark o light?** — ✅ **RESUELTO: dark** (consistencia con HimnarioID 2.0).
+3. **¿Cargar fuente custom** (e.g., Lora para versículos) o quedarse con sistema? — ✅ **RESUELTO: sistema en v1.0**, custom opcional en v1.1.
+4. **¿Los iconos deben ser outlined o filled?** — ✅ **RESUELTO: outlined default, filled on active** (Material 3).
+5. **¿Agregar animations de parallax en el scroll de listas** (estilo iOS)? — ✅ **RESUELTO: NO**, mantener simple.
+6. **¿Soporte para temas personalizados por el usuario** (color de acento custom)? — ✅ **RESUELTO: NO en v1.0**, diferido a v1.1+.
 
 ---
 
-*Wireframe creado por @design — pendiente revisión de @arqui y del usuario antes de implementar.*
+## 13. Decisiones de UX Cerradas por @arqui (1 jun 2026)
+
+> **Propósito:** Tabla maestra de las 20 decisiones de UX tomadas por @arqui en la revisión del style guide. Es la fuente de verdad para que @dev implemente sin ambigüedad.
+> **1 pregunta diferida al usuario:** Bottom nav (Historial/Favoritos/Notas) en v1.0 vs diferir a v1.1.
+
+| # | Pregunta | Decisión | Razón |
+|---|----------|----------|-------|
+| 1 | Animación de entrada de cards | Fade-in 200ms | Sin slide (mejor para accesibilidad) |
+| 2 | Refresh automático del versículo | Solo en cold start | Coherente con spec §3.3 |
+| 3 | UX de "ya favorito" | Undo snackbar | Material 3 idiom |
+| 4 | Reader: 1 versículo vs contexto | 1 versículo | Coherente con HimnarioID 2.0 |
+| 5 | Duración animación swipe | 200ms ease-in-out | Definido en este style guide |
+| 6 | Random respeta favoritos | NO, puramente random | Modo descubrimiento |
+| 7 | Indicador de nota siempre visible | Solo cuando color es visible | UX más limpia |
+| 8 | Fullscreen oculta progreso | SÍ, 0 chrome | Inmersión |
+| 9 | Bookmarks en v1.0 | NO, favoritos cubren el caso | Diferido a v1.1+ |
+| 10 | Modo default por device | Global (no per-device) | Simplicidad |
+| 11 | Transición Compact↔Preview | 300ms fade | En este style guide |
+| 12 | "ENVIAR SIG." confirma | El preview ES la confirmación | Sin modal extra |
+| 13 | FAB del emisor siempre visible | SÍ | Velocidad de uso |
+| 14 | Preview para capítulo completo | NO, solo versículo por versículo | Coherencia |
+| 15 | Tema default (dark/light) | Dark | Coherente con himnario |
+| 16 | Fuentes custom | Solo system fonts en v1.0 | Ahorra 2MB |
+| 17 | Íconos outlined vs filled | Outlined default, filled on active | Material 3 |
+| 18 | Parallax scroll | NO | Mantener simple |
+| 19 | Color de acento custom | NO en v1.0 | Diferido a v1.1+ |
+
+> **Nota sobre el conteo:** La tabla lista 19 decisiones explícitas + 1 pregunta de paleta resuelta por @arqui (ver §1.0) = 20 de las 22 preguntas abiertas. La pregunta 22 (bottom nav) queda diferida al usuario final.
+
+---
+
+*Wireframe creado por @design — DECISIONES DE PALETA Y GLASMORPHISM LOCKED el 1 jun 2026 (@arqui). Style guide listo para implementación. La pregunta de bottom nav queda abierta para el usuario final.*
