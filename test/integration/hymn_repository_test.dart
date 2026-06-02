@@ -191,9 +191,14 @@ void main() {
           'tipo': 1,
           'activo': 1,
         });
+        // Phase 2a.4: crear País antes de Version_Pais por la nueva FK.
+        final paisId = await db.insert('Pais', {
+          'nombre': 'Test Land',
+          'codigo': 'TL',
+        });
         final vId = await db.insert('Version_Pais', {
           'himno_id': 99,
-          'pais': 'Test Land',
+          'pais_id': paisId,
           'tonalidad_original': 'C',
           'activo': 1,
         });
@@ -299,6 +304,17 @@ void main() {
         await bundle.repo.createCategoria('Alabanza');
         await bundle.repo.createCategoria('Adoración');
 
+        // Phase 2a.4: crear países antes de las versiones (FK actualizada).
+        final db = bundle.db;
+        final svId = await db.insert('Pais', {
+          'nombre': 'El Salvador',
+          'codigo': 'SV',
+        });
+        final gtId = await db.insert('Pais', {
+          'nombre': 'Guatemala',
+          'codigo': 'GT',
+        });
+
         const himno = Himno(
           id: 0,
           titulo: 'Nuevo Himno de Prueba',
@@ -308,8 +324,8 @@ void main() {
         );
 
         final versiones = [
-          {'pais': 'El Salvador', 'tonalidad_original': 'D'},
-          {'pais': 'Guatemala', 'tonalidad_original': 'C'},
+          {'pais_id': svId, 'tonalidad_original': 'D'},
+          {'pais_id': gtId, 'tonalidad_original': 'C'},
         ];
 
         final estrofas = [
@@ -379,8 +395,14 @@ void main() {
           activo: true,
         );
 
+        // Phase 2a.4: crear país México antes de la versión (FK).
+        final mxId = await bundle.db.insert('Pais', {
+          'nombre': 'México',
+          'codigo': 'MX',
+        });
+
         final versiones = [
-          {'pais': 'México', 'tonalidad_original': 'A'},
+          {'pais_id': mxId, 'tonalidad_original': 'A'},
         ];
 
         final estrofas = [
