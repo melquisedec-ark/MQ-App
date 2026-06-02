@@ -39,12 +39,14 @@ void main() {
         expect(tableNames, contains('Fondo_Pantalla'));
         expect(tableNames, contains('Historial_Reproduccion'));
         expect(tableNames, contains('Himno_Busqueda'));
+        // Phase 2a.4: Pais añadida para FK de Version_Pais.
+        expect(tableNames, contains('Pais'));
 
         // Excluimos sqlite_sequence (auto-generado por AUTOINCREMENT)
         // del conteo porque no es una tabla de la aplicación.
         final appTables =
             tableNames.where((n) => n != 'sqlite_sequence').toList();
-        expect(appTables, hasLength(13));
+        expect(appTables, hasLength(14));
       } finally {
         await db.close();
       }
@@ -177,9 +179,15 @@ void main() {
       try {
         await seedDatabase(db);
 
-        final versions = await db.rawQuery(
-          'SELECT himno_id, pais, tonalidad_original FROM Version_Pais ORDER BY himno_id',
-        );
+        // Phase 2a.4: Version_Pais ya no tiene columna `pais`; ahora
+        // tiene `pais_id` (FK a Pais.id). JOINear con Pais para
+        // obtener el nombre del país.
+        final versions = await db.rawQuery('''
+          SELECT vp.himno_id, p.nombre AS pais, vp.tonalidad_original
+          FROM Version_Pais vp
+          JOIN Pais p ON p.id = vp.pais_id
+          ORDER BY vp.himno_id
+        ''');
         expect(versions, hasLength(3));
         for (final v in versions) {
           expect(v['pais'], 'El Salvador');
@@ -263,10 +271,17 @@ void main() {
         // 2. Insert category
         await db.insert('Categoria', {'id': 10, 'nombre': 'Test Category'});
 
+        // Phase 2a.4: insertar País primero (FK requerida) y usar
+        // `pais_id` en Version_Pais en vez del antiguo `pais` TEXT.
+        final paisId = await db.insert('Pais', {
+          'nombre': 'México',
+          'codigo': 'MX',
+        });
+
         // 3. Insert country version
         final versionId = await db.insert('Version_Pais', {
           'himno_id': himnoId,
-          'pais': 'México',
+          'pais_id': paisId,
           'tonalidad_original': 'D',
           'activo': 1,
         });
@@ -297,11 +312,13 @@ void main() {
         expect(hymns, hasLength(1));
         expect(hymns[0]['titulo_principal'], 'Full Test Hymn');
 
-        final versions = await db.query(
-          'Version_Pais',
-          where: 'himno_id = ?',
-          whereArgs: [himnoId],
-        );
+        // JOIN con Pais para verificar que el país se guardó correctamente.
+        final versions = await db.rawQuery('''
+          SELECT vp.himno_id, p.nombre AS pais, vp.tonalidad_original
+          FROM Version_Pais vp
+          JOIN Pais p ON p.id = vp.pais_id
+          WHERE vp.himno_id = ?
+        ''', [himnoId]);
         expect(versions, hasLength(1));
         expect(versions[0]['pais'], 'México');
 
@@ -393,9 +410,11 @@ void main() {
           'tipo': 1,
           'activo': 1,
         });
+        // Phase 2a.4: insertar País y usar `pais_id` en vez de `pais` TEXT.
+        final paisId = await db.insert('Pais', {'nombre': 'Test'});
         final versionId = await db.insert('Version_Pais', {
           'himno_id': himnoId,
-          'pais': 'Test',
+          'pais_id': paisId,
           'tonalidad_original': 'C',
           'activo': 1,
         });
@@ -582,9 +601,11 @@ void main() {
           'tipo': 1,
           'activo': 1,
         });
+        // Phase 2a.4: insertar País y usar `pais_id` en vez de `pais` TEXT.
+        final paisId = await db.insert('Pais', {'nombre': 'Test'});
         final versionId = await db.insert('Version_Pais', {
           'himno_id': himnoId,
-          'pais': 'Test',
+          'pais_id': paisId,
           'tonalidad_original': 'C',
           'activo': 1,
         });

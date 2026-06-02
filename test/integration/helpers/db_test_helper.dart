@@ -207,6 +207,8 @@ Future<Database> createEmptyDatabase() async {
   await db.execute('CREATE INDEX idx_himno_activo ON Himno(activo);');
 
   // ─── Vistas ───
+  // Phase 2a.4: actualizado para JOINear Pais (la columna `pais` ya no
+  // existe en Version_Pais; ahora es `pais_id` que apunta a Pais.id).
   await db.execute('''
     CREATE VIEW IF NOT EXISTS v_himno_resumen AS
     SELECT
@@ -215,10 +217,11 @@ Future<Database> createEmptyDatabase() async {
       h.numero_oficial,
       h.tipo,
       h.activo,
-      vp.pais,
+      p.nombre AS pais,
       vp.tonalidad_original
     FROM Himno h
     LEFT JOIN Version_Pais vp ON vp.himno_id = h.id AND vp.activo = 1
+    LEFT JOIN Pais p ON p.id = vp.pais_id
     ORDER BY h.numero_oficial;
   ''');
   await db.execute('''

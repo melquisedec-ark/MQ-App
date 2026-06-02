@@ -53,10 +53,21 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
   int? _currentPistaId;
   late final ScrollController _scrollController;
 
+  // Phase 2a.4: cachear providers en initState para poder usarlos
+  // en `dispose()` sin necesidad de `ref` (que ya es inválido cuando
+  // el State está siendo desmontado, causando
+  // "Cannot use 'ref' after the widget was disposed").
+  late final bool _isFullscreen;
+  late final FullscreenModeNotifier _fullscreenModeNotifier;
+  late final AudioRepository _audioRepository;
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _isFullscreen = ref.read(fullscreenModeProvider);
+    _fullscreenModeNotifier = ref.read(fullscreenModeProvider.notifier);
+    _audioRepository = ref.read(audioRepositoryProvider);
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeKeyFromHymn();
@@ -77,8 +88,8 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
     // Salir de fullscreen si la app pasa a segundo plano
     if ((state == AppLifecycleState.paused ||
             state == AppLifecycleState.inactive) &&
-        ref.read(fullscreenModeProvider)) {
-      ref.read(fullscreenModeProvider.notifier).exitFullscreen();
+        _isFullscreen) {
+      _fullscreenModeNotifier.exitFullscreen();
     }
   }
 
@@ -848,12 +859,14 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
   void dispose() {
     // Restaurar SystemChrome al salir de la pantalla (crítico: evitar
     // que el sistema UI quede oculto si se navega estando en fullscreen).
-    ref.read(fullscreenModeProvider.notifier).exitFullscreen();
+    // Phase 2a.4: usar el notifier cacheado en initState (en dispose()
+    // el `ref` de Riverpod ya no es válido).
+    _fullscreenModeNotifier.exitFullscreen();
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     if (_isPlaying) {
       // Disparar stop sin await — el widget se está destruyendo
-      ref.read(audioRepositoryProvider).stop();
+      _audioRepository.stop();
       _isPlaying = false;
     }
     super.dispose();
