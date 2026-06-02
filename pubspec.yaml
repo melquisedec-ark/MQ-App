@@ -87,8 +87,8 @@ flutter:
   assets:
     - assets/db/mqapp.db
     - assets/db/db_version.json
-    # assets/db/biblia.db              # Pendiente: generado por @back (Fase 2)
-    # assets/db/biblia_version.json    # Pendiente: generado por @back (Fase 2)
+    - assets/db/biblia.db
+    - assets/db/biblia_version.json
     - assets/database/
     - assets/audio/
     - assets/images/logoApp.jpg
