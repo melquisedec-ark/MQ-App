@@ -6,7 +6,6 @@ import 'package:sqflite_common/sqflite.dart';
 
 import 'package:mqapp/core/database/bible_database_helper.dart';
 import 'package:mqapp/features/biblia/application/providers/biblia_version_provider.dart';
-import 'package:mqapp/features/biblia/application/providers/current_libro_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/derived_providers.dart';
 import 'package:mqapp/features/biblia/application/providers/favoritos_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/historial_provider.dart';
