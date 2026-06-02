@@ -415,6 +415,9 @@ class CommandRequest extends $pb.GeneratedMessage {
     $core.double? cardOpacity,
     $core.double? projectionFontScale,
     $core.String? bgColor,
+    VerseReference? targetVerse,
+    ModuleType? targetModule,
+    EmitterViewMode? viewMode,
   }) {
     final result = create();
     if (type != null) result.type = type;
@@ -432,6 +435,9 @@ class CommandRequest extends $pb.GeneratedMessage {
     if (projectionFontScale != null)
       result.projectionFontScale = projectionFontScale;
     if (bgColor != null) result.bgColor = bgColor;
+    if (targetVerse != null) result.targetVerse = targetVerse;
+    if (targetModule != null) result.targetModule = targetModule;
+    if (viewMode != null) result.viewMode = viewMode;
     return result;
   }
 
@@ -465,6 +471,12 @@ class CommandRequest extends $pb.GeneratedMessage {
     ..aD(13, _omitFieldNames ? '' : 'projectionFontScale',
         fieldType: $pb.PbFieldType.OF)
     ..aOS(14, _omitFieldNames ? '' : 'bgColor')
+    ..aOM<VerseReference>(20, _omitFieldNames ? '' : 'targetVerse',
+        subBuilder: VerseReference.create)
+    ..aE<ModuleType>(21, _omitFieldNames ? '' : 'targetModule',
+        enumValues: ModuleType.values)
+    ..aE<EmitterViewMode>(22, _omitFieldNames ? '' : 'viewMode',
+        enumValues: EmitterViewMode.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -612,6 +624,37 @@ class CommandRequest extends $pb.GeneratedMessage {
   $core.bool hasBgColor() => $_has(13);
   @$pb.TagNumber(14)
   void clearBgColor() => $_clearField(14);
+
+  /// ─── BIBLE COMMAND FIELDS ──────────────────────────────────
+  /// Tags 20+ reservados para Biblia (no colisionan con himnario).
+  @$pb.TagNumber(20)
+  VerseReference get targetVerse => $_getN(14);
+  @$pb.TagNumber(20)
+  set targetVerse(VerseReference value) => $_setField(20, value);
+  @$pb.TagNumber(20)
+  $core.bool hasTargetVerse() => $_has(14);
+  @$pb.TagNumber(20)
+  void clearTargetVerse() => $_clearField(20);
+  @$pb.TagNumber(20)
+  VerseReference ensureTargetVerse() => $_ensure(14);
+
+  @$pb.TagNumber(21)
+  ModuleType get targetModule => $_getN(15);
+  @$pb.TagNumber(21)
+  set targetModule(ModuleType value) => $_setField(21, value);
+  @$pb.TagNumber(21)
+  $core.bool hasTargetModule() => $_has(15);
+  @$pb.TagNumber(21)
+  void clearTargetModule() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  EmitterViewMode get viewMode => $_getN(16);
+  @$pb.TagNumber(22)
+  set viewMode(EmitterViewMode value) => $_setField(22, value);
+  @$pb.TagNumber(22)
+  $core.bool hasViewMode() => $_has(16);
+  @$pb.TagNumber(22)
+  void clearViewMode() => $_clearField(22);
 }
 
 class CommandResponse extends $pb.GeneratedMessage {
@@ -698,6 +741,7 @@ class DisplayStatus extends $pb.GeneratedMessage {
     $core.bool? showChords,
     $core.double? cardOpacity,
     $core.double? projectionFontScale,
+    ModuleContext? moduleContext,
   }) {
     final result = create();
     if (currentHymnId != null) result.currentHymnId = currentHymnId;
@@ -720,6 +764,7 @@ class DisplayStatus extends $pb.GeneratedMessage {
     if (cardOpacity != null) result.cardOpacity = cardOpacity;
     if (projectionFontScale != null)
       result.projectionFontScale = projectionFontScale;
+    if (moduleContext != null) result.moduleContext = moduleContext;
     return result;
   }
 
@@ -754,6 +799,8 @@ class DisplayStatus extends $pb.GeneratedMessage {
         fieldType: $pb.PbFieldType.OF)
     ..aD(16, _omitFieldNames ? '' : 'projectionFontScale',
         fieldType: $pb.PbFieldType.OF)
+    ..aOM<ModuleContext>(17, _omitFieldNames ? '' : 'moduleContext',
+        subBuilder: ModuleContext.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -919,6 +966,343 @@ class DisplayStatus extends $pb.GeneratedMessage {
   $core.bool hasProjectionFontScale() => $_has(15);
   @$pb.TagNumber(16)
   void clearProjectionFontScale() => $_clearField(16);
+
+  /// Contexto del módulo activo (Biblia o Himnario) para el emisor.
+  /// Tag 17 (libre; 15 y 16 ya usados por apariencia).
+  @$pb.TagNumber(17)
+  ModuleContext get moduleContext => $_getN(16);
+  @$pb.TagNumber(17)
+  set moduleContext(ModuleContext value) => $_setField(17, value);
+  @$pb.TagNumber(17)
+  $core.bool hasModuleContext() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearModuleContext() => $_clearField(17);
+  @$pb.TagNumber(17)
+  ModuleContext ensureModuleContext() => $_ensure(16);
+}
+
+/// Referencia canónica a un versículo bíblico.
+/// `libro_numero` sigue el orden canónico (1..66), NO el id interno de la BD.
+class VerseReference extends $pb.GeneratedMessage {
+  factory VerseReference({
+    $core.int? versionId,
+    $core.int? libroNumero,
+    $core.int? capitulo,
+    $core.int? versiculo,
+  }) {
+    final result = create();
+    if (versionId != null) result.versionId = versionId;
+    if (libroNumero != null) result.libroNumero = libroNumero;
+    if (capitulo != null) result.capitulo = capitulo;
+    if (versiculo != null) result.versiculo = versiculo;
+    return result;
+  }
+
+  VerseReference._();
+
+  factory VerseReference.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory VerseReference.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'VerseReference',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'versionId')
+    ..aI(2, _omitFieldNames ? '' : 'libroNumero')
+    ..aI(3, _omitFieldNames ? '' : 'capitulo')
+    ..aI(4, _omitFieldNames ? '' : 'versiculo')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  VerseReference clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  VerseReference copyWith(void Function(VerseReference) updates) =>
+      super.copyWith((message) => updates(message as VerseReference))
+          as VerseReference;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static VerseReference create() => VerseReference._();
+  @$core.override
+  VerseReference createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static VerseReference getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<VerseReference>(create);
+  static VerseReference? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get versionId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set versionId($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasVersionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearVersionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get libroNumero => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set libroNumero($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasLibroNumero() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLibroNumero() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get capitulo => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set capitulo($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCapitulo() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCapitulo() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get versiculo => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set versiculo($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasVersiculo() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearVersiculo() => $_clearField(4);
+}
+
+/// Payload completo de un versículo para mostrar en el display remoto.
+class VersePayload extends $pb.GeneratedMessage {
+  factory VersePayload({
+    VerseReference? reference,
+    $core.String? libroNombre,
+    $core.String? libroAbreviatura,
+    $core.String? texto,
+    $core.String? versionAbreviatura,
+  }) {
+    final result = create();
+    if (reference != null) result.reference = reference;
+    if (libroNombre != null) result.libroNombre = libroNombre;
+    if (libroAbreviatura != null) result.libroAbreviatura = libroAbreviatura;
+    if (texto != null) result.texto = texto;
+    if (versionAbreviatura != null)
+      result.versionAbreviatura = versionAbreviatura;
+    return result;
+  }
+
+  VersePayload._();
+
+  factory VersePayload.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory VersePayload.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'VersePayload',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
+      createEmptyInstance: create)
+    ..aOM<VerseReference>(1, _omitFieldNames ? '' : 'reference',
+        subBuilder: VerseReference.create)
+    ..aOS(2, _omitFieldNames ? '' : 'libroNombre')
+    ..aOS(3, _omitFieldNames ? '' : 'libroAbreviatura')
+    ..aOS(4, _omitFieldNames ? '' : 'texto')
+    ..aOS(5, _omitFieldNames ? '' : 'versionAbreviatura')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  VersePayload clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  VersePayload copyWith(void Function(VersePayload) updates) =>
+      super.copyWith((message) => updates(message as VersePayload))
+          as VersePayload;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static VersePayload create() => VersePayload._();
+  @$core.override
+  VersePayload createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static VersePayload getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<VersePayload>(create);
+  static VersePayload? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  VerseReference get reference => $_getN(0);
+  @$pb.TagNumber(1)
+  set reference(VerseReference value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasReference() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearReference() => $_clearField(1);
+  @$pb.TagNumber(1)
+  VerseReference ensureReference() => $_ensure(0);
+
+  @$pb.TagNumber(2)
+  $core.String get libroNombre => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set libroNombre($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasLibroNombre() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLibroNombre() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get libroAbreviatura => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set libroAbreviatura($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLibroAbreviatura() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLibroAbreviatura() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get texto => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set texto($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasTexto() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTexto() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get versionAbreviatura => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set versionAbreviatura($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasVersionAbreviatura() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearVersionAbreviatura() => $_clearField(5);
+}
+
+enum ModuleContext_Payload { currentVerse, notSet }
+
+/// Contexto del módulo activo: qué se está mostrando y adyacentes (preview).
+/// `payload` es un `oneof` para que el mismo mensaje pueda portar Biblia
+/// o Himnario según `module`.
+class ModuleContext extends $pb.GeneratedMessage {
+  factory ModuleContext({
+    ModuleType? module,
+    VersePayload? currentVerse,
+    $core.String? prevText,
+    $core.String? currentText,
+    $core.String? nextText,
+  }) {
+    final result = create();
+    if (module != null) result.module = module;
+    if (currentVerse != null) result.currentVerse = currentVerse;
+    if (prevText != null) result.prevText = prevText;
+    if (currentText != null) result.currentText = currentText;
+    if (nextText != null) result.nextText = nextText;
+    return result;
+  }
+
+  ModuleContext._();
+
+  factory ModuleContext.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ModuleContext.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, ModuleContext_Payload>
+      _ModuleContext_PayloadByTag = {
+    2: ModuleContext_Payload.currentVerse,
+    0: ModuleContext_Payload.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModuleContext',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'mqapp'),
+      createEmptyInstance: create)
+    ..oo(0, [2])
+    ..aE<ModuleType>(1, _omitFieldNames ? '' : 'module',
+        enumValues: ModuleType.values)
+    ..aOM<VersePayload>(2, _omitFieldNames ? '' : 'currentVerse',
+        subBuilder: VersePayload.create)
+    ..aOS(10, _omitFieldNames ? '' : 'prevText')
+    ..aOS(11, _omitFieldNames ? '' : 'currentText')
+    ..aOS(12, _omitFieldNames ? '' : 'nextText')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModuleContext clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModuleContext copyWith(void Function(ModuleContext) updates) =>
+      super.copyWith((message) => updates(message as ModuleContext))
+          as ModuleContext;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ModuleContext create() => ModuleContext._();
+  @$core.override
+  ModuleContext createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ModuleContext getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ModuleContext>(create);
+  static ModuleContext? _defaultInstance;
+
+  @$pb.TagNumber(2)
+  ModuleContext_Payload whichPayload() =>
+      _ModuleContext_PayloadByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(2)
+  void clearPayload() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(1)
+  ModuleType get module => $_getN(0);
+  @$pb.TagNumber(1)
+  set module(ModuleType value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasModule() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearModule() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  VersePayload get currentVerse => $_getN(1);
+  @$pb.TagNumber(2)
+  set currentVerse(VersePayload value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCurrentVerse() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCurrentVerse() => $_clearField(2);
+  @$pb.TagNumber(2)
+  VersePayload ensureCurrentVerse() => $_ensure(1);
+
+  /// Textos adyacentes para el modo PREVIEW del emisor.
+  /// Vacíos si el modo actual es COMPACT.
+  @$pb.TagNumber(10)
+  $core.String get prevText => $_getSZ(2);
+  @$pb.TagNumber(10)
+  set prevText($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(10)
+  $core.bool hasPrevText() => $_has(2);
+  @$pb.TagNumber(10)
+  void clearPrevText() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.String get currentText => $_getSZ(3);
+  @$pb.TagNumber(11)
+  set currentText($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(11)
+  $core.bool hasCurrentText() => $_has(3);
+  @$pb.TagNumber(11)
+  void clearCurrentText() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.String get nextText => $_getSZ(4);
+  @$pb.TagNumber(12)
+  set nextText($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(12)
+  $core.bool hasNextText() => $_has(4);
+  @$pb.TagNumber(12)
+  void clearNextText() => $_clearField(12);
 }
 
 class HandshakeRequest extends $pb.GeneratedMessage {
