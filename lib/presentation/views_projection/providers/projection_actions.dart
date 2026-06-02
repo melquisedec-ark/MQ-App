@@ -80,18 +80,46 @@ String _colorToHex(Color color) {
   return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
 }
 
+/// Mapea un [fontScale] numérico (0.7–1.8) a un [ProjectionFontSize] legacy.
+///
+/// Phase 2a.4: introducido para mantener compatibilidad con campos
+/// legacy (`fontSize`) del receptor de proyección.
+String _mapFontScaleToLegacySize(double fontScale) {
+  if (fontScale < 0.85) return 'small';
+  if (fontScale < 1.15) return 'medium';
+  if (fontScale < 1.5) return 'large';
+  return 'extraLarge';
+}
+
 /// Construye el payload del mensaje [SET_CONFIG] con la apariencia actual.
+///
+/// Phase 2a.4: el receptor espera tanto los campos NUEVOS (textColor,
+/// chordColor, bgColor, fontScale, etc.) como los LEGACY (backgroundColor,
+/// fontSize, transitionSpeed, background) que ya no se exponen al usuario
+/// pero siguen siendo consumidos por la ventana de proyección para
+/// mantener retrocompatibilidad con versiones viejas del subproceso.
 Map<String, dynamic> _buildSetConfigMessage(HymnAppearanceState appearance) {
+  final bgColor = appearance.bgColor;
   return {
     'type': 'SET_CONFIG',
-    // Nuevos campos de apariencia
+    // ── Nuevos campos de apariencia ──
     'textColor': _colorToHex(appearance.textColor),
     'chordColor': _colorToHex(appearance.chordColor),
     'fontFamily': appearance.fontFamily,
     'isBold': appearance.isBold,
     'fontScale': appearance.fontScale,
+    'bgColor': _colorToHex(bgColor),
     'showChords': appearance.showChords,
     'cardOpacity': appearance.cardOpacity,
+    // ── Campos legacy (compatibilidad con receptor) ──
+    // backgroundColor = bgColor (alias) — el receptor los usa como
+    // sinónimos. Mantener ambos evita reset visual en subprocesos viejos.
+    'backgroundColor': _colorToHex(bgColor),
+    'fontSize': _mapFontScaleToLegacySize(appearance.fontScale),
+    'transitionSpeed': 0.5, // default legacy; Phase 2a.4 sin UI dedicada
+    // background: 'black' cuando no hay color sólido seleccionado,
+    // 'color' en caso contrario (ver BUG_FONDO_RESET.md).
+    'background': bgColor == Colors.transparent ? 'black' : 'color',
   };
 }
 
