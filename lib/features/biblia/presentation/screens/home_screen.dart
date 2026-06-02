@@ -6,6 +6,7 @@ import '../../../../core/network/connection_state.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
+import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/favoritos_provider.dart';
@@ -257,6 +258,7 @@ class _RandomVerseCard extends ConsumerWidget {
     if (libro == null || !context.mounted) return;
     // Setea estado global para que BibleReaderScreen lo lea
     ref.read(currentLibroIdProvider.notifier).state = libro.id;
+    ref.read(currentLibroNumeroProvider.notifier).state = libro.numero;
     ref.read(currentCapituloProvider.notifier).state = verse.capituloNumero;
     ref.read(currentVersiculoNumeroProvider.notifier).state =
         verse.versiculo.numero;

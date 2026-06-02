@@ -15,6 +15,7 @@ import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dar
 import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/notas_repository.dart';
 import 'package:mqapp/features/biblia/presentation/screens/bible_reader_screen.dart';
+import 'package:mqapp/presentation/views_projection/providers/connection_providers.dart';
 
 import '../helpers/bible_db_test_helper.dart';
 
@@ -27,6 +28,7 @@ Widget _buildHarness({
   required BibleDatabaseHelper helper,
   int libroId = 1,
   int capitulo = 1,
+  bool isConnected = false,
 }) {
   return ProviderScope(
     overrides: <Override>[
@@ -38,6 +40,9 @@ Widget _buildHarness({
       favoritosStreamProvider.overrideWith((_) => favRepo.watchAll()),
       notasStreamProvider.overrideWith((_) => notasRepo.watchAll()),
       historialStreamProvider.overrideWith((_) => histRepo.watchAll()),
+      // Override directo: no requiere instanciar ConnectionNotifier
+      // (que abriría sockets reales en el constructor de GrpcControlDataSource).
+      isConnectedProvider.overrideWith((_) => isConnected),
     ],
     child: MaterialApp.router(
       routerConfig: GoRouter(
@@ -108,7 +113,8 @@ void main() {
     );
   });
 
-  Widget buildHarness({int libroId = 1, int capitulo = 1}) => _buildHarness(
+  Widget buildHarness({int libroId = 1, int capitulo = 1, bool isConnected = false}) =>
+      _buildHarness(
         bibliaRepo: bibliaRepo,
         favRepo: favRepo,
         notasRepo: notasRepo,
@@ -117,6 +123,7 @@ void main() {
         helper: helper,
         libroId: libroId,
         capitulo: capitulo,
+        isConnected: isConnected,
       );
 
   testWidgets('muestra el título del libro y el versículo inicial',
@@ -192,5 +199,38 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
     // Y los 4 colores (ninguno, amarillo, verde, azul)
     expect(find.text('Color'), findsOneWidget);
+  });
+
+  testWidgets('oculta el botón ENVIAR cuando no hay display conectado',
+      (tester) async {
+    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpAndSettle();
+
+    // Sin conexión, el botón ENVIAR no debe renderizarse.
+    expect(find.text('ENVIAR'), findsNothing);
+    expect(find.byIcon(Icons.cast_rounded), findsNothing);
+  });
+
+  testWidgets('muestra el botón ENVIAR y el menú overflow cuando hay display',
+      (tester) async {
+    await tester.pumpWidget(
+      buildHarness(libroId: 1, capitulo: 1, isConnected: true),
+    );
+    await tester.pumpAndSettle();
+
+    // Con conexión, el botón ENVIAR aparece en la AppBar.
+    expect(find.text('ENVIAR'), findsOneWidget);
+    expect(find.byIcon(Icons.cast_rounded), findsOneWidget);
+
+    // El menú overflow siempre está visible (no depende de conexión).
+    final overflowBtn = find.byTooltip('Más opciones');
+    expect(overflowBtn, findsOneWidget);
+
+    // Al abrirlo deben aparecer las 3 acciones del menú.
+    await tester.tap(overflowBtn);
+    await tester.pumpAndSettle();
+    expect(find.text('Modo Compact'), findsOneWidget);
+    expect(find.text('Modo Preview'), findsOneWidget);
+    expect(find.text('Ir a Himnario'), findsOneWidget);
   });
 }

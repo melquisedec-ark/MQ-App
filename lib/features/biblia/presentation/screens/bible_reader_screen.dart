@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../presentation/shared_widgets/glass_card.dart';
+import '../../../../proto/generated/hymn_control.pbgrpc.dart';
+import '../../../../presentation/views_projection/providers/connection_providers.dart';
+import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/biblia_version_provider.dart';
+import '../../application/providers/biblia_config_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/derived_providers.dart';
@@ -48,7 +52,23 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       if (currentNum == null) {
         ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
       }
+      // Resolver libroId → libroNumero (canónico) y cachearlo para el
+      // cliente gRPC (BibleClientActions lo lee al enviar comandos).
+      _syncLibroNumeroFromId(widget.libroId);
     });
+  }
+
+  /// Resuelve el `libroId` a su número canónico y lo cachea.
+  Future<void> _syncLibroNumeroFromId(int libroId) async {
+    try {
+      final repo = ref.read(bibliaRepositoryProvider);
+      final libro = await repo.getLibroById(libroId);
+      if (libro != null && mounted) {
+        ref.read(currentLibroNumeroProvider.notifier).state = libro.numero;
+      }
+    } catch (_) {
+      // Ignorar: el default (1 = Génesis) ya está en el provider.
+    }
   }
 
   @override
@@ -79,12 +99,18 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           tooltip: 'Atrás',
         ),
         actions: [
+          _EnviarButton(
+            libroId: libroId,
+            capitulo: capitulo,
+            versiculoNum: versiculoNum,
+          ),
           _VersionSelector(versionId: versionId),
           IconButton(
             icon: const Icon(Icons.search_rounded),
             onPressed: () => context.pushNamed('biblia_search'),
             tooltip: 'Buscar',
           ),
+          const _ReaderOverflowMenu(),
         ],
       ),
       body: SafeArea(
@@ -401,6 +427,7 @@ class _VerseDisplay extends ConsumerWidget {
     final nextLibro = allLibros[idx + 1];
     if (!context.mounted) return;
     ref.read(currentLibroIdProvider.notifier).state = nextLibro.id;
+    ref.read(currentLibroNumeroProvider.notifier).state = nextLibro.numero;
     ref.read(currentCapituloProvider.notifier).state = 1;
     ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
   }
@@ -736,6 +763,7 @@ class _ReaderBottomBar extends ConsumerWidget {
     final nextLibro = allLibros[idx + 1];
     if (!context.mounted) return;
     ref.read(currentLibroIdProvider.notifier).state = nextLibro.id;
+    ref.read(currentLibroNumeroProvider.notifier).state = nextLibro.numero;
     ref.read(currentCapituloProvider.notifier).state = 1;
     ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
   }
@@ -756,6 +784,7 @@ class _ReaderBottomBar extends ConsumerWidget {
     final prevCaps = await biblia.getCapitulosByLibro(prevLibro.id);
     if (prevCaps.isEmpty || !context.mounted) return;
     ref.read(currentLibroIdProvider.notifier).state = prevLibro.id;
+    ref.read(currentLibroNumeroProvider.notifier).state = prevLibro.numero;
     ref.read(currentCapituloProvider.notifier).state = prevCaps.last.numero;
     ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
   }
@@ -834,3 +863,204 @@ class _FavoriteToggle extends ConsumerWidget {
     );
   }
 }
+
+/// Botón "ENVIAR" en el AppBar: envía el versículo actual al display
+/// remoto. Solo es visible cuando hay un emisor conectado.
+class _EnviarButton extends ConsumerWidget {
+  const _EnviarButton({
+    required this.libroId,
+    required this.capitulo,
+    required this.versiculoNum,
+  });
+
+  final int libroId;
+  final int capitulo;
+  final int versiculoNum;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isConnected = ref.watch(isConnectedProvider);
+    if (!isConnected) return const SizedBox.shrink();
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: TextButton.icon(
+        onPressed: () async {
+          // Asegurar que el libroNumero cacheado corresponde al libroId actual.
+          final repo = ref.read(bibliaRepositoryProvider);
+          final libro = await repo.getLibroById(libroId);
+          if (libro != null) {
+            ref.read(currentLibroNumeroProvider.notifier).state = libro.numero;
+          }
+          final messenger = ScaffoldMessenger.of(context);
+          try {
+            final actions = ref.read(bibleClientActionsProvider);
+            final ok = await actions.sendCurrentVerse();
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(
+                  ok ? 'Enviado al display' : 'Display rechazó el envío',
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          } catch (e) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text('Error al enviar: $e'),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        icon: Icon(
+          Icons.cast_rounded,
+          color: colorScheme.primary,
+          size: 18,
+        ),
+        label: const Text('ENVIAR'),
+        style: TextButton.styleFrom(
+          foregroundColor: colorScheme.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          textStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Menú overflow del Bible reader: modo de vista del emisor y
+/// cross-module "Ir a Himnario".
+class _ReaderOverflowMenu extends ConsumerWidget {
+  const _ReaderOverflowMenu();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<_ReaderMenuAction>(
+      icon: const Icon(Icons.more_vert_rounded),
+      tooltip: 'Más opciones',
+      onSelected: (action) => _handleAction(context, ref, action),
+      itemBuilder: (ctx) {
+        final currentMode = ref.watch(currentEmitterViewModeProvider);
+        return [
+          const PopupMenuItem(
+            value: _ReaderMenuAction.modeCompact,
+            child: ListTile(
+              leading: Icon(Icons.short_text_rounded),
+              title: Text('Modo Compact'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          const PopupMenuItem(
+            value: _ReaderMenuAction.modePreview,
+            child: ListTile(
+              leading: Icon(Icons.article_outlined),
+              title: Text('Modo Preview'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          if (currentMode == 'compact')
+            const PopupMenuItem(
+              enabled: false,
+              child: ListTile(
+                leading: Icon(Icons.short_text_rounded, color: Colors.grey),
+                title: Text(
+                  'Modo Compact (actual)',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          if (currentMode == 'preview')
+            const PopupMenuItem(
+              enabled: false,
+              child: ListTile(
+                leading: Icon(Icons.article_outlined, color: Colors.grey),
+                title: Text(
+                  'Modo Preview (actual)',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          const PopupMenuDivider(),
+          const PopupMenuItem(
+            value: _ReaderMenuAction.goHymnal,
+            child: ListTile(
+              leading: Icon(Icons.music_note_rounded),
+              title: Text('Ir a Himnario'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ];
+      },
+    );
+  }
+
+  Future<void> _handleAction(
+    BuildContext context,
+    WidgetRef ref,
+    _ReaderMenuAction action,
+  ) async {
+    switch (action) {
+      case _ReaderMenuAction.modeCompact:
+        ref.read(currentEmitterViewModeProvider.notifier).state = 'compact';
+        // Notificar al display si hay conexión.
+        if (ref.read(isConnectedProvider)) {
+          try {
+            await ref
+                .read(bibleClientActionsProvider)
+                .setViewMode(EmitterViewMode.VIEW_MODE_COMPACT);
+          } catch (_) {}
+        }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Modo Compact'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+        break;
+      case _ReaderMenuAction.modePreview:
+        ref.read(currentEmitterViewModeProvider.notifier).state = 'preview';
+        if (ref.read(isConnectedProvider)) {
+          try {
+            await ref
+                .read(bibleClientActionsProvider)
+                .setViewMode(EmitterViewMode.VIEW_MODE_PREVIEW);
+          } catch (_) {}
+        }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Modo Preview'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+        break;
+      case _ReaderMenuAction.goHymnal:
+        // Cross-module: switch al himnario y, si hay display conectado,
+        // enviar SWITCH_TO_HIMNAL.
+        if (ref.read(isConnectedProvider)) {
+          try {
+            await ref.read(bibleClientActionsProvider).switchToHymnal();
+          } catch (_) {}
+        }
+        if (context.mounted) context.goNamed('himnario');
+        break;
+    }
+  }
+}
+
+enum _ReaderMenuAction { modeCompact, modePreview, goHymnal }
