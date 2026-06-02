@@ -33,6 +33,9 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.6.0
 
+  # Routing
+  go_router: ^14.6.0
+
   # Modelos Inmutables
   freezed_annotation: ^2.4.0
   json_annotation: ^4.9.0
