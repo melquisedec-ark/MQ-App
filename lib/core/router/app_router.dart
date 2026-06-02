@@ -6,7 +6,7 @@ import '../../features/biblia/presentation/screens/book_selector_screen.dart';
 import '../../features/biblia/presentation/screens/chapter_grid_screen.dart';
 import '../../features/biblia/presentation/screens/home_screen.dart';
 import '../../features/biblia/presentation/screens/search_screen.dart';
-import '../../presentation/views_admin/admin_panel_screen.dart';
+import '../../features/biblia/presentation/screens/settings_screen.dart';
 import '../../presentation/views_personal/dashboard/home_screen.dart' as himnario;
 import '../../presentation/views_projection/controller/widgets/discover_display_sheet.dart';
 
@@ -23,7 +23,7 @@ import '../../presentation/views_projection/controller/widgets/discover_display_
 /// - `/biblia/libro/:libroId/capitulo/:capitulo` → [BibleReaderScreen]
 /// - `/biblia/search`                     → [SearchScreen]
 /// - `/himnario`    → himnario.HomeScreen (lista A-Z de himnos, módulo HimnarioID 2.0)
-/// - `/config`      → [AdminPanelScreen] (configuración)
+/// - `/config`      → [SettingsScreen] (configuración)
 /// - `/connect`     → [DiscoverDisplaySheet] (mDNS, modo emisor/receptor)
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -92,7 +92,7 @@ final GoRouter appRouter = GoRouter(
           path: 'config',
           name: 'config',
           builder: (BuildContext context, GoRouterState state) {
-            return const AdminPanelScreen();
+            return const SettingsScreen();
           },
         ),
 
