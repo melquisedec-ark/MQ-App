@@ -99,10 +99,32 @@ String _colorToHex(Color color) {
   return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
 }
 
+/// Mapea un [fontScale] numérico (0.7–1.8) al enum string legacy
+/// `ProjectionFontSize` que el receptor de proyección aún consume.
+///
+/// Phase 2a.4: introducido para compatibilidad con la versión heredada
+/// del subproceso de proyección que lee `fontSize` (string) en vez de
+/// `fontScale` (double).
+String _fontScaleToLegacySize(double fontScale) {
+  if (fontScale < 0.85) return 'small';
+  if (fontScale < 1.15) return 'medium';
+  if (fontScale < 1.5) return 'large';
+  return 'extraLarge';
+}
+
 /// Envía el estado actual de [hymnAppearanceProvider] a la ventana
 /// de proyección vía [WindowService.sendMessage] (silencioso).
+///
+/// Phase 2a.4: el payload ahora incluye los campos NUEVOS (textColor,
+/// chordColor, fontFamily, isBold, fontScale, bgColor, showChords,
+/// cardOpacity, glass*) Y los LEGACY (backgroundColor, fontSize,
+/// transitionSpeed, background) que el receptor de proyección aún
+/// consume para retrocompatibilidad. Ver BUG_FONDO_RESET.md — el bug
+/// del fondo negro NO se reproduce al añadir bgColor de vuelta porque
+/// el receptor no procesa bgColor (solo el bg_fondo_id dedicado).
 void _syncAppearanceToProjection(WidgetRef ref) {
   final appearance = ref.read(hymnAppearanceProvider);
+  final bgColor = appearance.bgColor;
   final message = <String, dynamic>{
     'type': 'SET_CONFIG',
     // Nuevos campos de apariencia
@@ -111,12 +133,18 @@ void _syncAppearanceToProjection(WidgetRef ref) {
     'fontFamily': appearance.fontFamily,
     'isBold': appearance.isBold,
     'fontScale': appearance.fontScale,
+    'bgColor': _colorToHex(bgColor),
     'projectionFontScale': appearance.projectionFontScale,
     'showChords': appearance.showChords,
     'cardOpacity': appearance.cardOpacity,
     'glassBlurSigma': appearance.glassBlurSigma,
     'glassEnabled': appearance.glassEnabled,
     'glassOverlayColor': _colorToHex(appearance.glassOverlayColor),
+    // Campos legacy (compatibilidad con receptor)
+    'backgroundColor': _colorToHex(bgColor),
+    'fontSize': _fontScaleToLegacySize(appearance.fontScale),
+    'transitionSpeed': 0.5,
+    'background': bgColor == Colors.transparent ? 'black' : 'color',
   };
   // Fire-and-forget silencioso
   ref.read(windowServiceProvider).sendMessage(message);
@@ -544,6 +572,11 @@ List<Widget> _brushSheetChildren({
         const Icon(Icons.text_fields, size: 18),
         Expanded(
           child: Slider(
+            // Phase 2a.4: key para que los tests puedan identificar este
+            // slider específico. El BrushSheet muestra varios sliders
+            // (cardOpacity, glassBlurSigma, fontScale) y los tests
+            // necesitan uno estable para interactuar.
+            key: const Key('brush.font_scale_slider'),
             value: appearance.fontScale,
             min: 0.7,
             max: 1.8,

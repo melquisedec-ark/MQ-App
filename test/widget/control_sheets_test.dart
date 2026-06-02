@@ -66,9 +66,28 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Buscar el slider de tamaño de letra y moverlo
-      final slider = find.byType(Slider);
-      expect(slider, findsOneWidget);
-      await tester.drag(slider, const Offset(50, 0));
+      // Phase 2a.4: el BrushSheet tiene múltiples sliders (cardOpacity,
+      // glassBlurSigma, fontScale). El fontScale está debajo del fold
+      // en el ListView, por lo que usamos byWidgetPredicate para
+      // identificarlo por su `min` único (0.7 — los demás usan 0.0).
+      // Hacemos scroll primero para asegurar que esté renderizado.
+      final fontScaleFinder = find.byWidgetPredicate(
+        (w) => w is Slider && w.min == 0.7,
+        description: 'Slider with min=0.7 (font scale)',
+      );
+      await tester.scrollUntilVisible(
+        fontScaleFinder,
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      // Encontrar el thumb del slider (no el track) para hacer tap directo
+      // en una posición que registre el cambio. El Slider de fontScale
+      // ocupa un ancho dado por Row>Expanded>Slider.
+      final sliderCenter = tester.getCenter(fontScaleFinder);
+      // Tap a la derecha del centro para que el slider registre el cambio
+      // (mover el valor hacia el max).
+      await tester.tapAt(sliderCenter + const Offset(40, 0));
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verificar que se envió SET_CONFIG
@@ -93,8 +112,20 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Pulsar el slider para forzar un cambio
-      final slider = find.byType(Slider);
-      await tester.drag(slider, const Offset(50, 0));
+      // Phase 2a.4: mismo patrón que el test anterior — el fontScale
+      // slider está debajo del fold, hay que hacer scroll.
+      final fontScaleFinder2 = find.byWidgetPredicate(
+        (w) => w is Slider && w.min == 0.7,
+        description: 'Slider with min=0.7 (font scale)',
+      );
+      await tester.scrollUntilVisible(
+        fontScaleFinder2,
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      final sliderCenter2 = tester.getCenter(fontScaleFinder2);
+      await tester.tapAt(sliderCenter2 + const Offset(40, 0));
       await tester.pump(const Duration(milliseconds: 300));
 
       // Verificar la estructura del mensaje SET_CONFIG

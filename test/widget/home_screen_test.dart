@@ -119,14 +119,16 @@ void main() {
       await tester.pumpWidget(_buildTestApp());
       await tester.pumpAndSettle();
 
-      // Verificar que los tres chips están presentes
+      // Verificar que los cuatro chips de filtro están presentes
       expect(find.text('Todos'), findsOneWidget);
       expect(find.text('Oficiales'), findsOneWidget);
       expect(find.text('Inspiradas'), findsOneWidget);
+      expect(find.text('Convención'), findsOneWidget);
 
-      // Verificar que FilterChip se usa
-      // 3 de filtro + 2 de orden + 1 de categoría = 6
-      expect(find.byType(FilterChip), findsNWidgets(6));
+      // Phase 2a.4: el chip "Convención" se añadió a la barra de
+      // filtros, así que ahora hay 4 chips de filtro + 2 de orden
+      // (A-Z, Z-A) + 1 de categoría = 7 chips en total.
+      expect(find.byType(FilterChip), findsNWidgets(7));
     });
 
     testWidgets('Muestra loading state mientras carga himnos', (tester) async {
