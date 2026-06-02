@@ -57,7 +57,6 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
   // en `dispose()` sin necesidad de `ref` (que ya es inválido cuando
   // el State está siendo desmontado, causando
   // "Cannot use 'ref' after the widget was disposed").
-  late final bool _isFullscreen;
   late final FullscreenModeNotifier _fullscreenModeNotifier;
   late final AudioRepository _audioRepository;
 
@@ -65,7 +64,6 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _isFullscreen = ref.read(fullscreenModeProvider);
     _fullscreenModeNotifier = ref.read(fullscreenModeProvider.notifier);
     _audioRepository = ref.read(audioRepositoryProvider);
     WidgetsBinding.instance.addObserver(this);
@@ -85,11 +83,14 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Salir de fullscreen si la app pasa a segundo plano
+    // Salir de fullscreen si la app pasa a segundo plano.
+    // `didChangeAppLifecycleState` no es `dispose`, así que `ref` sigue
+    // siendo válido aquí — leer el provider en vivo para no usar un
+    // valor cacheado obsoleto de `initState`.
     if ((state == AppLifecycleState.paused ||
             state == AppLifecycleState.inactive) &&
-        _isFullscreen) {
-      _fullscreenModeNotifier.exitFullscreen();
+        ref.read(fullscreenModeProvider)) {
+      ref.read(fullscreenModeProvider.notifier).exitFullscreen();
     }
   }
 
