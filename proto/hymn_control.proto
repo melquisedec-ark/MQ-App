@@ -81,6 +81,17 @@ enum CommandType {
   SET_FONT_SIZE = 9;
   PING = 10;
   SET_APPEARANCE = 11;
+  // ─── BIBLE MODULE COMMANDS ─────────────────────────────────
+  // Se reservan los valores 20+ para no colisionar con himnario.
+  NEXT_VERSE = 20;
+  PREV_VERSE = 21;
+  NEXT_CHAPTER = 22;
+  PREV_CHAPTER = 23;
+  GO_TO_VERSE = 24;
+  TOGGLE_FAVORITE = 25;
+  SWITCH_TO_BIBLE = 26;
+  SWITCH_TO_HIMNAL = 27;
+  SET_EMITTER_VIEW_MODE = 28;
 }
 
 message CommandRequest {
@@ -99,6 +110,11 @@ message CommandRequest {
   optional float card_opacity = 12;
   optional float projection_font_scale = 13;
   optional string bg_color = 14;
+  // ─── BIBLE COMMAND FIELDS ──────────────────────────────────
+  // Tags 20+ reservados para Biblia (no colisionan con himnario).
+  optional VerseReference target_verse = 20;  // GO_TO_VERSE
+  optional ModuleType target_module = 21;     // SWITCH_TO_*
+  optional EmitterViewMode view_mode = 22;    // SET_EMITTER_VIEW_MODE
 }
 
 message CommandResponse {
@@ -124,6 +140,60 @@ message DisplayStatus {
   optional bool show_chords = 14;
   optional float card_opacity = 15;
   optional float projection_font_scale = 16;
+  // Contexto del módulo activo (Biblia o Himnario) para el emisor.
+  // Tag 17 (libre; 15 y 16 ya usados por apariencia).
+  optional ModuleContext module_context = 17;
+}
+
+// ─── BIBLE MODULE MESSAGES ───────────────────────────────────────
+
+// Referencia canónica a un versículo bíblico.
+// `libro_numero` sigue el orden canónico (1..66), NO el id interno de la BD.
+message VerseReference {
+  int32 version_id = 1;
+  int32 libro_numero = 2;
+  int32 capitulo = 3;
+  int32 versiculo = 4;
+}
+
+// Payload completo de un versículo para mostrar en el display remoto.
+message VersePayload {
+  VerseReference reference = 1;
+  string libro_nombre = 2;
+  string libro_abreviatura = 3;
+  string texto = 4;
+  string version_abreviatura = 5;
+}
+
+// Módulo actualmente activo en el display.
+// 0 = UNKNOWN (default proto3 — no usar en código de negocio).
+enum ModuleType {
+  MODULE_UNKNOWN = 0;
+  MODULE_BIBLIA = 1;
+  MODULE_HIMNARIO = 2;
+}
+
+// Modo de vista del emisor (afecta cómo se muestra la preview en el celular).
+// 0 = UNKNOWN; 1 = COMPACT (número + preview mini); 2 = PREVIEW (texto completo).
+enum EmitterViewMode {
+  VIEW_MODE_UNKNOWN = 0;
+  VIEW_MODE_COMPACT = 1;
+  VIEW_MODE_PREVIEW = 2;
+}
+
+// Contexto del módulo activo: qué se está mostrando y adyacentes (preview).
+// `payload` es un `oneof` para que el mismo mensaje pueda portar Biblia
+// o Himnario según `module`.
+message ModuleContext {
+  ModuleType module = 1;
+  oneof payload {
+    VersePayload current_verse = 2;
+  }
+  // Textos adyacentes para el modo PREVIEW del emisor.
+  // Vacíos si el modo actual es COMPACT.
+  string prev_text = 10;
+  string current_text = 11;
+  string next_text = 12;
 }
 
 message HandshakeRequest {
