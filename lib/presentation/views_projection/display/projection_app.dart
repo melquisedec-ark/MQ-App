@@ -191,6 +191,66 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
       appearanceNotifier.setFontScale((message['fontScale'] as num).toDouble());
     }
 
+    // Phase 2a.4: campos legacy (compatibilidad con emisores que aún
+    // envían `fontSize`/`backgroundColor`/`transitionSpeed`/`background`
+    // en vez de los nuevos `fontScale`/`bgColor`/etc.).
+    if (message.containsKey('fontSize')) {
+      final fontSizeStr = message['fontSize'] as String;
+      try {
+        final configNotifier = ref.read(projectionConfigProvider.notifier);
+        switch (fontSizeStr) {
+          case 'small':
+            configNotifier.setFontSize(ProjectionFontSize.small);
+          case 'medium':
+            configNotifier.setFontSize(ProjectionFontSize.medium);
+          case 'large':
+            configNotifier.setFontSize(ProjectionFontSize.large);
+          case 'extraLarge':
+            configNotifier.setFontSize(ProjectionFontSize.extraLarge);
+        }
+      } catch (_) {
+        // Ignorar valores inválidos
+      }
+    }
+
+    if (message.containsKey('backgroundColor')) {
+      final hex = message['backgroundColor'] as String;
+      try {
+        final color =
+            Color(int.parse(hex.substring(1), radix: 16) | 0xFF000000);
+        ref.read(projectionConfigProvider.notifier).setBackgroundColor(color);
+      } catch (_) {
+        // Ignorar color inválido
+      }
+    }
+
+    if (message.containsKey('transitionSpeed')) {
+      try {
+        ref
+            .read(projectionConfigProvider.notifier)
+            .setTransitionSpeed((message['transitionSpeed'] as num).toDouble());
+      } catch (_) {
+        // Ignorar valor inválido
+      }
+    }
+
+    if (message.containsKey('background')) {
+      final bgStr = message['background'] as String;
+      try {
+        final configNotifier = ref.read(projectionConfigProvider.notifier);
+        switch (bgStr) {
+          case 'black':
+            configNotifier.setBackground(ProjectionBackground.black);
+          case 'color':
+            configNotifier.setBackground(ProjectionBackground.color);
+          case 'image':
+            configNotifier.setBackground(ProjectionBackground.image);
+        }
+      } catch (_) {
+        // Ignorar valor inválido
+      }
+    }
+
     if (message.containsKey('projectionFontScale')) {
       appearanceNotifier.setProjectionFontScale(
         (message['projectionFontScale'] as num).toDouble(),
