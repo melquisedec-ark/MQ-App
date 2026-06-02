@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-/// Reader bíblico con 1 versículo a la vez (PLACEHOLDER temporal en Fase 1).
+import '../../../../presentation/shared_widgets/glass_card.dart';
+import '../../application/providers/biblia_version_provider.dart';
+import '../../application/providers/current_libro_provider.dart';
+import '../../application/providers/current_versiculo_provider.dart';
+import '../../application/providers/derived_providers.dart';
+import '../../application/providers/favoritos_provider.dart';
+import '../../application/providers/historial_provider.dart';
+import '../../data/models/capitulo.dart';
+import '../../data/models/libro.dart';
+import '../../data/models/nota.dart';
+import '../../data/models/versiculo.dart';
+import '../widgets/note_editor_modal.dart';
+import '../widgets/version_picker_sheet.dart';
+
+/// Pantalla principal del Bible reader: muestra 1 versículo a la vez.
 ///
-/// Implementación completa llega en la Fase 5.
-class BibleReaderScreen extends StatelessWidget {
+/// Referencia: `doc/wireframes/02_bible_module.md` (Pantalla 2c).
+class BibleReaderScreen extends ConsumerStatefulWidget {
   const BibleReaderScreen({
     super.key,
     required this.libroId,
@@ -14,10 +31,806 @@ class BibleReaderScreen extends StatelessWidget {
   final int capitulo;
 
   @override
+  ConsumerState<BibleReaderScreen> createState() => _BibleReaderScreenState();
+}
+
+class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
+  int? _lastRecordedVersiculo;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(currentLibroIdProvider.notifier).state = widget.libroId;
+      ref.read(currentCapituloProvider.notifier).state = widget.capitulo;
+      final currentNum = ref.read(currentVersiculoNumeroProvider);
+      if (currentNum == null) {
+        ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final versionId = ref.watch(currentVersionIdProvider);
+    final libroId = ref.watch(currentLibroIdProvider) ?? widget.libroId;
+    final capitulo = ref.watch(currentCapituloProvider) ?? widget.capitulo;
+    final versiculoNum = ref.watch(currentVersiculoNumeroProvider) ?? 1;
+
+    ref.listen<int?>(currentVersiculoNumeroProvider, (prev, next) {
+      if (next != null && next != _lastRecordedVersiculo) {
+        _lastRecordedVersiculo = next;
+        ref.read(historialRepositoryProvider).record(
+              versionId,
+              libroId,
+              capitulo,
+              next,
+            );
+      }
+    });
+
     return Scaffold(
-      appBar: AppBar(title: Text('L$libroId C$capitulo')),
-      body: const Center(child: Text('Bible Reader — pendiente')),
+      appBar: AppBar(
+        title: _AppBarTitle(libroId: libroId, capitulo: capitulo),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+          tooltip: 'Atrás',
+        ),
+        actions: [
+          _VersionSelector(versionId: versionId),
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () => context.pushNamed('biblia_search'),
+            tooltip: 'Buscar',
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _ChapterProgress(
+              libroId: libroId,
+              capitulo: capitulo,
+              versiculoNum: versiculoNum,
+            ),
+            Expanded(
+              child: _VerseDisplay(
+                libroId: libroId,
+                capitulo: capitulo,
+                versiculoNum: versiculoNum,
+              ),
+            ),
+            _ReaderBottomBar(
+              libroId: libroId,
+              capitulo: capitulo,
+              versiculoNum: versiculoNum,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AppBarTitle extends ConsumerWidget {
+  const _AppBarTitle({required this.libroId, required this.capitulo});
+
+  final int libroId;
+  final int capitulo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bibliaRepo = ref.read(bibliaRepositoryProvider);
+    return FutureBuilder<Libro?>(
+      future: bibliaRepo.getLibroById(libroId),
+      builder: (context, snap) {
+        final libro = snap.data;
+        if (libro == null) {
+          return const Text('...');
+        }
+        return Text('${libro.nombre} $capitulo');
+      },
+    );
+  }
+}
+
+class _VersionSelector extends ConsumerWidget {
+  const _VersionSelector({required this.versionId});
+
+  final int versionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final versionsAsync = ref.watch(activeBibliaVersionsProvider);
+    return versionsAsync.maybeWhen(
+      data: (versions) {
+        final current = versions.firstWhere(
+          (v) => v.id == versionId,
+          orElse: () => versions.first,
+        );
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => VersionPickerSheet.show(
+                context: context,
+                versions: versions,
+                currentVersionId: versionId,
+              ),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: colorScheme.outline,
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      current.abreviatura,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _ChapterProgress extends ConsumerWidget {
+  const _ChapterProgress({
+    required this.libroId,
+    required this.capitulo,
+    required this.versiculoNum,
+  });
+
+  final int libroId;
+  final int capitulo;
+  final int versiculoNum;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final capsAsync = ref.watch(capitulosProvider(libroId));
+    final totalVersiculos = capsAsync.maybeWhen(
+      data: (caps) {
+        final cap = caps.firstWhere(
+          (c) => c.numero == capitulo,
+          orElse: () => Capitulo(
+            id: 0,
+            libroId: libroId,
+            numero: capitulo,
+            totalVersiculos: 1,
+          ),
+        );
+        return cap.totalVersiculos;
+      },
+      orElse: () => 1,
+    );
+    final progress = totalVersiculos == 0
+        ? 0.0
+        : (versiculoNum / totalVersiculos).clamp(0.0, 1.0);
+    return LinearProgressIndicator(
+      value: progress,
+      minHeight: 3,
+      backgroundColor:
+          Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+      valueColor: AlwaysStoppedAnimation<Color>(
+        Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+      ),
+    );
+  }
+}
+
+class _VerseDisplay extends ConsumerWidget {
+  const _VerseDisplay({
+    required this.libroId,
+    required this.capitulo,
+    required this.versiculoNum,
+  });
+
+  final int libroId;
+  final int capitulo;
+  final int versiculoNum;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final versionId = ref.watch(currentVersionIdProvider);
+    final bibliaRepo = ref.read(bibliaRepositoryProvider);
+    final capsAsync = ref.watch(capitulosProvider(libroId));
+    final totalVersiculos = capsAsync.maybeWhen(
+      data: (caps) {
+        final cap = caps.firstWhere(
+          (c) => c.numero == capitulo,
+          orElse: () => Capitulo(
+            id: 0,
+            libroId: libroId,
+            numero: capitulo,
+            totalVersiculos: 1,
+          ),
+        );
+        return cap.totalVersiculos;
+      },
+      orElse: () => 1,
+    );
+
+    return FutureBuilder<Capitulo?>(
+      future: bibliaRepo.getCapitulo(libroId, capitulo),
+      builder: (context, capSnap) {
+        if (!capSnap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final cap = capSnap.data;
+        if (cap == null) {
+          return const Center(child: Text('Capítulo no encontrado'));
+        }
+        return FutureBuilder<List<Versiculo>>(
+          future: bibliaRepo.getVersiculosByCapitulo(cap.id),
+          builder: (context, versSnap) {
+            if (!versSnap.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final versiculos = versSnap.data!;
+            if (versiculos.isEmpty) {
+              return const Center(child: Text('Sin versículos'));
+            }
+            final current = versiculos.firstWhere(
+              (v) => v.numero == versiculoNum,
+              orElse: () => versiculos.first,
+            );
+            return GestureDetector(
+              onHorizontalDragEnd: (details) {
+                final v = details.primaryVelocity ?? 0;
+                if (v < -200) {
+                  _goNext(ref);
+                } else if (v > 200) {
+                  _goPrev(ref);
+                }
+              },
+              onLongPress: () => _showLongPressMenu(context, ref, current),
+              onDoubleTap: () => _toggleFavorito(context, ref, current),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Capítulo $capitulo',
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GlassCard(
+                      padding: const EdgeInsets.all(20),
+                      child: _VerseCard(
+                        versionId: versionId,
+                        libroId: libroId,
+                        capitulo: capitulo,
+                        versiculo: current,
+                        totalVersiculos: totalVersiculos,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (versiculoNum == totalVersiculos)
+                      Center(
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _goNextChapter(context, ref, libroId),
+                          icon: const Icon(Icons.skip_next_rounded),
+                          label: const Text('Siguiente capítulo'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _goNext(WidgetRef ref) {
+    final caps = ref.read(capitulosProvider(libroId)).valueOrNull;
+    if (caps == null) return;
+    final cap = caps.firstWhere(
+      (c) => c.numero == capitulo,
+      orElse: () => caps.first,
+    );
+    if (versiculoNum < cap.totalVersiculos) {
+      ref.read(currentVersiculoNumeroProvider.notifier).state =
+          versiculoNum + 1;
+    } else {
+      _goNextChapter(ref.context, ref, libroId);
+    }
+  }
+
+  void _goPrev(WidgetRef ref) {
+    if (versiculoNum > 1) {
+      ref.read(currentVersiculoNumeroProvider.notifier).state =
+          versiculoNum - 1;
+    }
+  }
+
+  Future<void> _goNextChapter(
+    BuildContext context,
+    WidgetRef ref,
+    int currentLibroId,
+  ) async {
+    final caps = ref.read(capitulosProvider(currentLibroId)).valueOrNull;
+    if (caps == null) return;
+    final maxCap = caps.map((c) => c.numero).reduce((a, b) => a > b ? a : b);
+    if (capitulo < maxCap) {
+      ref.read(currentCapituloProvider.notifier).state = capitulo + 1;
+      ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+      return;
+    }
+    // Último capítulo del libro → siguiente libro
+    final biblia = ref.read(bibliaRepositoryProvider);
+    final libro = await biblia.getLibroById(currentLibroId);
+    if (libro == null || !context.mounted) return;
+    final allLibros = await biblia.getLibrosByVersion(libro.versionId);
+    final idx = allLibros.indexWhere((l) => l.id == libro.id);
+    if (idx == -1 || idx + 1 >= allLibros.length) return;
+    final nextLibro = allLibros[idx + 1];
+    if (!context.mounted) return;
+    ref.read(currentLibroIdProvider.notifier).state = nextLibro.id;
+    ref.read(currentCapituloProvider.notifier).state = 1;
+    ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+  }
+
+  void _showLongPressMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Versiculo current,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_rounded),
+              title: const Text('Copiar'),
+              onTap: () {
+                Navigator.pop(ctx);
+                final messenger = ScaffoldMessenger.of(context);
+                Clipboard.setData(ClipboardData(text: current.texto));
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Copiado al portapapeles')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_note_rounded),
+              title: const Text('Agregar nota'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openNoteEditor(context, ref, current);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleFavorito(
+    BuildContext context,
+    WidgetRef ref,
+    Versiculo current,
+  ) async {
+    final repo = ref.read(favoritosRepositoryProvider);
+    final versionId = ref.read(currentVersionIdProvider);
+    final isFav = await repo.isFavorito(
+      versionId,
+      libroId,
+      capitulo,
+      current.numero,
+    );
+    if (isFav) {
+      await repo.remove(versionId, libroId, capitulo, current.numero);
+    } else {
+      await repo.add(versionId, libroId, capitulo, current.numero);
+    }
+  }
+
+  void _openNoteEditor(
+    BuildContext context,
+    WidgetRef ref,
+    Versiculo current,
+  ) {
+    final versionId = ref.read(currentVersionIdProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => NoteEditorModal(
+        versionId: versionId,
+        libroId: libroId,
+        capitulo: capitulo,
+        versiculoNumero: current.numero,
+      ),
+    );
+  }
+}
+
+class _VerseCard extends ConsumerWidget {
+  const _VerseCard({
+    required this.versionId,
+    required this.libroId,
+    required this.capitulo,
+    required this.versiculo,
+    required this.totalVersiculos,
+  });
+
+  final int versionId;
+  final int libroId;
+  final int capitulo;
+  final Versiculo versiculo;
+  final int totalVersiculos;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final notaAsync = ref.watch(
+      currentNotaProvider(
+        NotaQuery(
+          versionId: versionId,
+          libroId: libroId,
+          capitulo: capitulo,
+          numero: versiculo.numero,
+        ),
+      ),
+    );
+    final nota = notaAsync.valueOrNull;
+
+    final showBorder = nota != null && nota.color != NotaColor.ninguno;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showBorder) ...[
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: _colorForNota(nota.color),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  bottomLeft: Radius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '${versiculo.numero}',
+                      style: textTheme.titleLarge?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    if (nota != null)
+                      Tooltip(
+                        message: 'Tiene nota (${nota.color.name})',
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _colorForNota(nota.color),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  versiculo.texto,
+                  style: textTheme.bodyLarge?.copyWith(
+                    fontSize: 18,
+                    height: 1.6,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${versiculo.numero}/$totalVersiculos',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _colorForNota(NotaColor color) {
+    switch (color) {
+      case NotaColor.amarillo:
+        return const Color(0xFFF59E0B);
+      case NotaColor.verde:
+        return const Color(0xFF10B981);
+      case NotaColor.azul:
+        return const Color(0xFF3B82F6);
+      case NotaColor.ninguno:
+        return Colors.transparent;
+    }
+  }
+}
+
+class _ReaderBottomBar extends ConsumerWidget {
+  const _ReaderBottomBar({
+    required this.libroId,
+    required this.capitulo,
+    required this.versiculoNum,
+  });
+
+  final int libroId;
+  final int capitulo;
+  final int versiculoNum;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer,
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous_rounded),
+                    onPressed: () => _goPrevChapter(context, ref),
+                    tooltip: 'Capítulo anterior',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded),
+                    onPressed: () {
+                      if (versiculoNum > 1) {
+                        ref
+                            .read(currentVersiculoNumeroProvider.notifier)
+                            .state = versiculoNum - 1;
+                      }
+                    },
+                    tooltip: 'Versículo anterior',
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '$versiculoNum',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    onPressed: () => _goNextVerse(ref),
+                    tooltip: 'Versículo siguiente',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next_rounded),
+                    onPressed: () => _goNextChapter(context, ref),
+                    tooltip: 'Capítulo siguiente',
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _FavoriteToggle(
+                    libroId: libroId,
+                    capitulo: capitulo,
+                    versiculoNum: versiculoNum,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_note_rounded),
+                    onPressed: () => _openNoteEditor(context, ref),
+                    tooltip: 'Nota',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.casino_rounded),
+                    onPressed: () => _goRandomVerse(context, ref),
+                    tooltip: 'Versículo aleatorio',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _goNextVerse(WidgetRef ref) {
+    final caps = ref.read(capitulosProvider(libroId)).valueOrNull;
+    if (caps == null) return;
+    final cap = caps.firstWhere(
+      (c) => c.numero == capitulo,
+      orElse: () => caps.first,
+    );
+    if (versiculoNum < cap.totalVersiculos) {
+      ref.read(currentVersiculoNumeroProvider.notifier).state =
+          versiculoNum + 1;
+    } else {
+      ref.read(currentCapituloProvider.notifier).state = capitulo + 1;
+      ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+    }
+  }
+
+  Future<void> _goNextChapter(BuildContext context, WidgetRef ref) async {
+    final caps = ref.read(capitulosProvider(libroId)).valueOrNull;
+    if (caps == null) return;
+    final maxCap = caps.map((c) => c.numero).reduce((a, b) => a > b ? a : b);
+    if (capitulo < maxCap) {
+      ref.read(currentCapituloProvider.notifier).state = capitulo + 1;
+      ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+      return;
+    }
+    final biblia = ref.read(bibliaRepositoryProvider);
+    final libro = await biblia.getLibroById(libroId);
+    if (libro == null || !context.mounted) return;
+    final allLibros = await biblia.getLibrosByVersion(libro.versionId);
+    final idx = allLibros.indexWhere((l) => l.id == libro.id);
+    if (idx == -1 || idx + 1 >= allLibros.length) return;
+    final nextLibro = allLibros[idx + 1];
+    if (!context.mounted) return;
+    ref.read(currentLibroIdProvider.notifier).state = nextLibro.id;
+    ref.read(currentCapituloProvider.notifier).state = 1;
+    ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+  }
+
+  Future<void> _goPrevChapter(BuildContext context, WidgetRef ref) async {
+    if (capitulo > 1) {
+      ref.read(currentCapituloProvider.notifier).state = capitulo - 1;
+      ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+      return;
+    }
+    final biblia = ref.read(bibliaRepositoryProvider);
+    final libro = await biblia.getLibroById(libroId);
+    if (libro == null || !context.mounted) return;
+    final allLibros = await biblia.getLibrosByVersion(libro.versionId);
+    final idx = allLibros.indexWhere((l) => l.id == libro.id);
+    if (idx <= 0 || !context.mounted) return;
+    final prevLibro = allLibros[idx - 1];
+    final prevCaps = await biblia.getCapitulosByLibro(prevLibro.id);
+    if (prevCaps.isEmpty || !context.mounted) return;
+    ref.read(currentLibroIdProvider.notifier).state = prevLibro.id;
+    ref.read(currentCapituloProvider.notifier).state = prevCaps.last.numero;
+    ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+  }
+
+  Future<void> _goRandomVerse(BuildContext context, WidgetRef ref) async {
+    final biblia = ref.read(bibliaRepositoryProvider);
+    final libro = await biblia.getLibroById(libroId);
+    if (libro == null) return;
+    final caps = await biblia.getCapitulosByLibro(libroId);
+    if (caps.isEmpty) return;
+    final randomCap = caps[DateTime.now().millisecondsSinceEpoch % caps.length];
+    final versiculos = await biblia.getVersiculosByCapitulo(randomCap.id);
+    if (versiculos.isEmpty || !context.mounted) return;
+    final randomV = versiculos[
+        DateTime.now().microsecondsSinceEpoch % versiculos.length];
+    ref.read(currentCapituloProvider.notifier).state = randomCap.numero;
+    ref.read(currentVersiculoNumeroProvider.notifier).state = randomV.numero;
+  }
+
+  void _openNoteEditor(BuildContext context, WidgetRef ref) {
+    final versionId = ref.read(currentVersionIdProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => NoteEditorModal(
+        versionId: versionId,
+        libroId: libroId,
+        capitulo: capitulo,
+        versiculoNumero: versiculoNum,
+      ),
+    );
+  }
+}
+
+class _FavoriteToggle extends ConsumerWidget {
+  const _FavoriteToggle({
+    required this.libroId,
+    required this.capitulo,
+    required this.versiculoNum,
+  });
+
+  final int libroId;
+  final int capitulo;
+  final int versiculoNum;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final versionId = ref.watch(currentVersionIdProvider);
+    final favoritosAsync = ref.watch(favoritosStreamProvider);
+    final isFav = favoritosAsync.maybeWhen(
+      data: (list) => list.any(
+        (f) =>
+            f.versionId == versionId &&
+            f.libroId == libroId &&
+            f.capitulo == capitulo &&
+            f.numero == versiculoNum,
+      ),
+      orElse: () => false,
+    );
+    return IconButton(
+      icon: Icon(
+        isFav ? Icons.star_rounded : Icons.star_outline_rounded,
+        color: isFav ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      ),
+      onPressed: () async {
+        final repo = ref.read(favoritosRepositoryProvider);
+        if (isFav) {
+          await repo.remove(versionId, libroId, capitulo, versiculoNum);
+        } else {
+          await repo.add(versionId, libroId, capitulo, versiculoNum);
+        }
+      },
+      tooltip: isFav ? 'Quitar de favoritos' : 'Agregar a favoritos',
     );
   }
 }

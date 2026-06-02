@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sqflite_common/sqflite.dart';
+
+import 'package:mqapp/core/database/bible_database_helper.dart';
+import 'package:mqapp/features/biblia/application/providers/biblia_version_provider.dart';
+import 'package:mqapp/features/biblia/application/providers/favoritos_provider.dart';
+import 'package:mqapp/features/biblia/application/providers/historial_provider.dart';
+import 'package:mqapp/features/biblia/application/providers/notas_provider.dart';
+import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
+import 'package:mqapp/features/biblia/data/repositories/biblia_search_repository.dart';
+import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
+import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
+import 'package:mqapp/features/biblia/data/repositories/notas_repository.dart';
+import 'package:mqapp/features/biblia/presentation/screens/bible_reader_screen.dart';
+
+import '../helpers/bible_db_test_helper.dart';
+
+Widget _buildHarness({
+  required BibliaRepository bibliaRepo,
+  required FavoritosRepository favRepo,
+  required NotasRepository notasRepo,
+  required HistorialRepository histRepo,
+  required BibliaSearchRepository searchRepo,
+  required BibleDatabaseHelper helper,
+  int libroId = 1,
+  int capitulo = 1,
+}) {
+  return ProviderScope(
+    overrides: <Override>[
+      bibleDatabaseHelperProvider.overrideWithValue(helper),
+      bibliaRepositoryProvider.overrideWithValue(bibliaRepo),
+      favoritosRepositoryProvider.overrideWithValue(favRepo),
+      notasRepositoryProvider.overrideWithValue(notasRepo),
+      historialRepositoryProvider.overrideWithValue(histRepo),
+      favoritosStreamProvider.overrideWith((_) => favRepo.watchAll()),
+      notasStreamProvider.overrideWith((_) => notasRepo.watchAll()),
+      historialStreamProvider.overrideWith((_) => histRepo.watchAll()),
+    ],
+    child: MaterialApp.router(
+      routerConfig: GoRouter(
+        initialLocation: '/biblia/libro/$libroId/capitulo/$capitulo',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/biblia',
+            builder: (_, __) => const Scaffold(
+              body: Text('biblia-stub'),
+            ),
+            routes: <RouteBase>[
+              GoRoute(
+                path: 'libro/:libroId',
+                builder: (_, state) {
+                  final id = int.parse(state.pathParameters['libroId']!);
+                  return Scaffold(body: Text('libro-$id'));
+                },
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'capitulo/:capitulo',
+                    name: 'biblia_reader',
+                    builder: (_, state) {
+                      final id = int.parse(state.pathParameters['libroId']!);
+                      final cap = int.parse(state.pathParameters['capitulo']!);
+                      return BibleReaderScreen(libroId: id, capitulo: cap);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void main() {
+  setUpAll(() {
+    initBibleTestFfi();
+  });
+
+  late Database db;
+  late BibliaRepository bibliaRepo;
+  late FavoritosRepository favRepo;
+  late NotasRepository notasRepo;
+  late HistorialRepository histRepo;
+  late BibliaSearchRepository searchRepo;
+  late BibleDatabaseHelper helper;
+
+  setUp(() async {
+    final bundle = await createBibleReposWithSeed();
+    db = bundle.db;
+    bibliaRepo = bundle.biblia;
+    favRepo = bundle.favoritos;
+    notasRepo = bundle.notas;
+    histRepo = bundle.historial;
+    searchRepo = bundle.search;
+    helper = BibleDatabaseHelper.forTesting(db);
+  });
+
+  tearDown(() async {
+    await closeBibleRepos(
+      db: db,
+      favoritos: favRepo,
+      notas: notasRepo,
+      historial: histRepo,
+    );
+  });
+
+  Widget buildHarness({int libroId = 1, int capitulo = 1}) => _buildHarness(
+        bibliaRepo: bibliaRepo,
+        favRepo: favRepo,
+        notasRepo: notasRepo,
+        histRepo: histRepo,
+        searchRepo: searchRepo,
+        helper: helper,
+        libroId: libroId,
+        capitulo: capitulo,
+      );
+
+  testWidgets('muestra el título del libro y el versículo inicial',
+      (tester) async {
+    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpAndSettle();
+
+    // AppBar muestra "Génesis 1"
+    expect(find.text('Génesis 1'), findsOneWidget);
+    // Subtítulo "Capítulo 1" dentro del body
+    expect(find.textContaining('Capítulo 1'), findsWidgets);
+    // Texto del versículo 1 de Génesis 1 (seed)
+    expect(
+      find.textContaining('En el principio creó Dios'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('avanza al siguiente versículo al pulsar la flecha derecha',
+      (tester) async {
+    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpAndSettle();
+
+    // Verificar que el versículo inicial es el 1
+    expect(find.textContaining('En el principio creó Dios'), findsOneWidget);
+
+    // Pulsar el botón "Versículo siguiente" (chevron_right)
+    final nextBtn = find.byTooltip('Versículo siguiente');
+    expect(nextBtn, findsOneWidget);
+    await tester.tap(nextBtn);
+    await tester.pumpAndSettle();
+
+    // Ahora debe verse el versículo 2
+    expect(
+      find.textContaining('Y la tierra estaba desordenada'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('botón de favoritos alterna el icono al pulsarlo',
+      (tester) async {
+    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpAndSettle();
+
+    // Inicialmente no es favorito
+    final addBtn = find.byTooltip('Agregar a favoritos');
+    expect(addBtn, findsOneWidget);
+
+    await tester.tap(addBtn);
+    await tester.pumpAndSettle();
+
+    // Ahora debe ser favorito (cambia el tooltip)
+    expect(find.byTooltip('Quitar de favoritos'), findsOneWidget);
+    // Verificar en BD
+    final favoritos = await favRepo.getAll(versionId: 1);
+    expect(favoritos.length, 1);
+    expect(favoritos.first.numero, 1);
+  });
+
+  testWidgets('abre el modal de notas al pulsar el botón de nota',
+      (tester) async {
+    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpAndSettle();
+
+    final noteBtn = find.byTooltip('Nota');
+    expect(noteBtn, findsOneWidget);
+    await tester.tap(noteBtn);
+    await tester.pumpAndSettle();
+
+    // El modal debe mostrar el título "Nota"
+    expect(find.text('Nota'), findsOneWidget);
+    // Y el campo de texto
+    expect(find.byType(TextField), findsOneWidget);
+    // Y los 4 colores (ninguno, amarillo, verde, azul)
+    expect(find.text('Color'), findsOneWidget);
+  });
+}
