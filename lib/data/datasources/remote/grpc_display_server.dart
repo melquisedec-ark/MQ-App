@@ -13,6 +13,12 @@ import '../../../core/window_manager/window_providers.dart';
 import '../../../domain/entities/estrofa.dart';
 import '../../../domain/entities/himno.dart';
 import '../../../domain/entities/projection_slide.dart';
+import '../../../features/biblia/application/providers/biblia_version_provider.dart';
+import '../../../features/biblia/application/providers/current_libro_provider.dart';
+import '../../../features/biblia/application/providers/current_versiculo_provider.dart';
+import '../../../features/biblia/application/providers/favoritos_provider.dart';
+import '../../../features/biblia/data/models/versiculo.dart';
+import '../../../features/biblia/data/repositories/biblia_repository.dart';
 import '../../../presentation/shared_widgets/providers/appearance_provider.dart';
 import '../../../presentation/views_projection/providers/live_control_providers.dart';
 import '../../../presentation/views_projection/providers/projection_providers.dart';
@@ -58,6 +64,15 @@ class GrpcDisplayServer extends HymnControlServiceBase {
 
   Server? _server;
   bool _isRunning = false;
+
+  /// Estado actual de la Biblia en el display (lo que está proyectando).
+  /// Por defecto: Génesis 1:1 RV1909 (libro canónico 1, cap 1, v 1).
+  _BibleDisplayState _bibleState = _BibleDisplayState.initial();
+
+  /// Cache del `ModuleContext` para incluir en cada `DisplayStatus`.
+  /// Se reconstruye cada vez que cambia `_bibleState` (en los handlers
+  /// Bible). Mantenerlo en memoria evita abrir la BD en cada stream emit.
+  ModuleContext? _bibleModuleContextCache;
 
   /// ProviderContainer opcional para acceder al estado real de LiveControl.
   final ProviderContainer? _container;
@@ -279,6 +294,61 @@ class GrpcDisplayServer extends HymnControlServiceBase {
           }
           break;
 
+        // ─── BIBLE MODULE COMMANDS ─────────────────────────────────
+        // Tags 20-28. Manejan navegación, favoritos, cambio de módulo
+        // y modo de vista del emisor.
+
+        case CommandType.NEXT_VERSE:
+          await _handleNextVerse();
+          break;
+
+        case CommandType.PREV_VERSE:
+          await _handlePrevVerse();
+          break;
+
+        case CommandType.NEXT_CHAPTER:
+          await _handleNextChapter();
+          break;
+
+        case CommandType.PREV_CHAPTER:
+          await _handlePrevChapter();
+          break;
+
+        case CommandType.GO_TO_VERSE:
+          if (request.hasTargetVerse()) {
+            await _handleGoToVerse(
+              versionId: request.targetVerse.versionId,
+              libroNumero: request.targetVerse.libroNumero,
+              capitulo: request.targetVerse.capitulo,
+              versiculo: request.targetVerse.versiculo,
+            );
+          } else {
+            _log.warning('GO_TO_VERSE sin targetVerse');
+          }
+          break;
+
+        case CommandType.TOGGLE_FAVORITE:
+          await _handleToggleFavorite();
+          break;
+
+        case CommandType.SWITCH_TO_BIBLE:
+          await _handleSwitchToBible();
+          break;
+
+        case CommandType.SWITCH_TO_HIMNAL:
+          // El himnario ya está manejado por LiveControl; este comando
+          // solo limpia el cache de Biblia para que el próximo WatchStatus
+          // no incluya `module_context` Biblia.
+          _bibleModuleContextCache = null;
+          _log.info('Cambio a módulo himnario solicitado');
+          break;
+
+        case CommandType.SET_EMITTER_VIEW_MODE:
+          if (request.hasViewMode()) {
+            _handleSetEmitterViewMode(request.viewMode);
+          }
+          break;
+
         default:
           _log.warning('Tipo de comando no manejado: ${request.type}');
       }
@@ -375,6 +445,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         isBlackout: state.isBlackout,
         fontSize: 48.0,
         displayName: displayName,
+        moduleContext: _bibleModuleContextCache,
       );
     }
 
@@ -388,6 +459,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       isBlackout: state.isBlackout,
       fontSize: 48.0,
       displayName: displayName,
+      moduleContext: _bibleModuleContextCache,
     );
   }
 
@@ -567,5 +639,449 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     } catch (e) {
       _log.warning('Error al sincronizar fondo con subproceso: $e');
     }
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // BIBLE COMMAND HANDLERS (Phase 2a.3)
+  // ───────────────────────────────────────────────────────────────
+  // Cada handler:
+  // 1. Actualiza `_bibleState` (estado del display).
+  // 2. Resuelve prev/next versículos (async) y actualiza el cache
+  //    `_bibleModuleContextCache` para que el próximo `WatchStatus` lo
+  //    incluya en `module_context`.
+  // 3. Sincroniza con los providers del Bible reader móvil
+  //    (`currentVersionIdProvider`, `currentLibroIdProvider`, etc.)
+  //    para que la UI del emisor refleje el estado del display.
+  // 4. Persiste favorito si corresponde.
+  // Si `_container` es null (modo display puro), solo actualiza el
+  // estado interno y el cache.
+
+  Future<void> _handleNextVerse() async {
+    if (_container == null) {
+      _log.warning('NEXT_VERSE sin container; se ignora');
+      return;
+    }
+    final repo = _container.read(bibliaRepositoryProvider);
+    final cap = await repo.getCapitulo(
+      await _libroIdForNumero(repo, _bibleState.versionId, _bibleState.libroNumero) ?? -1,
+      _bibleState.capitulo,
+    );
+    if (cap != null) {
+      if (_bibleState.versiculoNumero < cap.totalVersiculos) {
+        await _updateBibleVerse(_bibleState.versiculoNumero + 1);
+        return;
+      }
+    }
+    // Último versículo del capítulo → primer versículo del siguiente
+    final nextCap = await _getNextCapituloOrLibro();
+    if (nextCap != null) {
+      _bibleState = _bibleState.copyWith(
+        libroNumero: nextCap.$1,
+        capitulo: nextCap.$2,
+      );
+      await _updateBibleVerse(1);
+    }
+  }
+
+  Future<void> _handlePrevVerse() async {
+    if (_container == null) return;
+    if (_bibleState.versiculoNumero > 1) {
+      await _updateBibleVerse(_bibleState.versiculoNumero - 1);
+      return;
+    }
+    // Primer versículo → último del capítulo anterior
+    final prevCap = await _getPrevCapituloOrLibro();
+    if (prevCap != null) {
+      _bibleState = _bibleState.copyWith(
+        libroNumero: prevCap.$1,
+        capitulo: prevCap.$2,
+      );
+      final repo = _container.read(bibliaRepositoryProvider);
+      final libro = await repo.getLibroByNumero(
+        _bibleState.versionId,
+        _bibleState.libroNumero,
+      );
+      if (libro != null) {
+        final cap = await repo.getCapitulo(libro.id, _bibleState.capitulo);
+        if (cap != null) {
+          await _updateBibleVerse(cap.totalVersiculos);
+        }
+      }
+    }
+  }
+
+  Future<void> _handleNextChapter() async {
+    if (_container == null) return;
+    final nextCap = await _getNextCapituloOrLibro();
+    if (nextCap != null) {
+      _bibleState = _bibleState.copyWith(
+        libroNumero: nextCap.$1,
+        capitulo: nextCap.$2,
+      );
+      await _updateBibleVerse(1);
+    }
+  }
+
+  Future<void> _handlePrevChapter() async {
+    if (_container == null) return;
+    if (_bibleState.capitulo > 1) {
+      _bibleState = _bibleState.copyWith(capitulo: _bibleState.capitulo - 1);
+      await _updateBibleVerse(1);
+      return;
+    }
+    final prevCap = await _getPrevCapituloOrLibro();
+    if (prevCap != null) {
+      _bibleState = _bibleState.copyWith(
+        libroNumero: prevCap.$1,
+        capitulo: prevCap.$2,
+      );
+      await _updateBibleVerse(1);
+    }
+  }
+
+  Future<void> _handleGoToVerse({
+    required int versionId,
+    required int libroNumero,
+    required int capitulo,
+    required int versiculo,
+  }) async {
+    if (_container == null) return;
+    if (versionId <= 0 || libroNumero <= 0 || capitulo <= 0 || versiculo <= 0) {
+      _log.warning('GO_TO_VERSE con valores inválidos: v=$versionId '
+          'l=$libroNumero c=$capitulo v=$versiculo');
+      return;
+    }
+    _bibleState = _bibleState.copyWith(
+      versionId: versionId,
+      libroNumero: libroNumero,
+      capitulo: capitulo,
+      versiculoNumero: versiculo,
+    );
+    await _resolveAndCacheBibleContext();
+    _syncBibleStateToProviders();
+  }
+
+  Future<void> _handleToggleFavorite() async {
+    if (_container == null) return;
+    final repo = _container.read(favoritosRepositoryProvider);
+    final biblia = _container.read(bibliaRepositoryProvider);
+    final libro = await biblia.getLibroByNumero(
+      _bibleState.versionId,
+      _bibleState.libroNumero,
+    );
+    if (libro == null) {
+      _log.warning('TOGGLE_FAVORITE: libro ${_bibleState.libroNumero} no existe');
+      return;
+    }
+    final isFav = await repo.isFavorito(
+      _bibleState.versionId,
+      libro.id,
+      _bibleState.capitulo,
+      _bibleState.versiculoNumero,
+    );
+    if (isFav) {
+      await repo.remove(
+        _bibleState.versionId,
+        libro.id,
+        _bibleState.capitulo,
+        _bibleState.versiculoNumero,
+      );
+      _log.fine('Favorito removido vía gRPC');
+    } else {
+      await repo.add(
+        _bibleState.versionId,
+        libro.id,
+        _bibleState.capitulo,
+        _bibleState.versiculoNumero,
+      );
+      _log.fine('Favorito agregado vía gRPC');
+    }
+  }
+
+  Future<void> _handleSwitchToBible() async {
+    // El display ya tiene un `_bibleState` interno; solo forzamos un
+    // rebuild del `module_context` cache para que el próximo `WatchStatus`
+    // lo incluya. La proyección bíblica en sí (render) es trabajo futuro;
+    // por ahora, este comando prepara el estado.
+    _bibleState = _BibleDisplayState.initial();
+    await _resolveAndCacheBibleContext();
+    _syncBibleStateToProviders();
+    _log.info('Cambio a módulo Biblia solicitado');
+  }
+
+  void _handleSetEmitterViewMode(EmitterViewMode mode) {
+    _bibleState = _bibleState.copyWith(viewMode: mode);
+    // El viewMode es preferencia del emisor (lado cliente), no se
+    // transporta en `module_context` del display. Solo lo guardamos
+    // internamente; el próximo `WatchStatus` indicará el cambio vía
+    // el log, y el cliente lo refleja en su UI local.
+    _log.fine('View mode actualizado: $mode');
+  }
+
+  /// Resuelve el versículo actual (y prev/next) y actualiza el cache.
+  Future<void> _resolveAndCacheBibleContext() async {
+    if (_container == null) return;
+    final repo = _container.read(bibliaRepositoryProvider);
+    final libro = await repo.getLibroByNumero(
+      _bibleState.versionId,
+      _bibleState.libroNumero,
+    );
+    if (libro == null) {
+      _log.warning('Libro ${_bibleState.libroNumero} no encontrado');
+      return;
+    }
+    final cap = await repo.getCapitulo(libro.id, _bibleState.capitulo);
+    if (cap == null) {
+      _log.warning('Capítulo ${_bibleState.capitulo} no encontrado');
+      return;
+    }
+    final current = await repo.getVersiculo(cap.id, _bibleState.versiculoNumero);
+    if (current == null) {
+      _log.warning('Versículo ${_bibleState.versiculoNumero} no encontrado');
+      return;
+    }
+    final version = await repo.getVersionById(_bibleState.versionId);
+
+    // Prev/next del mismo capítulo
+    final allVersiculos = await repo.getVersiculosByCapitulo(cap.id);
+    final idx = allVersiculos.indexWhere((v) => v.id == current.id);
+    Versiculo? prev;
+    Versiculo? next;
+    if (idx > 0) prev = allVersiculos[idx - 1];
+    if (idx >= 0 && idx + 1 < allVersiculos.length) {
+      next = allVersiculos[idx + 1];
+    } else {
+      // Último versículo del capítulo → primero del siguiente
+      final nextCap = await _getNextCapituloOrLibro();
+      if (nextCap != null) {
+        final nextLibro = await repo.getLibroByNumero(
+          _bibleState.versionId,
+          nextCap.$1,
+        );
+        if (nextLibro != null) {
+          final nc = await repo.getCapitulo(nextLibro.id, nextCap.$2);
+          if (nc != null) {
+            final nv = await repo.getVersiculosByCapitulo(nc.id);
+            if (nv.isNotEmpty) next = nv.first;
+          }
+        }
+      }
+    }
+    if (_bibleState.versiculoNumero == 1) {
+      // Primer versículo → último del capítulo anterior
+      final prevCap = await _getPrevCapituloOrLibro();
+      if (prevCap != null) {
+        final prevLibro = await repo.getLibroByNumero(
+          _bibleState.versionId,
+          prevCap.$1,
+        );
+        if (prevLibro != null) {
+          final pc = await repo.getCapitulo(prevLibro.id, prevCap.$2);
+          if (pc != null) {
+            final pv = await repo.getVersiculosByCapitulo(pc.id);
+            if (pv.isNotEmpty) prev = pv.last;
+          }
+        }
+      }
+    }
+
+    final reference = VerseReference()
+      ..versionId = _bibleState.versionId
+      ..libroNumero = _bibleState.libroNumero
+      ..capitulo = _bibleState.capitulo
+      ..versiculo = _bibleState.versiculoNumero;
+
+    final payload = VersePayload()
+      ..reference = reference
+      ..libroNombre = libro.nombre
+      ..libroAbreviatura = libro.abreviatura
+      ..texto = current.texto
+      ..versionAbreviatura = version?.abreviatura ?? '';
+
+    final ctx = ModuleContext()
+      ..module = ModuleType.MODULE_BIBLIA
+      ..currentVerse = payload
+      ..prevText = prev?.texto ?? ''
+      ..currentText = current.texto
+      ..nextText = next?.texto ?? '';
+
+    _bibleModuleContextCache = ctx;
+    // Actualizar también el state local con los nombres resueltos.
+    _bibleState = _bibleState.copyWith(
+      libroNombre: libro.nombre,
+      libroAbreviatura: libro.abreviatura,
+      versionAbreviatura: version?.abreviatura,
+    );
+  }
+
+  /// Actualiza el número de versículo y re-resuelve el contexto.
+  Future<void> _updateBibleVerse(int nuevoNumero) async {
+    _bibleState = _bibleState.copyWith(versiculoNumero: nuevoNumero);
+    await _resolveAndCacheBibleContext();
+    _syncBibleStateToProviders();
+  }
+
+  /// Sincroniza el estado bíblico del display con los providers del
+  /// Bible reader móvil (si el emisor también tiene su UI abierta).
+  void _syncBibleStateToProviders() {
+    if (_container == null) return;
+    try {
+      _container.read(currentVersionIdProvider.notifier).state =
+          _bibleState.versionId;
+      _container.read(currentCapituloProvider.notifier).state =
+          _bibleState.capitulo;
+      _container.read(currentVersiculoNumeroProvider.notifier).state =
+          _bibleState.versiculoNumero;
+      // El libro por id se setea solo si podemos resolverlo. Si no,
+      // el emisor usará el número canónico directamente.
+      _container.read(bibliaRepositoryProvider).getLibroByNumero(
+        _bibleState.versionId,
+        _bibleState.libroNumero,
+      ).then((libro) {
+        if (libro != null) {
+          _container.read(currentLibroIdProvider.notifier).state = libro.id;
+        }
+      });
+    } catch (e) {
+      _log.warning('Error sincronizando estado Biblia con providers: $e');
+    }
+  }
+
+  /// Resuelve el `libroId` interno a partir de (versionId, libroNumero).
+  /// Helper para `NEXT_VERSE` / `PREV_VERSE` que necesitan el id.
+  Future<int?> _libroIdForNumero(
+    BibliaRepository repo,
+    int versionId,
+    int libroNumero,
+  ) async {
+    final libro = await repo.getLibroByNumero(versionId, libroNumero);
+    return libro?.id;
+  }
+
+  /// Devuelve el siguiente (libroNumero, capitulo) o null si no hay.
+  /// Tuple simple con `Record` de Dart 3.
+  Future<(int, int)?> _getNextCapituloOrLibro() async {
+    if (_container == null) return null;
+    final repo = _container.read(bibliaRepositoryProvider);
+    final libro = await repo.getLibroByNumero(
+      _bibleState.versionId,
+      _bibleState.libroNumero,
+    );
+    if (libro == null) return null;
+    final caps = await repo.getCapitulosByLibro(libro.id);
+    final idx = caps.indexWhere((c) => c.numero == _bibleState.capitulo);
+    if (idx == -1) return null;
+    if (idx + 1 < caps.length) {
+      return (_bibleState.libroNumero, caps[idx + 1].numero);
+    }
+    // Último capítulo → primer capítulo del siguiente libro
+    final allLibros = await repo.getLibrosByVersion(_bibleState.versionId);
+    final libroIdx = allLibros.indexWhere((l) => l.numero == _bibleState.libroNumero);
+    if (libroIdx == -1 || libroIdx + 1 >= allLibros.length) return null;
+    final nextLibro = allLibros[libroIdx + 1];
+    final nextCaps = await repo.getCapitulosByLibro(nextLibro.id);
+    if (nextCaps.isEmpty) return null;
+    return (nextLibro.numero, nextCaps.first.numero);
+  }
+
+  /// Devuelve el anterior (libroNumero, capitulo) o null si no hay.
+  Future<(int, int)?> _getPrevCapituloOrLibro() async {
+    if (_container == null) return null;
+    final repo = _container.read(bibliaRepositoryProvider);
+    final libro = await repo.getLibroByNumero(
+      _bibleState.versionId,
+      _bibleState.libroNumero,
+    );
+    if (libro == null) return null;
+    final caps = await repo.getCapitulosByLibro(libro.id);
+    final idx = caps.indexWhere((c) => c.numero == _bibleState.capitulo);
+    if (idx == -1) return null;
+    if (idx > 0) {
+      return (_bibleState.libroNumero, caps[idx - 1].numero);
+    }
+    // Primer capítulo → último capítulo del libro anterior
+    final allLibros = await repo.getLibrosByVersion(_bibleState.versionId);
+    final libroIdx = allLibros.indexWhere((l) => l.numero == _bibleState.libroNumero);
+    if (libroIdx <= 0) return null;
+    final prevLibro = allLibros[libroIdx - 1];
+    final prevCaps = await repo.getCapitulosByLibro(prevLibro.id);
+    if (prevCaps.isEmpty) return null;
+    return (prevLibro.numero, prevCaps.last.numero);
+  }
+}
+
+/// Estado interno del display para la Biblia.
+///
+/// Se mantiene en `GrpcDisplayServer` para que el display sepa qué
+/// versículo está proyectando. No se persiste — un reinicio del
+/// servidor vuelve a Génesis 1:1.
+class _BibleDisplayState {
+  /// Versión bíblica. 1 = RV1909, 2 = RV1569.
+  final int versionId;
+
+  /// Número canónico del libro (1-66), NO el id interno de la BD.
+  final int libroNumero;
+
+  /// Número del capítulo dentro del libro.
+  final int capitulo;
+
+  /// Número del versículo dentro del capítulo.
+  final int versiculoNumero;
+
+  /// Nombre del libro (cacheado para evitar lookup en cada emit).
+  final String libroNombre;
+
+  /// Abreviatura del libro (cacheada para evitar lookup en cada emit).
+  final String libroAbreviatura;
+
+  /// Abreviatura de la versión (cacheada).
+  final String versionAbreviatura;
+
+  /// Modo de vista actual del emisor.
+  final EmitterViewMode viewMode;
+
+  const _BibleDisplayState({
+    required this.versionId,
+    required this.libroNumero,
+    required this.capitulo,
+    required this.versiculoNumero,
+    this.libroNombre = '',
+    this.libroAbreviatura = '',
+    this.versionAbreviatura = '',
+    this.viewMode = EmitterViewMode.VIEW_MODE_COMPACT,
+  });
+
+  /// Estado inicial: Génesis 1:1 (RV1909 = versionId 1) en modo Compact.
+  factory _BibleDisplayState.initial() => const _BibleDisplayState(
+        versionId: 1,
+        libroNumero: 1,
+        capitulo: 1,
+        versiculoNumero: 1,
+        libroNombre: 'Génesis',
+        libroAbreviatura: 'Gn',
+        versionAbreviatura: 'RVR1909',
+        viewMode: EmitterViewMode.VIEW_MODE_COMPACT,
+      );
+
+  _BibleDisplayState copyWith({
+    int? versionId,
+    int? libroNumero,
+    int? capitulo,
+    int? versiculoNumero,
+    String? libroNombre,
+    String? libroAbreviatura,
+    String? versionAbreviatura,
+    EmitterViewMode? viewMode,
+  }) {
+    return _BibleDisplayState(
+      versionId: versionId ?? this.versionId,
+      libroNumero: libroNumero ?? this.libroNumero,
+      capitulo: capitulo ?? this.capitulo,
+      versiculoNumero: versiculoNumero ?? this.versiculoNumero,
+      libroNombre: libroNombre ?? this.libroNombre,
+      libroAbreviatura: libroAbreviatura ?? this.libroAbreviatura,
+      versionAbreviatura: versionAbreviatura ?? this.versionAbreviatura,
+      viewMode: viewMode ?? this.viewMode,
+    );
   }
 }
