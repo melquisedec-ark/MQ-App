@@ -384,6 +384,91 @@ class GrpcControlDataSource {
     await _sendCommand(CommandRequest(type: CommandType.PING));
   }
 
+  // ───────────────────────────────────────────────────────────────
+  // BIBLE MODULE COMMANDS (Phase 2a.3)
+  // ───────────────────────────────────────────────────────────────
+  // Wrappers tipados sobre `_sendCommand` para los 9 comandos nuevos.
+  // Siguen el mismo patrón que `sendNextStanza` / `sendShowHimno`.
+
+  /// Avanza al versículo siguiente en el display.
+  Future<bool> sendNextVerse() async {
+    final r = await _sendCommand(CommandRequest(type: CommandType.NEXT_VERSE));
+    return r.success;
+  }
+
+  /// Retrocede al versículo anterior en el display.
+  Future<bool> sendPrevVerse() async {
+    final r = await _sendCommand(CommandRequest(type: CommandType.PREV_VERSE));
+    return r.success;
+  }
+
+  /// Avanza al siguiente capítulo en el display.
+  Future<bool> sendNextChapter() async {
+    final r = await _sendCommand(CommandRequest(type: CommandType.NEXT_CHAPTER));
+    return r.success;
+  }
+
+  /// Retrocede al capítulo anterior en el display.
+  Future<bool> sendPrevChapter() async {
+    final r = await _sendCommand(CommandRequest(type: CommandType.PREV_CHAPTER));
+    return r.success;
+  }
+
+  /// Salta a un versículo específico identificado por referencia canónica.
+  ///
+  /// [versionId] 1 = RV1909, 2 = RV1569.
+  /// [libroNumero] sigue orden canónico (1..66): 1=Génesis, 43=Juan, etc.
+  Future<bool> sendGoToVerse({
+    required int versionId,
+    required int libroNumero,
+    required int capitulo,
+    required int versiculo,
+  }) async {
+    final ref = VerseReference()
+      ..versionId = versionId
+      ..libroNumero = libroNumero
+      ..capitulo = capitulo
+      ..versiculo = versiculo;
+    final req = CommandRequest(type: CommandType.GO_TO_VERSE)
+      ..targetVerse = ref;
+    final r = await _sendCommand(req);
+    return r.success;
+  }
+
+  /// Alterna el estado de favorito del versículo actual en el display.
+  Future<bool> sendToggleFavorite() async {
+    final r = await _sendCommand(CommandRequest(type: CommandType.TOGGLE_FAVORITE));
+    return r.success;
+  }
+
+  /// Solicita al display que cambie al módulo Biblia.
+  Future<bool> sendSwitchToBible() async {
+    final req = CommandRequest(type: CommandType.SWITCH_TO_BIBLE)
+      ..targetModule = ModuleType.MODULE_BIBLIA;
+    final r = await _sendCommand(req);
+    return r.success;
+  }
+
+  /// Solicita al display que vuelva al módulo Himnario.
+  Future<bool> sendSwitchToHymnal() async {
+    final req = CommandRequest(type: CommandType.SWITCH_TO_HIMNAL)
+      ..targetModule = ModuleType.MODULE_HIMNARIO;
+    final r = await _sendCommand(req);
+    return r.success;
+  }
+
+  /// Cambia el modo de vista del emisor (COMPACT/PREVIEW) en el display.
+  ///
+  /// NOTA: el `viewMode` es una preferencia del cliente, pero igual se
+  /// notifica al display para que registre el cambio y pueda sincronizar
+  /// con múltiples clientes en el futuro.
+  Future<bool> sendSetEmitterViewMode(EmitterViewMode mode) async {
+    final req = CommandRequest(type: CommandType.SET_EMITTER_VIEW_MODE)
+      ..viewMode = mode;
+    final r = await _sendCommand(req);
+    return r.success;
+  }
+
   /// Verifica que el cliente esté conectado.
   void _ensureConnected() {
     if (_client == null) {
