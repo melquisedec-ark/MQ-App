@@ -1,12 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common/sqlite_api.dart' show DatabaseException;
 
+import '../test_helpers/test_environment.dart';
 import 'helpers/db_test_helper.dart';
 
 void main() {
   setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    // Phase 2a.4: el patrón sqfliteFfiInit() + databaseFactoryFfi no carga
+    // libsqlite3.so en este sistema (solo existe libsqlite3.so.0 sin symlink).
+    // Usamos el helper centralizado con open.overrideFor() + noIsolate.
+    initTestEnvironment();
   });
 
   tearDownAll(() => cleanupTestDatabases());

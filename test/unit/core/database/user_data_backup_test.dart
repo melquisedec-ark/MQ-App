@@ -4,11 +4,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'package:mqapp/core/database/user_data_backup.dart';
 
+import '../../../test_helpers/test_environment.dart';
+
 void main() {
-  // Inicializar sqflite_ffi para tests (no requiere plataforma nativa)
+  // Phase 2a.4: Reemplazado el patrón sqfliteFfiInit + databaseFactoryFfi
+  // (que fallaba con libsqlite3.so no encontrado) por el helper centralizado
+  // que usa open.overrideFor() + noIsolate, mismo patrón que Bible tests.
   setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    initTestEnvironment();
   });
 
   group('UserDataBackup — exportUserData', () {

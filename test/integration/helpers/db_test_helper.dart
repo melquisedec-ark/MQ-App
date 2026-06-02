@@ -33,17 +33,33 @@ Future<Database> createEmptyDatabase() async {
       titulo_principal TEXT NOT NULL,
       numero_oficial INTEGER,
       tipo INTEGER NOT NULL CHECK(tipo IN (1, 2, 3)),
+      evento TEXT,
       activo INTEGER NOT NULL DEFAULT 1,
       fecha_creacion TEXT NOT NULL DEFAULT (datetime('now'))
     );
   ''');
+  // ─── Pais ───
+  // Phase 2a.4: tabla añadida para que coincida con el esquema real de
+  // `DatabaseHelper._onCreate`. Las queries de HymnRepositoryImpl hacen
+  // `LEFT JOIN Pais p ON p.id = vp.pais_id`, por lo que la tabla es
+  // requerida incluso en tests.
+  await db.execute('''
+    CREATE TABLE Pais (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL UNIQUE,
+      codigo TEXT
+    );
+  ''');
   // ─── Version_Pais ───
+  // Phase 2a.4: actualizado para usar `pais_id INTEGER REFERENCES Pais(id)`
+  // en vez del antiguo `pais TEXT`, alineándose con el esquema de
+  // producción y con las queries que esperan un JOIN numérico.
   await db.execute('''
     CREATE TABLE Version_Pais (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       himno_id INTEGER NOT NULL,
-      pais TEXT NOT NULL,
-      tonalidad_original TEXT NOT NULL,
+      pais_id INTEGER NOT NULL REFERENCES Pais(id),
+      tonalidad_original TEXT NOT NULL DEFAULT 'C',
       activo INTEGER NOT NULL DEFAULT 1,
       FOREIGN KEY (himno_id) REFERENCES Himno(id) ON DELETE CASCADE
     );
@@ -227,6 +243,9 @@ Future<void> seedDatabase(Database db) async {
   await db.insert('Categoria', {'id': 2, 'nombre': 'Adoración'});
   await db.insert('Categoria', {'id': 3, 'nombre': 'Fe'});
 
+  // Phase 2a.4: País añadido (era requerido por la FK de Version_Pais).
+  await db.insert('Pais', {'id': 1, 'nombre': 'El Salvador', 'codigo': 'SV'});
+
   // Usuario admin
   final adminHash = sha256.convert(utf8.encode('admin123')).toString();
   await db.insert('Usuario', {
@@ -248,7 +267,7 @@ Future<void> seedDatabase(Database db) async {
   await db.insert('Version_Pais', {
     'id': 1,
     'himno_id': 1,
-    'pais': 'El Salvador',
+    'pais_id': 1,
     'tonalidad_original': 'G',
     'activo': 1,
   });
@@ -278,7 +297,7 @@ Future<void> seedDatabase(Database db) async {
   await db.insert('Version_Pais', {
     'id': 2,
     'himno_id': 2,
-    'pais': 'El Salvador',
+    'pais_id': 1,
     'tonalidad_original': 'C',
     'activo': 1,
   });
@@ -307,7 +326,7 @@ Future<void> seedDatabase(Database db) async {
   await db.insert('Version_Pais', {
     'id': 3,
     'himno_id': 3,
-    'pais': 'El Salvador',
+    'pais_id': 1,
     'tonalidad_original': 'C',
     'activo': 1,
   });
