@@ -8,8 +8,12 @@
 //     https://github.com/iglesianazaret/biblia-reina-valera-1909-base-datos-sql
 //     (copia local: assets/db/tools/source/rv1909/data.sql)
 //
-//   * RV1569: PLACEHOLDER. Texto idéntico a RV1909 pendiente de reemplazo
-//     con la versión 1569 de Casiodoro de Reina. Ver SOURCES.md.
+// Multi-version support:
+//   El schema es multi-versión (tabla `version` con FKs CASCADE). Por ahora
+//   solo RV1909 está poblada (decisión D1 de v1.0.1). Futuras versiones
+//   (RV1960, NVI, RV1569 cuando se obtenga fuente estructurada, etc.) se
+//   añaden reinsertando en la tabla `version` y poblando libros/capítulos/
+//   versículos. Ver SOURCES.md §4 "Cómo añadir una nueva versión".
 //
 // Uso:
 //   cd /home/melquisedec/Escritorio/Projects/Personales/MQ-App
@@ -36,7 +40,6 @@ import 'lib/books_canon.dart';
 class CliOptions {
   String schemaPath;
   String rv1909SourcePath;
-  String rv1569SourcePath; // currently unused; placeholder marker only
   String outPath;
   bool keepTemp;
   bool skipValidate;
@@ -44,7 +47,6 @@ class CliOptions {
   CliOptions({
     required this.schemaPath,
     required this.rv1909SourcePath,
-    required this.rv1569SourcePath,
     required this.outPath,
     required this.keepTemp,
     required this.skipValidate,
@@ -54,7 +56,6 @@ class CliOptions {
 CliOptions parseArgs(List<String> args, String projectRoot) {
   String schemaPath = pJoin(projectRoot, 'assets/db/schema/001_biblia_schema.sql');
   String rv1909Path = pJoin(projectRoot, 'assets/db/tools/source/rv1909/data.sql');
-  String rv1569Path = pJoin(projectRoot, 'assets/db/tools/source/rv1569');
   String outPath    = pJoin(projectRoot, 'assets/db/biblia.db');
   bool keepTemp = false;
   bool skipValidate = false;
@@ -72,7 +73,6 @@ CliOptions parseArgs(List<String> args, String projectRoot) {
     switch (a) {
       case '--schema':        schemaPath = pAbs(next()!, projectRoot); break;
       case '--rv1909':        rv1909Path = pAbs(next()!, projectRoot); break;
-      case '--rv1569':        rv1569Path = pAbs(next()!, projectRoot); break;
       case '--out':           outPath    = pAbs(next()!, projectRoot); break;
       case '--keep-temp':     keepTemp   = true; break;
       case '--skip-validate': skipValidate = true; break;
@@ -90,7 +90,6 @@ CliOptions parseArgs(List<String> args, String projectRoot) {
   return CliOptions(
     schemaPath: schemaPath,
     rv1909SourcePath: rv1909Path,
-    rv1569SourcePath: rv1569Path,
     outPath: outPath,
     keepTemp: keepTemp,
     skipValidate: skipValidate,
@@ -99,7 +98,7 @@ CliOptions parseArgs(List<String> args, String projectRoot) {
 
 void printUsage() {
   stdout.writeln('Uso: dart run assets/db/tools/build_biblia_db.dart [opciones]');
-  stdout.writeln('Opciones: --schema, --rv1909, --rv1569, --out, --keep-temp, --skip-validate');
+  stdout.writeln('Opciones: --schema, --rv1909, --out, --keep-temp, --skip-validate');
 }
 
 // ----------------------- Helpers ---------------------------------------------
@@ -190,9 +189,9 @@ class Stats {
     stdout.writeln('');
     stdout.writeln('📊 Estadísticas finales:');
     stdout.writeln('   Versiones  : $versionCount');
-    stdout.writeln('   Libros     : $bookCount (esperado 132 = 66 × 2)');
-    stdout.writeln('   Capítulos  : $chapterCount (esperado 2 378 = 1 189 × 2)');
-    stdout.writeln('   Versículos : $verseCount (esperado ~62 204 = 31 102 × 2)');
+    stdout.writeln('   Libros     : $bookCount (esperado 66)');
+    stdout.writeln('   Capítulos  : $chapterCount (esperado 1 189)');
+    stdout.writeln('   Versículos : $verseCount (esperado ~31 102)');
     stdout.writeln('   Tamaño     : ${sizeMb.toStringAsFixed(2)} MB ($sizeBytes bytes)');
     for (final entry in versesByVersion.entries) {
       stdout.writeln('     • version_id=${entry.key}: ${entry.value} versículos');
@@ -216,7 +215,6 @@ Future<int> main(List<String> args) async {
   stdout.writeln('   Proyecto   : $projectRoot');
   stdout.writeln('   Schema     : ${opts.schemaPath}');
   stdout.writeln('   RV1909 src : ${opts.rv1909SourcePath}');
-  stdout.writeln('   RV1569 src : ${opts.rv1569SourcePath} (placeholder)');
   stdout.writeln('   Salida     : ${opts.outPath}');
 
   if (!File(opts.schemaPath).existsSync()) {
@@ -260,9 +258,9 @@ Future<int> main(List<String> args) async {
     final versionIds = _insertVersions(db);
     timings.versions.stop();
     stats.versionCount = versionIds.length;
-    stdout.writeln('✅ Versiones insertadas: ${versionIds.length} (RV1909, RV1569)');
+    stdout.writeln('✅ Versiones insertadas: ${versionIds.length} (RV1909)');
 
-    // ---------- 3) Books (66 × 2) ----------
+    // ---------- 3) Books (66) ----------
     timings.books.start();
     final booksByVersion = _insertBooks(db, versionIds);
     timings.books.stop();
@@ -270,7 +268,7 @@ Future<int> main(List<String> args) async {
     stats.booksByVersion = booksByVersion.map((k, v) => MapEntry(k, v.length));
     stdout.writeln('✅ Libros insertados: ${stats.bookCount}');
 
-    // ---------- 4) Chapters (1 189 × 2) ----------
+    // ---------- 4) Chapters (1 189) ----------
     timings.chapters.start();
     final chapterIdsByVersion = _insertChapters(db, booksByVersion);
     timings.chapters.stop();
@@ -295,9 +293,9 @@ Future<int> main(List<String> args) async {
     stats.versesByVersion = versesByVersion;
     stdout.writeln('✅ Versículos insertados: ${stats.verseCount}');
 
-    // ---------- 6) Config (RV1569 placeholder marker) ----------
+    // ---------- 6) Config ----------
     _insertConfig(db, versesByVersion);
-    stdout.writeln('✅ Config insertada (marcador RV1569 placeholder)');
+    stdout.writeln('✅ Config insertada');
 
     // ---------- 7) ANALYZE ----------
     db.execute('ANALYZE;');
@@ -371,6 +369,10 @@ Map<String, int> _insertVersions(Database db) {
     versionIds[nombre] = db.lastInsertRowId;
   }
 
+  // v1.0.1 (decisión D1): solo RV1909 está poblada. El schema es
+  // multi-versión (esta tabla y las FKs CASCADE), así que añadir RV1569,
+  // RV1960, NVI, etc. en el futuro es solo reinsertar aquí y poblar
+  // libros/capítulos/versículos. Ver SOURCES.md §4.
   insertVersion(
     'Reina Valera 1909',
     'RVR1909',
@@ -381,21 +383,9 @@ Map<String, int> _insertVersions(Database db) {
     1909, 1, 1,
   );
 
-  insertVersion(
-    'Reina Valera 1569',
-    'RVR1569',
-    'es',
-    'Biblia del Oso de Casiodoro de Reina (1569). Primera traducción completa '
-        'de la Biblia al español. Dominio público mundial. PLACEHOLDER en esta '
-        'build: el texto es idéntico a RV1909; pendiente de reemplazo con la '
-        'transcripción 1569. Ver assets/db/tools/SOURCES.md.',
-    1569, 1, 1,
-  );
-
   stmt.dispose();
   return {
     'RV1909': versionIds['Reina Valera 1909']!,
-    'RV1569': versionIds['Reina Valera 1569']!,
   };
 }
 
@@ -407,21 +397,21 @@ Map<int, List<int>> _insertBooks(Database db, Map<String, int> versionIds) {
 
   final result = <int, List<int>>{};
 
-  for (final versionId in [versionIds['RV1909']!, versionIds['RV1569']!]) {
-    final bookIds = <int>[];
-    for (final book in kBookCanon) {
-      stmt.execute([
-        versionId,
-        book.nombre,
-        book.abreviatura,
-        book.testamento,
-        book.numero,
-        book.totalCapitulos,
-      ]);
-      bookIds.add(db.lastInsertRowId);
-    }
-    result[versionId] = bookIds;
+  // v1.0.1: solo RV1909 (ver SOURCES.md §4 para añadir nuevas versiones).
+  final versionId = versionIds['RV1909']!;
+  final bookIds = <int>[];
+  for (final book in kBookCanon) {
+    stmt.execute([
+      versionId,
+      book.nombre,
+      book.abreviatura,
+      book.testamento,
+      book.numero,
+      book.totalCapitulos,
+    ]);
+    bookIds.add(db.lastInsertRowId);
   }
+  result[versionId] = bookIds;
 
   stmt.dispose();
   return result;
@@ -471,7 +461,6 @@ Map<int, int> _insertVerses(
 
   final versionIds = chapterIdsByVersion.keys.toList();
   final rv1909VersionId = versionIds.first;
-  final rv1569VersionId = versionIds.last;
 
   // Group source verses by (book, chapter) for fast lookup
   final versesByBookChapter = <int, Map<int, List<Rv1909Verse>>>{};
@@ -493,6 +482,7 @@ Map<int, int> _insertVerses(
   int totalInserted = 0;
   int batchCount = 0;
 
+  // v1.0.1: solo RV1909 se inserta (sin placeholder de RV1569).
   void insertForVersion(
     int versionId,
     Map<int, List<int>> bookChapterIds,
@@ -541,16 +531,10 @@ Map<int, int> _insertVerses(
   final rv1909Count = totalInserted;
   stdout.writeln('\r   ✓ RV1909: $rv1909Count versículos insertados');
 
-  stdout.write('   Insertando versículos RV1569 (placeholder)...');
-  totalInserted = 0;
-  insertForVersion(rv1569VersionId, chapterIdsByVersion[rv1569VersionId]!);
-  final rv1569Count = totalInserted;
-  stdout.writeln('\r   ✓ RV1569: $rv1569Count versículos insertados (texto idéntico a RV1909)');
-
   verseStmt.dispose();
   updateCapStmt.dispose();
 
-  return {rv1909VersionId: rv1909Count, rv1569VersionId: rv1569Count};
+  return {rv1909VersionId: rv1909Count};
 }
 
 void _insertConfig(Database db, Map<int, int> versesByVersion) {
@@ -560,14 +544,8 @@ void _insertConfig(Database db, Map<int, int> versesByVersion) {
   ''');
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   stmt.execute(['biblia.db.build_timestamp', now.toString()]);
-  stmt.execute(['biblia.db.build_script_version', '1.0.0']);
+  stmt.execute(['biblia.db.build_script_version', '1.0.1']);
   stmt.execute(['biblia.db.rv1909_verses', versesByVersion.values.first.toString()]);
-  stmt.execute(['biblia.db.rv1569_verses', versesByVersion.values.last.toString()]);
-  stmt.execute(['biblia.db.rv1569_status', 'placeholder_texto_identico_a_rv1909']);
-  stmt.execute([
-    'biblia.db.rv1569_pending_source',
-    'Ver assets/db/tools/SOURCES.md para instrucciones de reemplazo con la transcripción 1569 de Wikisource/CPC',
-  ]);
   stmt.dispose();
 }
 
@@ -667,18 +645,18 @@ bool runValidations(Database db) {
   }
 
   final versionCount = scalarQuery(db, 'SELECT COUNT(*) FROM version');
-  check('COUNT(version) = 2', versionCount == 2, 'actual=$versionCount');
+  check('COUNT(version) = 1', versionCount == 1, 'actual=$versionCount');
 
   final libroCount = scalarQuery(db, 'SELECT COUNT(*) FROM libro');
-  check('COUNT(libro) = 132', libroCount == 132, 'actual=$libroCount');
+  check('COUNT(libro) = 66', libroCount == 66, 'actual=$libroCount');
 
   final capCount = scalarQuery(db, 'SELECT COUNT(*) FROM capitulo');
-  check('COUNT(capitulo) = 2 378', capCount == 2378, 'actual=$capCount');
+  check('COUNT(capitulo) = 1 189', capCount == 1189, 'actual=$capCount');
 
   final verseCount = scalarQuery(db, 'SELECT COUNT(*) FROM versiculo');
   check(
-    'COUNT(versiculo) ≈ 62 204',
-    verseCount >= 62000 && verseCount <= 62500,
+    'COUNT(versiculo) ≈ 31 102',
+    verseCount >= 31000 && verseCount <= 31200,
     'actual=$verseCount',
   );
 
@@ -732,15 +710,7 @@ bool runValidations(Database db) {
       JOIN version ver ON l.version_id = ver.id
     WHERE ver.abreviatura = 'RVR1909'
   ''');
-  final rv1569Count = scalarQuery(db, '''
-    SELECT COUNT(*) FROM versiculo v
-      JOIN capitulo c ON v.capitulo_id = c.id
-      JOIN libro l ON c.libro_id = l.id
-      JOIN version ver ON l.version_id = ver.id
-    WHERE ver.abreviatura = 'RVR1569'
-  ''');
   check('RVR1909 = 31 102 versículos', rv1909Count == 31102, 'actual=$rv1909Count');
-  check('RVR1569 = 31 102 versículos (placeholder)', rv1569Count == 31102, 'actual=$rv1569Count');
 
   stdout.writeln('');
   stdout.writeln('🧪 Validaciones: $passed pasaron, $failed fallaron');

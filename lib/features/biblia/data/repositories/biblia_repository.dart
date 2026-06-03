@@ -33,8 +33,9 @@ class BibliaRepository {
 
   /// Lista de versiones activas. Orden alfabético por abreviatura.
   ///
-  /// La UI usa esto para popular el selector de versión (RV1909 / RV1569 /
-  /// futuras). Solo se cargan las activas (`WHERE activa = 1`).
+  /// La UI usa esto para popular el selector de versión (actualmente
+  /// RV1909; el schema es multi-versión y se reinsertarán futuras versiones
+  /// en la tabla `version`). Solo se cargan las activas (`WHERE activa = 1`).
   Future<List<BibliaVersion>> getActiveVersions() async {
     final db = await _database;
     final rows = await db.query(
