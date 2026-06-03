@@ -22,6 +22,9 @@ final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   final Ref _ref;
+  // Marca si ya se aplicó un load o un set; previene que el load async
+  // inicial sobrescriba un setThemeMode() del usuario.
+  bool _hydrated = false;
 
   ThemeModeNotifier(this._ref) : super(ThemeMode.system) {
     _loadFromDb();
@@ -34,14 +37,19 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
         BibliaConfigKeys.themeMode,
         defaultValue: 'system',
       );
-      state = _parseMode(raw);
+      // Solo sobrescribir si el usuario aún no eligió nada.
+      if (!_hydrated) {
+        _hydrated = true;
+        state = _parseMode(raw);
+      }
     } catch (_) {
-      // Si falla, mantener ThemeMode.system
+      _hydrated = true;
     }
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
+    _hydrated = true;
     try {
       final repo = _ref.read(bibliaConfigRepositoryProvider);
       await repo.set(BibliaConfigKeys.themeMode, _modeName(mode));
