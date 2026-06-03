@@ -73,6 +73,24 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   }
 }
 
+/// Extensión sobre [ThemeMode] que cicla entre los 3 modos.
+///
+/// Orden del ciclo: light → dark → system → light. Se usa desde el FAB de
+/// tema ([ThemeModeToggleButton]) y desde [setThemeMode] del notifier.
+extension ThemeModeCycle on ThemeMode {
+  /// Devuelve el siguiente modo en el ciclo light/dark/system.
+  ThemeMode get cycle {
+    switch (this) {
+      case ThemeMode.light:
+        return ThemeMode.dark;
+      case ThemeMode.dark:
+        return ThemeMode.system;
+      case ThemeMode.system:
+        return ThemeMode.light;
+    }
+  }
+}
+
 /// Versión bíblica preferida (abreviatura: "RV1909" o "RV1569").
 ///
 /// Se persiste en `biblia.config` y se aplica al `currentVersionIdProvider`

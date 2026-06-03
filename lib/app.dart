@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'presentation/shared_widgets/providers/theme_mode_provider.dart';
+import 'features/biblia/application/providers/biblia_config_provider.dart';
 
 /// Widget raíz de la aplicación MQ App 2.0.
 ///

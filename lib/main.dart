@@ -9,6 +9,7 @@ import 'bootstrap/app_container.dart';
 import 'bootstrap/app_initializer.dart';
 import 'core/database/db_version_manager.dart';
 import 'core/theme/app_theme.dart';
+import 'features/biblia/application/providers/biblia_config_provider.dart';
 import 'presentation/views_projection/display/projection_app.dart';
 import 'presentation/widgets/db_update_screen.dart';
 
@@ -113,13 +114,15 @@ Future<void> _startMainApp() async {
     runApp(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
-          title: 'MQ App',
-          debugShowCheckedModeBanner: false,
-          theme: appTheme,
-          darkTheme: darkTheme,
-          themeMode: ThemeMode.system,
-          home: DbUpdateScreen(container: container),
+        child: Consumer(
+          builder: (context, ref, _) => MaterialApp(
+            title: 'MQ App',
+            debugShowCheckedModeBanner: false,
+            theme: appTheme,
+            darkTheme: darkTheme,
+            themeMode: ref.watch(themeModeProvider),
+            home: DbUpdateScreen(container: container),
+          ),
         ),
       ),
     );
@@ -130,13 +133,15 @@ Future<void> _startMainApp() async {
     runApp(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
-          title: 'MQ App',
-          debugShowCheckedModeBanner: false,
-          theme: appTheme,
-          darkTheme: darkTheme,
-          themeMode: ThemeMode.system,
-          home: const MqApp(),
+        child: Consumer(
+          builder: (context, ref, _) => MaterialApp(
+            title: 'MQ App',
+            debugShowCheckedModeBanner: false,
+            theme: appTheme,
+            darkTheme: darkTheme,
+            themeMode: ref.watch(themeModeProvider),
+            home: const MqApp(),
+          ),
         ),
       ),
     );

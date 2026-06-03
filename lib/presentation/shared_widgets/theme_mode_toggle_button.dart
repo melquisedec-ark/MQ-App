@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'providers/theme_mode_provider.dart';
+import '../../features/biblia/application/providers/biblia_config_provider.dart';
 
 /// Botón para alternar entre modo claro, oscuro y seguir el tema del dispositivo.
 ///
@@ -23,7 +23,8 @@ class ThemeModeToggleButton extends ConsumerWidget {
       heroTag: 'theme_mode_toggle',
       backgroundColor: const Color(0xFFCCA43B),
       foregroundColor: const Color(0xFF1A1A1A),
-      onPressed: () => ref.read(themeModeProvider.notifier).cycleMode(),
+      onPressed: () =>
+          ref.read(themeModeProvider.notifier).setThemeMode(themeMode.cycle),
       tooltip: _tooltip(themeMode),
       child: Icon(_icon(themeMode)),
     );

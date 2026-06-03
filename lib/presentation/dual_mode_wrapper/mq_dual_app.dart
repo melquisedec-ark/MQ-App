@@ -6,7 +6,7 @@ import '../../core/network/connection_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../shared_widgets/fullscreen_handler.dart';
 import '../shared_widgets/theme_mode_toggle_button.dart';
-import '../shared_widgets/providers/theme_mode_provider.dart';
+import '../../features/biblia/application/providers/biblia_config_provider.dart';
 import '../views_personal/dashboard/home_screen.dart';
 import '../views_personal/dashboard/present_button.dart';
 import '../views_personal/hymn_scroll/arrangement_editor_screen.dart';
