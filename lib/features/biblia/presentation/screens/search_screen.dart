@@ -9,7 +9,9 @@ import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/derived_providers.dart';
+import '../../application/providers/reader_providers.dart';
 import '../../data/models/versiculo_contexto.dart';
+import '../widgets/verse_card.dart' show BibleReaderViewMode;
 import '../widgets/version_picker_sheet.dart';
 
 /// Pantalla de búsqueda FTS5 con debounce.
@@ -283,6 +285,10 @@ class _ResultCard extends ConsumerWidget {
       ref.read(currentCapituloProvider.notifier).state = result.capituloNumero;
       ref.read(currentVersiculoNumeroProvider.notifier).state =
           result.versiculo.numero;
+      // Forzar modo capítulo para que el auto-scroll al versículo funcione
+      ref.read(readerViewModeProvider.notifier).setViewMode(
+        BibleReaderViewMode.chapter,
+      );
       if (!context.mounted) return;
       context.pushNamed(
         'biblia_reader',
