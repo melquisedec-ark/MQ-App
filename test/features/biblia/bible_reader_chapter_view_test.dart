@@ -42,10 +42,10 @@ void main() {
   });
 
   group('Bible reader chapter view (D6)', () {
-    test('default view mode es verse', () {
+    test('default view mode es chapter', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
-      expect(container.read(readerViewModeProvider), BibleReaderViewMode.verse);
+      expect(container.read(readerViewModeProvider), BibleReaderViewMode.chapter);
     });
 
     test('currentVerseProvider inicia en 1', () {
@@ -113,16 +113,17 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      expect(container.read(readerViewModeProvider), BibleReaderViewMode.verse);
+      expect(container.read(readerViewModeProvider), BibleReaderViewMode.chapter);
 
-      container.read(readerViewModeProvider.notifier).state =
-          BibleReaderViewMode.chapter;
+      container.read(readerViewModeProvider.notifier)
+          .setViewMode(BibleReaderViewMode.verse);
+      expect(container.read(readerViewModeProvider),
+          BibleReaderViewMode.verse);
+
+      container.read(readerViewModeProvider.notifier)
+          .setViewMode(BibleReaderViewMode.chapter);
       expect(container.read(readerViewModeProvider),
           BibleReaderViewMode.chapter);
-
-      container.read(readerViewModeProvider.notifier).state =
-          BibleReaderViewMode.verse;
-      expect(container.read(readerViewModeProvider), BibleReaderViewMode.verse);
     });
 
     test('currentVerseProvider NO se resetea al alternar viewMode', () {
@@ -134,15 +135,15 @@ void main() {
       expect(container.read(currentVerseProvider), 5);
 
       // Alternar a chapter.
-      container.read(readerViewModeProvider.notifier).state =
-          BibleReaderViewMode.chapter;
+      container.read(readerViewModeProvider.notifier)
+          .setViewMode(BibleReaderViewMode.chapter);
 
       // El versículo debe preservarse.
       expect(container.read(currentVerseProvider), 5);
 
       // Volver a verse.
-      container.read(readerViewModeProvider.notifier).state =
-          BibleReaderViewMode.verse;
+      container.read(readerViewModeProvider.notifier)
+          .setViewMode(BibleReaderViewMode.verse);
 
       // Sigue preservado.
       expect(container.read(currentVerseProvider), 5);

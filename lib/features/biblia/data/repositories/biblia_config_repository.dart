@@ -131,4 +131,25 @@ abstract class BibliaConfigKeys {
   /// Color por defecto al crear una nota. Valores: "amarillo" | "verde"
   /// | "azul" | "ninguno".
   static const String notaColorDefault = 'biblia.nota_color_default';
+
+  /// Modo de vista del lector bíblico. Valores: "verse" | "chapter".
+  /// Persiste la preferencia del usuario entre sesiones.
+  static const String readerViewMode = 'biblia.reader_view_mode';
+
+  // ───────────────────────────────────────────────────────────────────
+  // Apariencia del lector bíblico (O9)
+  // ───────────────────────────────────────────────────────────────────
+
+  /// Escala de fuente del lector. Valores: "0.8" a "1.5" (step 0.1).
+  static const String bibliaFontScale = 'biblia.font_scale';
+
+  /// Familia tipográfica del lector. Valores: "system" | "serif" | "monospace".
+  static const String bibliaFontFamily = 'biblia.font_family';
+
+  /// Color del texto del lector. Valores: nombre del color
+  /// ("blanco" | "negro" | "sepia" | "azul").
+  static const String bibliaTextColor = 'biblia.text_color';
+
+  /// Altura de línea del lector. Valores: "1.4" a "2.0" (step 0.1).
+  static const String bibliaLineHeight = 'biblia.line_height';
 }
