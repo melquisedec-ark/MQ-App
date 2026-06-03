@@ -80,6 +80,9 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
 
     ref.listen<int?>(currentVersiculoNumeroProvider, (prev, next) {
       if (next != null && next != _lastRecordedVersiculo) {
+        // B2: respetar el toggle "Auto-registrar historial" en Configuración.
+        final autoHist = ref.read(autoHistorialProvider);
+        if (!autoHist) return;
         _lastRecordedVersiculo = next;
         ref.read(historialRepositoryProvider).record(
               versionId,
