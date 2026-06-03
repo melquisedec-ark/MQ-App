@@ -11,6 +11,7 @@ import '../../../domain/entities/fondo_pantalla.dart';
 import '../../../domain/entities/projection_slide.dart';
 import '../../shared_widgets/responsive_chord_widget.dart';
 import '../../shared_widgets/adaptive_stanza_text.dart';
+import '../../shared_widgets/glass_container.dart';
 import '../../shared_widgets/providers/appearance_provider.dart';
 import '../providers/live_control_providers.dart';
 import '../providers/projection_providers.dart';
@@ -95,7 +96,7 @@ class LiveProjectionScreen extends ConsumerWidget {
     };
   }
 
-  /// Construye el fondo de imagen con overlay semitransparente (sin glassmorphism).
+  /// Construye el fondo de imagen con efecto glassmorphism opcional.
   Widget _buildImageBackground(FondoPantalla fondo, HymnAppearanceState appearance, Widget slideContent) {
     if (fondo.rutaArchivo == null) return slideContent;
 
@@ -107,16 +108,21 @@ class LiveProjectionScreen extends ConsumerWidget {
       ),
     );
 
+    if (!appearance.glassEnabled) {
+      return Stack(children: [imageWidget, slideContent]);
+    }
+
     return Stack(
       children: [
         imageWidget,
-        // Overlay sutil para legibilidad del texto sobre la imagen.
-        Positioned.fill(
-          child: ColoredBox(
-            color: Colors.black.withValues(alpha: appearance.cardOpacity.clamp(0.0, 1.0)),
-          ),
+        GlassContainer(
+          blurSigma: appearance.glassBlurSigma,
+          opacity: appearance.cardOpacity,
+          overlayColor: appearance.glassOverlayColor,
+          padding: EdgeInsets.zero,
+          borderRadius: 0,
+          child: slideContent,
         ),
-        slideContent,
       ],
     );
   }
