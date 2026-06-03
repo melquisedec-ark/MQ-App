@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/entities/categoria.dart';
 import '../providers/admin_providers.dart';
 import '../providers/auth_providers.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Selector de categorías multi-select con chips.
 ///
@@ -104,8 +105,10 @@ class _CategoriaSelectorState extends ConsumerState<CategoriaSelector> {
         await _loadCategorias();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Theme.of(context).colorScheme.error),
+          showAppSnackBar(
+            context,
+            'Error: $e',
+            type: AppSnackBarType.error,
           );
         }
       }

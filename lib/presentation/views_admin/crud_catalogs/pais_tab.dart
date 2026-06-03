@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/pais_model.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 import '../../views_admin/providers/admin_providers.dart'
     show
         getAllPaisesUseCaseProvider,
@@ -115,8 +116,10 @@ class _PaisTabState extends ConsumerState<PaisTab> {
       ref.invalidate(_paisListProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -158,8 +161,10 @@ class _PaisTabState extends ConsumerState<PaisTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     }

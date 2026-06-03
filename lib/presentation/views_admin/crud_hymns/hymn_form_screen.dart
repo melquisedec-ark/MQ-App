@@ -12,6 +12,7 @@ import '../../views_admin/providers/admin_providers.dart' show getAllPaisesUseCa
 import '../../views_personal/providers/hymn_providers.dart';
 import 'categoria_selector.dart';
 import 'stanza_block_editor.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Representación editable de una estrofa en el formulario.
 class _StanzaDraft {
@@ -118,11 +119,10 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cargar himno: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          'Error al cargar himno: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -174,8 +174,10 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
 
     for (int i = 0; i < _estrofas.length; i++) {
       if (_estrofas[i].contenido.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('La estrofa ${i + 1} no puede estar vacía')),
+        showAppSnackBar(
+          context,
+          'La estrofa ${i + 1} no puede estar vacía',
+          type: AppSnackBarType.warning,
         );
         return;
       }
@@ -255,11 +257,10 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error inesperado: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          'Error inesperado: $e',
+          type: AppSnackBarType.error,
         );
       }
     } finally {

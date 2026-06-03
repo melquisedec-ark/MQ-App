@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/enums/fondo_pantalla_tipo.dart';
 import '../../../core/utils/file_storage_service.dart';
 import '../../../domain/entities/fondo_pantalla.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 import '../../views_admin/providers/admin_providers.dart'
     show
         getAllFondosUseCaseProvider,
@@ -154,8 +155,10 @@ class _FondoTabState extends ConsumerState<FondoTab> {
       ref.invalidate(fondosActivosProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -204,8 +207,10 @@ class _FondoTabState extends ConsumerState<FondoTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -310,12 +315,10 @@ class _FondoTabState extends ConsumerState<FondoTab> {
                             }
                           } catch (e) {
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content:
-                                      Text('Error al copiar archivo: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
+                              showAppSnackBar(
+                                context,
+                                'Error al copiar archivo: $e',
+                                type: AppSnackBarType.error,
                               );
                             }
                           }

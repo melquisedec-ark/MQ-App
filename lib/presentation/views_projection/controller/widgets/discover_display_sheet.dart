@@ -11,6 +11,7 @@ import '../../../../domain/repositories/control_repository.dart' as domain;
 import '../../display/receptor_binding.dart';
 import '../../providers/connection_providers.dart';
 import '../../providers/discovery_providers.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// BottomSheet modal para descubrir displays en la red vía mDNS,
 /// conectar y controlar remotamente el display seleccionado.
@@ -1216,8 +1217,10 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
           .sendSetBackground(bgId.toString());
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cambiar fondo remoto: $e')),
+      showAppSnackBar(
+        context,
+        'Error al cambiar fondo remoto: $e',
+        type: AppSnackBarType.error,
       );
     }
   }

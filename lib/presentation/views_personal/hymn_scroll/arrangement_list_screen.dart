@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/arreglo_musical.dart';
 import '../providers/arreglo_providers.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Pantalla que lista los arreglos musicales del usuario actual.
 ///
@@ -56,22 +57,20 @@ class _ArrangementListScreenState
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('No se pudo eliminar el arreglo'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          showAppSnackBar(
+            context,
+            'No se pudo eliminar el arreglo',
+            type: AppSnackBarType.error,
           );
         }
         ref.invalidate(userArreglosProvider);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al eliminar: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          'Error al eliminar: $e',
+          type: AppSnackBarType.error,
         );
       }
     }

@@ -8,6 +8,7 @@ import '../../../domain/entities/himno.dart';
 import '../../views_admin/crud_hymns/stanza_block_editor.dart';
 import '../providers/arreglo_providers.dart';
 import '../providers/hymn_providers.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Inner helpers
@@ -119,8 +120,10 @@ class _ArrangementEditorScreenState
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar datos: $e')),
+      showAppSnackBar(
+        context,
+        'Error al cargar datos: $e',
+        type: AppSnackBarType.error,
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -360,11 +363,10 @@ class _ArrangementEditorScreenState
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al guardar: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+      showAppSnackBar(
+        context,
+        'Error al guardar: $e',
+        type: AppSnackBarType.error,
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);

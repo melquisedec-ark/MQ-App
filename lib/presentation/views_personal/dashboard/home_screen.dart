@@ -23,6 +23,7 @@ import '../../views_admin/admin_panel_screen.dart';
 import '../providers/hymn_providers.dart';
 import '../../providers/wakelock_provider.dart';
 import 'connected_dashboard.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Tipos de filtro para himnos.
 enum HymnFilter {
@@ -92,8 +93,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) async {
     final error = await projectHymn(ref, himno);
     if (error != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar himno: $error')),
+      showAppSnackBar(
+        context,
+        'Error al cargar himno: $error',
+        type: AppSnackBarType.error,
       );
     }
   }

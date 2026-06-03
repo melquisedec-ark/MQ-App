@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../views_personal/providers/hymn_providers.dart' show catalogVersionProvider;
 import '../../../domain/entities/categoria.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 import '../../views_admin/providers/admin_providers.dart'
     show
         getAllCategoriasUseCaseProvider,
@@ -96,8 +97,10 @@ class _CategoriaTabState extends ConsumerState<CategoriaTab> {
       ref.read(catalogVersionProvider.notifier).state++;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     } finally {
@@ -142,8 +145,10 @@ class _CategoriaTabState extends ConsumerState<CategoriaTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     }

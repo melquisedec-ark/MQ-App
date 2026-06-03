@@ -28,6 +28,7 @@ import '../providers/transpose_providers.dart';
 import '../providers/arreglo_providers.dart';
 import 'arrangement_editor_screen.dart';
 import 'fab_menu.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Pantalla de detalle del himno (Formato Scroll para móvil).
 /// Muestra letra completa con acordes y controles de transposición
@@ -131,8 +132,10 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al presentar: $e')),
+        showAppSnackBar(
+          context,
+          'Error al presentar: $e',
+          type: AppSnackBarType.error,
         );
       }
       return;
@@ -141,16 +144,17 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
     final error = await projectHymn(ref, widget.himno);
     if (error != null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al presentar: $error')),
+        showAppSnackBar(
+          context,
+          'Error al presentar: $error',
+          type: AppSnackBarType.error,
         );
       }
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Presentando: ${widget.himno.titulo}'),
-          duration: const Duration(seconds: 2),
-        ),
+      showAppSnackBar(
+        context,
+        'Presentando: ${widget.himno.titulo}',
+        type: AppSnackBarType.info,
       );
     }
   }

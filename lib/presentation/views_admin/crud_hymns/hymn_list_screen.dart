@@ -8,6 +8,7 @@ import '../../../../domain/entities/himno.dart';
 import '../../../../domain/usecases/himno/delete_hymn_usecase.dart';
 import '../../views_personal/providers/hymn_providers.dart';
 import 'hymn_form_screen.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Pantalla de listado de himnos para el backoffice.
 ///
@@ -87,11 +88,10 @@ class _HymnListScreenState extends ConsumerState<HymnListScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error inesperado: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        showAppSnackBar(
+          context,
+          'Error inesperado: $e',
+          type: AppSnackBarType.error,
         );
       }
     }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/window_manager/window_providers.dart';
 import '../../../core/window_manager/window_service.dart';
 import '../../views_projection/providers/presentation_providers.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Botón toggle para iniciar/detener el modo proyección en desktop.
 ///
@@ -60,8 +61,10 @@ class PresentButton extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     }

@@ -7,6 +7,7 @@ import '../../../core/utils/audio_file_service.dart';
 import '../../../domain/entities/himno.dart';
 import '../../../domain/entities/pista_audio.dart';
 import '../../../domain/usecases/himno/search_hymns_usecase.dart';
+import 'package:mqapp/core/ui/app_snackbar.dart';
 import '../../views_admin/providers/admin_providers.dart'
     show
         getPistasByHimnoUseCaseProvider,
@@ -117,8 +118,10 @@ class _PistaTabState extends ConsumerState<PistaTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     } finally {
@@ -170,8 +173,10 @@ class _PistaTabState extends ConsumerState<PistaTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        showAppSnackBar(
+          context,
+          'Error: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -203,11 +208,10 @@ class _PistaTabState extends ConsumerState<PistaTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al seleccionar archivo: $e'),
-            backgroundColor: Colors.red,
-          ),
+        showAppSnackBar(
+          context,
+          'Error al seleccionar archivo: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
