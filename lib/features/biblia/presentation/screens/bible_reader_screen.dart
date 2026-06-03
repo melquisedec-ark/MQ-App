@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
@@ -15,11 +16,13 @@ import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/derived_providers.dart';
 import '../../application/providers/favoritos_provider.dart';
 import '../../application/providers/historial_provider.dart';
+import '../../application/providers/reader_providers.dart';
 import '../../data/models/capitulo.dart';
 import '../../data/models/libro.dart';
 import '../../data/models/nota.dart';
 import '../../data/models/versiculo.dart';
 import '../widgets/note_editor_modal.dart';
+import '../widgets/verse_card.dart';
 import '../widgets/version_picker_sheet.dart';
 
 /// Pantalla principal del Bible reader: muestra 1 versículo a la vez.
@@ -53,6 +56,11 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       if (currentNum == null) {
         ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
       }
+      // Inicializar currentVerseProvider (vista de capítulo) con el
+      // versículo actual (default 1) para que el scroll programático
+      // arranque en la posición correcta.
+      ref.read(currentVerseProvider.notifier).state =
+          ref.read(currentVersiculoNumeroProvider) ?? 1;
       // Resolver libroId → libroNumero (canónico) y cachearlo para el
       // cliente gRPC (BibleClientActions lo lee al enviar comandos).
       _syncLibroNumeroFromId(widget.libroId);
@@ -80,6 +88,11 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     final versiculoNum = ref.watch(currentVersiculoNumeroProvider) ?? 1;
 
     ref.listen<int?>(currentVersiculoNumeroProvider, (prev, next) {
+      if (next != null) {
+        // Mantener currentVerseProvider sincronizado para la vista de
+        // capítulo. Al alternar entre verse/chapter se preserva.
+        ref.read(currentVerseProvider.notifier).state = next;
+      }
       if (next != null && next != _lastRecordedVersiculo) {
         // B2: respetar el toggle "Auto-registrar historial" en Configuración.
         final autoHist = ref.read(autoHistorialProvider);
@@ -114,6 +127,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
             onPressed: () => context.pushNamed('biblia_search'),
             tooltip: 'Buscar',
           ),
+          // D6: alternar entre vista por versículo y vista de capítulo.
+          const _ViewModeToggleButton(),
           const _ReaderOverflowMenu(),
         ],
       ),
@@ -126,10 +141,22 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
               versiculoNum: versiculoNum,
             ),
             Expanded(
-              child: _VerseDisplay(
-                libroId: libroId,
-                capitulo: capitulo,
-                versiculoNum: versiculoNum,
+              // D6: alternar entre vista por versículo y vista de capítulo.
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final viewMode = ref.watch(readerViewModeProvider);
+                  if (viewMode == BibleReaderViewMode.chapter) {
+                    return _ChapterVerseList(
+                      libroId: libroId,
+                      capitulo: capitulo,
+                    );
+                  }
+                  return _VerseDisplay(
+                    libroId: libroId,
+                    capitulo: capitulo,
+                    versiculoNum: versiculoNum,
+                  );
+                },
               ),
             ),
             _ReaderBottomBar(
@@ -140,6 +167,117 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Botón en el AppBar que alterna entre vista por versículo y vista de capítulo.
+class _ViewModeToggleButton extends ConsumerWidget {
+  const _ViewModeToggleButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final viewMode = ref.watch(readerViewModeProvider);
+    final isChapter = viewMode == BibleReaderViewMode.chapter;
+    return IconButton(
+      icon: Icon(
+        isChapter ? Icons.view_agenda_outlined : Icons.view_headline_rounded,
+      ),
+      tooltip: isChapter ? 'Vista por versículo' : 'Vista de capítulo',
+      onPressed: () {
+        // NO resetear currentVerseProvider al alternar: la posición
+        // de lectura se preserva entre modos.
+        ref.read(readerViewModeProvider.notifier).state = isChapter
+            ? BibleReaderViewMode.verse
+            : BibleReaderViewMode.chapter;
+      },
+    );
+  }
+}
+
+/// Vista de capítulo completo: lista de [VerseCard] con scroll programático
+/// al [currentVerseProvider].
+class _ChapterVerseList extends ConsumerStatefulWidget {
+  const _ChapterVerseList({
+    required this.libroId,
+    required this.capitulo,
+  });
+
+  final int libroId;
+  final int capitulo;
+
+  @override
+  ConsumerState<_ChapterVerseList> createState() => _ChapterVerseListState();
+}
+
+class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
+  final ItemScrollController _itemController = ItemScrollController();
+  int? _lastScrolledVerse;
+
+  @override
+  Widget build(BuildContext context) {
+    final libroId = widget.libroId;
+    final capitulo = widget.capitulo;
+    final bibliaRepo = ref.read(bibliaRepositoryProvider);
+    final versionId = ref.watch(currentVersionIdProvider);
+    final currentVerse = ref.watch(currentVerseProvider);
+
+    return FutureBuilder<Capitulo?>(
+      future: bibliaRepo.getCapitulo(libroId, capitulo),
+      builder: (context, capSnap) {
+        if (!capSnap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final cap = capSnap.data!;
+        return FutureBuilder<List<Versiculo>>(
+          future: bibliaRepo.getVersiculosByCapitulo(cap.id),
+          builder: (context, versSnap) {
+            if (!versSnap.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final versiculos = versSnap.data!;
+            final total = cap.totalVersiculos;
+
+            // Auto-scroll al versículo actual la primera vez (o si cambia).
+            if (currentVerse != _lastScrolledVerse &&
+                _itemController.isAttached &&
+                currentVerse >= 1 &&
+                currentVerse <= total) {
+              _lastScrolledVerse = currentVerse;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                _itemController.scrollTo(
+                  index: currentVerse - 1,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                );
+              });
+            }
+
+            return ScrollablePositionedList.builder(
+              itemCount: total,
+              itemScrollController: _itemController,
+              itemBuilder: (context, index) {
+                final numero = index + 1;
+                // Si getVersiculos devuelve menos, fallback al texto vacío.
+                final texto = index < versiculos.length
+                    ? versiculos[index].texto
+                    : '';
+                return VerseCard(
+                  numero: numero,
+                  texto: texto,
+                  esFoco: numero == currentVerse,
+                  onTap: () {
+                    ref.read(currentVerseProvider.notifier).state = numero;
+                    ref.read(currentVersiculoNumeroProvider.notifier).state =
+                        numero;
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

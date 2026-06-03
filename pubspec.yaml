@@ -65,6 +65,12 @@ dependencies:
   url_launcher: ^6.3.2
   wakelock_plus: ^1.5.2
 
+  # Lista con scroll programático a un item concreto (Bible reader: capítulo)
+  scrollable_positioned_list: ^0.3.8
+
+  # Info de la app (versión, build) para pantalla "Acerca de"
+  package_info_plus: ^9.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
