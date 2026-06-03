@@ -20,7 +20,6 @@ import '../../views_projection/providers/connection_providers.dart';
 import '../../views_projection/providers/presentation_providers.dart';
 import '../../views_projection/providers/projection_actions.dart'
     show projectHymn;
-import '../../views_admin/admin_panel_screen.dart';
 import '../providers/hymn_providers.dart';
 import '../../providers/wakelock_provider.dart';
 import 'connected_dashboard.dart';
@@ -172,12 +171,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: const Text('MQ App'),
         leading: IconButton(
-          icon: const Icon(Icons.settings_rounded),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
-          ),
-          tooltip: 'Configuración',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+          tooltip: 'Atrás',
         ),
         actions: [
           // Botón de conexión: abre el DiscoverDisplaySheet
@@ -226,24 +222,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _searchQuery = '';
                     });
                   },
-                ),
-              ),
-
-              // D8: acceso rápido a Administrar himnario.
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Card(
-                  elevation: 1,
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.tune_rounded,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    title: const Text('Administrar himnario'),
-                    subtitle: const Text('Himnos, catálogos, importar/exportar'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.pushNamed('hymn-admin'),
-                  ),
                 ),
               ),
 
