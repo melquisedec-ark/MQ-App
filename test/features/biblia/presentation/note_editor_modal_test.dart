@@ -105,7 +105,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Título
-    expect(find.text('Nota'), findsOneWidget);
+    expect(find.text('Agregar nota'), findsOneWidget);
     // Subtítulo "v. 1"
     expect(find.text('v. 1'), findsOneWidget);
     // Label de color

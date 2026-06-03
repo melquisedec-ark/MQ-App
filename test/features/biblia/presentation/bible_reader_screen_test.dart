@@ -9,7 +9,9 @@ import 'package:mqapp/features/biblia/application/providers/biblia_version_provi
 import 'package:mqapp/features/biblia/application/providers/favoritos_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/historial_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/notas_provider.dart';
+import 'package:mqapp/features/biblia/application/providers/reader_providers.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
+import 'package:mqapp/features/biblia/presentation/widgets/verse_card.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_search_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
@@ -29,6 +31,7 @@ Widget _buildHarness({
   int libroId = 1,
   int capitulo = 1,
   bool isConnected = false,
+  BibleReaderViewMode initialViewMode = BibleReaderViewMode.chapter,
 }) {
   return ProviderScope(
     overrides: <Override>[
@@ -43,6 +46,14 @@ Widget _buildHarness({
       // Override directo: no requiere instanciar ConnectionNotifier
       // (que abriría sockets reales en el constructor de GrpcControlDataSource).
       isConnectedProvider.overrideWith((_) => isConnected),
+      readerViewModeProvider.overrideWith(
+        (ref) {
+          final notifier = ReaderViewModeNotifier(ref);
+          // Override sincrónico: no depende de async setViewMode
+          notifier.state = initialViewMode;
+          return notifier;
+        },
+      ),
     ],
     child: MaterialApp.router(
       routerConfig: GoRouter(
@@ -113,7 +124,7 @@ void main() {
     );
   });
 
-  Widget buildHarness({int libroId = 1, int capitulo = 1, bool isConnected = false}) =>
+  Widget buildHarness({int libroId = 1, int capitulo = 1, bool isConnected = false, BibleReaderViewMode initialViewMode = BibleReaderViewMode.chapter}) =>
       _buildHarness(
         bibliaRepo: bibliaRepo,
         favRepo: favRepo,
@@ -124,6 +135,7 @@ void main() {
         libroId: libroId,
         capitulo: capitulo,
         isConnected: isConnected,
+        initialViewMode: initialViewMode,
       );
 
   testWidgets('muestra el título del libro y el versículo inicial',
@@ -133,9 +145,7 @@ void main() {
 
     // AppBar muestra "Génesis 1"
     expect(find.text('Génesis 1'), findsOneWidget);
-    // Subtítulo "Capítulo 1" dentro del body
-    expect(find.textContaining('Capítulo 1'), findsWidgets);
-    // Texto del versículo 1 de Génesis 1 (seed)
+    // Texto del versículo 1 de Génesis 1 (seed) visible en modo capítulo
     expect(
       find.textContaining('En el principio creó Dios'),
       findsOneWidget,
@@ -144,7 +154,7 @@ void main() {
 
   testWidgets('avanza al siguiente versículo al pulsar la flecha derecha',
       (tester) async {
-    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1, initialViewMode: BibleReaderViewMode.verse));
     await tester.pumpAndSettle();
 
     // Verificar que el versículo inicial es el 1
@@ -185,7 +195,11 @@ void main() {
 
   testWidgets('abre el modal de notas al pulsar el botón de nota',
       (tester) async {
-    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
     await tester.pumpAndSettle();
 
     final noteBtn = find.byTooltip('Nota');
@@ -193,8 +207,8 @@ void main() {
     await tester.tap(noteBtn);
     await tester.pumpAndSettle();
 
-    // El modal debe mostrar el título "Nota"
-    expect(find.text('Nota'), findsOneWidget);
+    // El modal debe mostrar el título "Agregar nota" (o "Editar nota")
+    expect(find.text('Agregar nota'), findsOneWidget);
     // Y el campo de texto
     expect(find.byType(TextField), findsOneWidget);
     // Y los 4 colores (ninguno, amarillo, verde, azul)
@@ -211,7 +225,7 @@ void main() {
     expect(find.byIcon(Icons.cast_rounded), findsNothing);
   });
 
-  testWidgets('muestra el botón ENVIAR y el menú overflow cuando hay display',
+  testWidgets('muestra el botón ENVIAR cuando hay display',
       (tester) async {
     await tester.pumpWidget(
       buildHarness(libroId: 1, capitulo: 1, isConnected: true),
@@ -221,16 +235,5 @@ void main() {
     // Con conexión, el botón ENVIAR aparece en la AppBar.
     expect(find.text('ENVIAR'), findsOneWidget);
     expect(find.byIcon(Icons.cast_rounded), findsOneWidget);
-
-    // El menú overflow siempre está visible (no depende de conexión).
-    final overflowBtn = find.byTooltip('Más opciones');
-    expect(overflowBtn, findsOneWidget);
-
-    // Al abrirlo deben aparecer las 3 acciones del menú.
-    await tester.tap(overflowBtn);
-    await tester.pumpAndSettle();
-    expect(find.text('Modo Compact'), findsOneWidget);
-    expect(find.text('Modo Preview'), findsOneWidget);
-    expect(find.text('Ir a Himnario'), findsOneWidget);
   });
 }

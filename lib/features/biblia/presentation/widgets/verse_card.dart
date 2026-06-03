@@ -14,6 +14,9 @@ enum BibleReaderViewMode {
 /// Layout: número gold a la izquierda (32dp) + texto a la derecha con
 /// `bodyLarge` (18sp) y line-height 1.6 del sistema. Si [esFoco] es
 /// `true`, el fondo usa `surfaceContainerHigh` con elevación 1.
+///
+/// Los parámetros [fontFamily], [textColor] y [lineHeight] permiten
+/// personalizar la apariencia desde [ReadingSettingsSheet].
 class VerseCard extends StatelessWidget {
   const VerseCard({
     super.key,
@@ -22,6 +25,10 @@ class VerseCard extends StatelessWidget {
     this.esFoco = false,
     this.onTap,
     this.onLongPress,
+    this.notaIndicatorColor,
+    this.fontFamily,
+    this.textColor,
+    this.lineHeight,
   });
 
   /// Número del versículo (1, 2, 3, ...).
@@ -38,6 +45,18 @@ class VerseCard extends StatelessWidget {
 
   /// Callback al long press.
   final VoidCallback? onLongPress;
+
+  /// Color del indicador de nota (si no es null, muestra un dot 14×14).
+  final Color? notaIndicatorColor;
+
+  /// Familia tipográfica opcional (null = system default).
+  final String? fontFamily;
+
+  /// Color del texto opcional (null = default del tema).
+  final Color? textColor;
+
+  /// Altura de línea opcional (null = 1.6).
+  final double? lineHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -65,17 +84,34 @@ class VerseCard extends StatelessWidget {
               style: textTheme.titleSmall?.copyWith(
                 color: const Color(0xFFCCA43B),
                 fontWeight: FontWeight.w700,
+                fontFamily:
+                    fontFamily == 'system' ? null : fontFamily,
               ),
             ),
           ),
+          // Indicador de nota (14×14)
+          if (notaIndicatorColor != null) ...[
+            const SizedBox(width: 4),
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: notaIndicatorColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
           const SizedBox(width: 8),
           // Texto del versículo
           Expanded(
             child: Text(
               texto,
               style: textTheme.bodyLarge?.copyWith(
-                height: 1.6,
+                height: lineHeight ?? 1.6,
                 fontWeight: esFoco ? FontWeight.w500 : FontWeight.w400,
+                color: textColor,
+                fontFamily:
+                    fontFamily == 'system' ? null : fontFamily,
               ),
             ),
           ),

@@ -18,6 +18,7 @@ class NoteEditorModal extends ConsumerStatefulWidget {
     required this.libroId,
     required this.capitulo,
     required this.versiculoNumero,
+    this.existingNote,
   });
 
   final int versionId;
@@ -25,14 +26,17 @@ class NoteEditorModal extends ConsumerStatefulWidget {
   final int capitulo;
   final int versiculoNumero;
 
+  /// Nota existente a editar. Si es `null`, el modal carga la nota desde
+  /// el provider (o crea una nueva si no existe).
+  final Nota? existingNote;
+
   @override
   ConsumerState<NoteEditorModal> createState() => _NoteEditorModalState();
 }
 
 class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
   late final TextEditingController _controller;
-  // Se inicializa con un default seguro y se actualiza en el primer build
-  // usando la nota existente o el default del provider (B1 fix).
+  // Se inicializa con un default seguro y se actualiza al cargar la nota.
   NotaColor _selectedColor = NotaColor.amarillo;
   bool _initialized = false;
   bool _saving = false;
@@ -41,9 +45,15 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    // Lee sincrónicamente el color por defecto del provider (puede ser el
-    // valor inicial del notifier mientras se hidrata desde BD).
-    _selectedColor = ref.read(notaColorDefaultProvider);
+    if (widget.existingNote != null) {
+      // Si ya tenemos la nota (ej. desde long-press), precargar al instante.
+      _controller.text = widget.existingNote!.contenido;
+      _selectedColor = widget.existingNote!.color;
+      _initialized = true;
+    } else {
+      // Sin nota pasada → cargar sincrónicamente el color default del provider.
+      _selectedColor = ref.read(notaColorDefaultProvider);
+    }
   }
 
   @override
@@ -60,7 +70,9 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
 
     final defaultColor = ref.watch(notaColorDefaultProvider);
 
-    final notaAsync = ref.watch(
+    // Escuchar cambios en el provider de nota para cargar datos asíncronos
+    // (cuando existingNote es null, ej. desde el bottom bar).
+    ref.listen<AsyncValue<Nota?>>(
       currentNotaProvider(
         NotaQuery(
           versionId: widget.versionId,
@@ -69,22 +81,45 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
           numero: widget.versiculoNumero,
         ),
       ),
+      (prev, next) {
+        if (!_initialized) {
+          next.whenData((nota) {
+            if (!mounted || _initialized) return;
+            _initialized = true;
+            if (nota != null) {
+              _controller.text = nota.contenido;
+              _selectedColor = nota.color;
+            } else {
+              // Leer color actual del provider (puede haber cambiado desde build)
+              final colorFromProvider = ref.read(notaColorDefaultProvider);
+              if (colorFromProvider != NotaColor.ninguno) {
+                _selectedColor = colorFromProvider;
+              }
+            }
+          });
+        }
+      },
     );
 
-    // Cargar contenido/color existentes al primer frame. Si NO hay nota
-    // existente, usar el color por defecto del provider (B1 fix).
-    notaAsync.whenData((nota) {
-      if (!_initialized) {
-        _initialized = true;
-        if (nota != null) {
-          _controller.text = nota.contenido;
-          _selectedColor = nota.color;
-        } else if (defaultColor != NotaColor.ninguno) {
-          // Solo actualizar si el provider ya tiene un valor real cargado.
-          _selectedColor = defaultColor;
-        }
-      }
-    });
+    final isEditing = widget.existingNote != null ||
+        (_initialized && _controller.text.isNotEmpty);
+
+    // Watch para saber si hay nota existente (delete button).
+    final Nota? existingNote;
+    if (widget.existingNote != null) {
+      existingNote = widget.existingNote;
+    } else {
+      existingNote = ref.watch(
+        currentNotaProvider(
+          NotaQuery(
+            versionId: widget.versionId,
+            libroId: widget.libroId,
+            capitulo: widget.capitulo,
+            numero: widget.versiculoNumero,
+          ),
+        ),
+      ).valueOrNull;
+    }
 
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -124,7 +159,7 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Nota',
+                      isEditing ? 'Editar nota' : 'Agregar nota',
                       style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -173,11 +208,11 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
                 // Botones
                 Row(
                   children: [
-                    if (notaAsync.valueOrNull != null)
+                    if (existingNote != null)
                       TextButton.icon(
                         onPressed: _saving
                             ? null
-                            : () => _delete(notaAsync.valueOrNull),
+                            : () => _delete(existingNote),
                         icon: const Icon(Icons.delete_outline_rounded),
                         label: const Text('Eliminar'),
                         style: TextButton.styleFrom(

@@ -10,10 +10,12 @@ import '../../../../proto/generated/hymn_control.pbgrpc.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/biblia_version_provider.dart';
+import '../../application/providers/bible_appearance_provider.dart';
 import '../../application/providers/biblia_config_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/derived_providers.dart';
+import '../../application/providers/notas_provider.dart';
 import '../../application/providers/favoritos_provider.dart';
 import '../../application/providers/historial_provider.dart';
 import '../../application/providers/reader_providers.dart';
@@ -23,6 +25,7 @@ import '../../data/models/nota.dart';
 import '../../data/models/versiculo.dart';
 import '../widgets/note_editor_modal.dart';
 import '../widgets/verse_card.dart';
+import '../widgets/reading_settings_sheet.dart';
 import '../widgets/version_picker_sheet.dart';
 
 /// Pantalla principal del Bible reader: muestra 1 versículo a la vez.
@@ -129,7 +132,6 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           ),
           // D6: alternar entre vista por versículo y vista de capítulo.
           const _ViewModeToggleButton(),
-          const _ReaderOverflowMenu(),
         ],
       ),
       body: SafeArea(
@@ -187,9 +189,8 @@ class _ViewModeToggleButton extends ConsumerWidget {
       onPressed: () {
         // NO resetear currentVerseProvider al alternar: la posición
         // de lectura se preserva entre modos.
-        ref.read(readerViewModeProvider.notifier).state = isChapter
-            ? BibleReaderViewMode.verse
-            : BibleReaderViewMode.chapter;
+        ref.read(readerViewModeProvider.notifier).setViewMode(
+            isChapter ? BibleReaderViewMode.verse : BibleReaderViewMode.chapter);
       },
     );
   }
@@ -221,6 +222,22 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
     final bibliaRepo = ref.read(bibliaRepositoryProvider);
     final versionId = ref.watch(currentVersionIdProvider);
     final currentVerse = ref.watch(currentVerseProvider);
+    final appearance = ref.watch(bibleAppearanceProvider);
+
+    // O7b: mapa de número de versículo → color de nota para el capítulo actual.
+    final notasAsync = ref.watch(notasStreamProvider);
+    final notasEnCapitulo = notasAsync.maybeWhen(
+      data: (notas) {
+        final map = <int, Color>{};
+        for (final n in notas) {
+          if (n.libroId == libroId && n.capitulo == capitulo) {
+            map[n.numero] = _colorForNota(n.color);
+          }
+        }
+        return map;
+      },
+      orElse: () => <int, Color>{},
+    );
 
     return FutureBuilder<Capitulo?>(
       future: bibliaRepo.getCapitulo(libroId, capitulo),
@@ -254,26 +271,36 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
               });
             }
 
-            return ScrollablePositionedList.builder(
-              itemCount: total,
-              itemScrollController: _itemController,
-              itemBuilder: (context, index) {
-                final numero = index + 1;
-                // Si getVersiculos devuelve menos, fallback al texto vacío.
-                final texto = index < versiculos.length
-                    ? versiculos[index].texto
-                    : '';
-                return VerseCard(
-                  numero: numero,
-                  texto: texto,
-                  esFoco: numero == currentVerse,
-                  onTap: () {
-                    ref.read(currentVerseProvider.notifier).state = numero;
-                    ref.read(currentVersiculoNumeroProvider.notifier).state =
-                        numero;
-                  },
-                );
-              },
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(appearance.fontScale),
+              ),
+              child: ScrollablePositionedList.builder(
+                itemCount: total,
+                itemScrollController: _itemController,
+                itemBuilder: (context, index) {
+                  final numero = index + 1;
+                  // Si getVersiculos devuelve menos, fallback al texto vacío.
+                  final texto = index < versiculos.length
+                      ? versiculos[index].texto
+                      : '';
+                  return VerseCard(
+                    numero: numero,
+                    texto: texto,
+                    esFoco: numero == currentVerse,
+                    notaIndicatorColor: notasEnCapitulo[numero],
+                    fontFamily: appearance.fontFamily,
+                    textColor: appearance.textColor,
+                    lineHeight: appearance.lineHeight,
+                    onTap: () {
+                      ref.read(currentVerseProvider.notifier).state = numero;
+                      ref
+                          .read(currentVersiculoNumeroProvider.notifier)
+                          .state = numero;
+                    },
+                  );
+                },
+              ),
             );
           },
         );
@@ -579,6 +606,19 @@ class _VerseDisplay extends ConsumerWidget {
     WidgetRef ref,
     Versiculo current,
   ) {
+    final versionId = ref.read(currentVersionIdProvider);
+    final notaAsync = ref.read(
+      currentNotaProvider(
+        NotaQuery(
+          versionId: versionId,
+          libroId: libroId,
+          capitulo: capitulo,
+          numero: current.numero,
+        ),
+      ),
+    );
+    final existingNote = notaAsync.valueOrNull;
+
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -595,11 +635,22 @@ class _VerseDisplay extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.edit_note_rounded),
-              title: const Text('Agregar nota'),
+              leading: Icon(
+                existingNote != null
+                    ? Icons.edit_rounded
+                    : Icons.edit_note_rounded,
+              ),
+              title: Text(
+                existingNote != null ? 'Editar nota' : 'Agregar nota',
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                _openNoteEditor(context, ref, current);
+                _openNoteEditor(
+                  context,
+                  ref,
+                  current,
+                  existingNote: existingNote,
+                );
               },
             ),
           ],
@@ -631,8 +682,9 @@ class _VerseDisplay extends ConsumerWidget {
   void _openNoteEditor(
     BuildContext context,
     WidgetRef ref,
-    Versiculo current,
-  ) {
+    Versiculo current, {
+    Nota? existingNote,
+  }) {
     final versionId = ref.read(currentVersionIdProvider);
     showModalBottomSheet<void>(
       context: context,
@@ -643,6 +695,7 @@ class _VerseDisplay extends ConsumerWidget {
         libroId: libroId,
         capitulo: capitulo,
         versiculoNumero: current.numero,
+        existingNote: existingNote,
       ),
     );
   }
@@ -667,6 +720,7 @@ class _VerseCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final appearance = ref.watch(bibleAppearanceProvider);
 
     final notaAsync = ref.watch(
       currentNotaProvider(
@@ -682,87 +736,128 @@ class _VerseCard extends ConsumerWidget {
 
     final showBorder = nota != null && nota.color != NotaColor.ninguno;
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (showBorder) ...[
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: _colorForNota(nota.color),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(4),
-                  bottomLeft: Radius.circular(4),
+    final textStyle = textTheme.bodyLarge?.copyWith(
+      fontSize: 18,
+      height: appearance.lineHeight,
+      color: appearance.textColor,
+      fontFamily: appearance.fontFamily == 'system'
+          ? null
+          : appearance.fontFamily,
+    );
+
+    final numeroStyle = textTheme.titleLarge?.copyWith(
+      color: colorScheme.primary,
+      fontWeight: FontWeight.w800,
+      fontSize: 24,
+      fontFamily: appearance.fontFamily == 'system'
+          ? null
+          : appearance.fontFamily,
+    );
+
+    final progressStyle = textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontFamily: appearance.fontFamily == 'system'
+          ? null
+          : appearance.fontFamily,
+    );
+
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(appearance.fontScale),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showBorder) ...[
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: _colorForNota(nota.color),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    bottomLeft: Radius.circular(4),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '${versiculo.numero}',
-                      style: textTheme.titleLarge?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 24,
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '${versiculo.numero}',
+                        style: numeroStyle,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    if (nota != null)
-                      Tooltip(
-                        message: 'Tiene nota (${nota.color.name})',
-                        child: Container(
-                          width: 8,
-                          height: 8,
+                      const SizedBox(width: 12),
+                      if (nota != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _colorForNota(nota.color),
-                            shape: BoxShape.circle,
+                            color: _colorForNota(nota.color)
+                                .withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: _colorForNota(nota.color),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Tiene nota',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: _colorForNota(nota.color),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  versiculo.texto,
-                  style: textTheme.bodyLarge?.copyWith(
-                    fontSize: 18,
-                    height: 1.6,
-                    color: colorScheme.onSurface,
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${versiculo.numero}/$totalVersiculos',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 8),
+                  Text(
+                    versiculo.texto,
+                    style: textStyle,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '${versiculo.numero}/$totalVersiculos',
+                    style: progressStyle,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Color _colorForNota(NotaColor color) {
-    switch (color) {
-      case NotaColor.amarillo:
-        return const Color(0xFFF59E0B);
-      case NotaColor.verde:
-        return const Color(0xFF10B981);
-      case NotaColor.azul:
-        return const Color(0xFF3B82F6);
-      case NotaColor.ninguno:
-        return Colors.transparent;
-    }
+/// Convierte [NotaColor] a [Color] de Flutter.
+Color _colorForNota(NotaColor color) {
+  switch (color) {
+    case NotaColor.amarillo:
+      return const Color(0xFFF59E0B);
+    case NotaColor.verde:
+      return const Color(0xFF10B981);
+    case NotaColor.azul:
+      return const Color(0xFF3B82F6);
+    case NotaColor.ninguno:
+      return Colors.transparent;
   }
 }
 
@@ -855,9 +950,9 @@ class _ReaderBottomBar extends ConsumerWidget {
                     tooltip: 'Nota',
                   ),
                   IconButton(
-                    icon: const Icon(Icons.casino_rounded),
-                    onPressed: () => _goRandomVerse(context, ref),
-                    tooltip: 'Versículo aleatorio',
+                    icon: const Icon(Icons.tune_rounded),
+                    onPressed: () => ReadingSettingsSheet.show(context),
+                    tooltip: 'Ajustes de lectura',
                   ),
                 ],
               ),
@@ -926,21 +1021,6 @@ class _ReaderBottomBar extends ConsumerWidget {
     ref.read(currentLibroNumeroProvider.notifier).state = prevLibro.numero;
     ref.read(currentCapituloProvider.notifier).state = prevCaps.last.numero;
     ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
-  }
-
-  Future<void> _goRandomVerse(BuildContext context, WidgetRef ref) async {
-    final biblia = ref.read(bibliaRepositoryProvider);
-    final libro = await biblia.getLibroById(libroId);
-    if (libro == null) return;
-    final caps = await biblia.getCapitulosByLibro(libroId);
-    if (caps.isEmpty) return;
-    final randomCap = caps[DateTime.now().millisecondsSinceEpoch % caps.length];
-    final versiculos = await biblia.getVersiculosByCapitulo(randomCap.id);
-    if (versiculos.isEmpty || !context.mounted) return;
-    final randomV = versiculos[
-        DateTime.now().microsecondsSinceEpoch % versiculos.length];
-    ref.read(currentCapituloProvider.notifier).state = randomCap.numero;
-    ref.read(currentVersiculoNumeroProvider.notifier).state = randomV.numero;
   }
 
   void _openNoteEditor(BuildContext context, WidgetRef ref) {
