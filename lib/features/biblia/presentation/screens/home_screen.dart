@@ -50,12 +50,11 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
-              child: Column(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // ── Logo + tagline ──
@@ -78,10 +77,9 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
+    }
   }
-}
 
 /// Logo "MQ App" + tagline, centrados.
 class _LogoHeader extends StatelessWidget {
