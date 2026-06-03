@@ -2,7 +2,7 @@
 
 > **Propósito:** Definir tokens visuales (colores, tipografía, espaciado, componentes) para las nuevas pantallas de MQ App.
 > **Audiencia:** @dev (implementador), @arqui (revisor técnico)
-> **Versión:** v1.0
+> **Versión:** v1.0.2 (actualizado 3 jun 2026 — glassmorphism restaurado, O3)
 > **Referencia:** Especificaciones previas en `doc/especificaciones-diseno.md` + `doc/GLASSMORPHISM.md` (HimnarioID 2.0) + `nuevaidea.md`
 
 ---
@@ -104,7 +104,7 @@ de HimnarioID 2.0 por las siguientes razones:
 | `grey700` | `#3A3A3A` | Botones inactivos dark, chips no seleccionados |
 | `grey600` | `#5E5E5E` | Texto secundario dark, hint text |
 | `grey500` | `#757575` | Placeholder, iconos inactivos |
-| `grey400` | `#9E9E9E` | Borde en light mode (glassmorphism) |
+| `grey400` | `#9E9E9E` | Borde en light mode |
 | `grey300` | `#BDBDBD` | Botones inactivos light |
 | `grey200` | `#E0E0E0` | Borde sutil light |
 | `grey100` | `#F5F5F5` | Fondos de contenedores light |
@@ -166,33 +166,24 @@ ColorScheme(
 
 ---
 
-## 2. Glassmorphism (heredado de HimnarioID 2.0)
+## 2. Glassmorphism — Restaurado en v1.0.2
 
-### 2.0 ✅ DECIDIDO: Glassmorphism = SÍ
+### 2.0 ✅ RESTAURADO: Glassmorphism funciona automáticamente
 
-**Decisión de @arqui (1 jun 2026):** Aplicar glassmorphism en:
-- Cards principales (Home, Biblia, Himnario)
-- Modales y bottom sheets
-- App bar en pantallas de lectura
+**Decisión de @arqui + usuario (3 jun 2026):** El glassmorphism fue restaurado completamente en v1.0.2 después de que el usuario aclarara que NUNCA pidió eliminarlo — solo pidió quitar el toggle de configuración porque estaba fuera de contexto.
 
-**NO aplicar glassmorphism en:**
-- Bottom nav (si existe en v1.0)
-- Modo presentación / emitter compact view
-- Splash screen inicial
+**Alcance de la restauración (O3):**
+- `glass_container.dart` (NUEVO) — port desde HimnarioID_2.0 con BackdropFilter + ImageFilter.blur + ClipRRect
+- `hymn_detail_screen.dart` — BackdropFilter restaurado en el fondo (cuando hay imagen de fondo y `appearance.glassEnabled == true`)
+- `live_projection_screen.dart` — GlassContainer para fondos con imagen en proyección en vivo
+- `glass_card.dart` permanece como wrapper sólido (no se cambió — HimnarioID_2.0 tampoco lo usaba con blur)
+- `appearance_provider.dart` conserva los campos `glassEnabled`, `glassBlurSigma`, `glassOverlayColor` (ya estaban vivos)
 
-| Propiedad | Dark mode | Light mode |
-|-----------|-----------|------------|
-| Color de fondo | `#FFFFFF` 10-15% opacidad | `#000000` 5-8% opacidad |
-| BackdropFilter | `ImageFilter.blur(sigmaX: 12, sigmaY: 12)` | id. |
-| Borde | 1.5px `#FFFFFF` 20% opacidad | 1.5px `#9E9E9E` 15% opacidad |
-| Border radius | 16px (consistente) | id. |
-| Elevación | 0 (sin sombra) | id. |
+**Importante:** No hay toggle en la UI de settings. El glassmorphism se activa automáticamente cuando:
+- El usuario tiene una imagen de fondo configurada
+- El campo `glassEnabled` del provider está en `true` (default: `true`)
 
-**Aplicación en MQ App:**
-- ✅ **SÍ glass:** Versículo del día, cards de Biblia/Himnario (home), book list items, chapter grid buttons, reader card
-- ❌ **NO glass:** Bottom navigation, modo presentación (requiere máximo contraste), emitter compact view (pantallas chicas)
-
-> **Configurable por usuario** (slider de sigma 0-20 en Settings). Default: sigma 8.
+**Heredado de HimnarioID 2.0** — implementación idéntica para que el himnario quede intocable.
 
 ---
 
@@ -561,7 +552,7 @@ ColorScheme(
 
 | Recurso | Ubicación | Notas |
 |---------|-----------|-------|
-| `GlassContainer` widget | `lib/presentation/shared_widgets/glass_container.dart` | Reutilizar tal cual |
+| `GlassContainer` widget | `lib/presentation/shared_widgets/glass_container.dart` | Reutilizar — portado desde HimnarioID_2.0 (v1.0.2) |
 | `HymnAppearanceState` | `lib/presentation/shared_widgets/providers/appearance_provider.dart` | Reutilizar, extender con campos Biblia |
 | `AppTheme` | `lib/core/theme/app_theme.dart` | Reutilizar (consistencia de paleta) |
 | `ColorScheme` | `lib/core/theme/color_schemes.dart` | Reutilizar |
