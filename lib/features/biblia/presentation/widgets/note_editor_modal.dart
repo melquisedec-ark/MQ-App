@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../application/providers/biblia_config_provider.dart';
 import '../../application/providers/derived_providers.dart';
@@ -215,8 +216,10 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
   Future<void> _save() async {
     final content = _controller.text.trim();
     if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La nota no puede estar vacía')),
+      showAppSnackBar(
+        context,
+        'La nota no puede estar vacía',
+        type: AppSnackBarType.warning,
       );
       return;
     }
@@ -234,8 +237,10 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al guardar: $e')),
+        showAppSnackBar(
+          context,
+          'Error al guardar: $e',
+          type: AppSnackBarType.error,
         );
       }
     }
@@ -250,8 +255,10 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar: $e')),
+        showAppSnackBar(
+          context,
+          'Error al eliminar: $e',
+          type: AppSnackBarType.error,
         );
       }
     }

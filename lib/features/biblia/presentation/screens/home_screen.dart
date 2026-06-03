@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/connection_state.dart';
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
@@ -592,13 +593,7 @@ class _FavoriteButton extends ConsumerWidget {
     String text, {
     SnackBarAction? action,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(text),
-        action: action,
-        duration: const Duration(seconds: 4),
-      ),
-    );
+    showAppSnackBar(context, text, action: action);
   }
 }
 

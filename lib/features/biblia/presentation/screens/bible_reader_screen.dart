@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../proto/generated/hymn_control.pbgrpc.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
@@ -451,11 +452,8 @@ class _VerseDisplay extends ConsumerWidget {
               title: const Text('Copiar'),
               onTap: () {
                 Navigator.pop(ctx);
-                final messenger = ScaffoldMessenger.of(context);
                 Clipboard.setData(ClipboardData(text: current.texto));
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Copiado al portapapeles')),
-                );
+                showAppSnackBar(context, 'Copiado al portapapeles');
               },
             ),
             ListTile(
@@ -895,24 +893,20 @@ class _EnviarButton extends ConsumerWidget {
           if (libro != null) {
             ref.read(currentLibroNumeroProvider.notifier).state = libro.numero;
           }
-          final messenger = ScaffoldMessenger.of(context);
           try {
             final actions = ref.read(bibleClientActionsProvider);
             final ok = await actions.sendCurrentVerse();
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(
-                  ok ? 'Enviado al display' : 'Display rechazó el envío',
-                ),
-                duration: const Duration(seconds: 2),
-              ),
+            showAppSnackBar(
+              context,
+              ok ? 'Enviado al display' : 'Display rechazó el envío',
+              duration: const Duration(seconds: 2),
+              type: ok ? AppSnackBarType.success : AppSnackBarType.warning,
             );
           } catch (e) {
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text('Error al enviar: $e'),
-                duration: const Duration(seconds: 3),
-              ),
+            showAppSnackBar(
+              context,
+              'Error al enviar: $e',
+              type: AppSnackBarType.error,
             );
           }
         },
@@ -1026,11 +1020,10 @@ class _ReaderOverflowMenu extends ConsumerWidget {
           } catch (_) {}
         }
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Modo Compact'),
-              duration: Duration(seconds: 1),
-            ),
+          showAppSnackBar(
+            context,
+            'Modo Compact',
+            duration: const Duration(seconds: 1),
           );
         }
         break;
@@ -1044,11 +1037,10 @@ class _ReaderOverflowMenu extends ConsumerWidget {
           } catch (_) {}
         }
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Modo Preview'),
-              duration: Duration(seconds: 1),
-            ),
+          showAppSnackBar(
+            context,
+            'Modo Preview',
+            duration: const Duration(seconds: 1),
           );
         }
         break;

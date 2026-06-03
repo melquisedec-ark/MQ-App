@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../data/models/biblia_version.dart';
 import '../../data/models/nota.dart';
@@ -116,14 +117,18 @@ class SettingsScreen extends ConsumerWidget {
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir el navegador')),
+        showAppSnackBar(
+          context,
+          'No se pudo abrir el navegador',
+          type: AppSnackBarType.error,
         );
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir el navegador')),
+        showAppSnackBar(
+          context,
+          'No se pudo abrir el navegador',
+          type: AppSnackBarType.error,
         );
       }
     }
