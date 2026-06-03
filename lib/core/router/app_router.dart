@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/entities/himno.dart';
 import '../../features/biblia/presentation/screens/bible_reader_screen.dart';
 import '../../features/biblia/presentation/screens/book_selector_screen.dart';
 import '../../features/biblia/presentation/screens/chapter_grid_screen.dart';
@@ -8,6 +9,7 @@ import '../../features/biblia/presentation/screens/home_screen.dart';
 import '../../features/biblia/presentation/screens/search_screen.dart';
 import '../../features/biblia/presentation/screens/settings_screen.dart';
 import '../../presentation/views_personal/dashboard/home_screen.dart' as himnario;
+import '../../presentation/views_personal/hymn_scroll/hymn_detail_screen.dart';
 import '../../presentation/views_projection/controller/widgets/discover_display_sheet.dart';
 
 /// Router principal de la aplicación MQ App v1.0.
@@ -85,6 +87,23 @@ final GoRouter appRouter = GoRouter(
           builder: (BuildContext context, GoRouterState state) {
             return const himnario.HomeScreen();
           },
+          routes: <RouteBase>[
+            // B4: ruta hymn-detail antes faltaba en go_router; antes el
+            // Navigator.pushNamed('/hymn-detail') fallaba silenciosamente
+            // porque la ruta solo existía en mq_dual_app.dart (código muerto).
+            GoRoute(
+              path: 'detalle',
+              name: 'hymn-detail',
+              builder: (BuildContext context, GoRouterState state) {
+                final himno = state.extra;
+                if (himno is! Himno) {
+                  // Fallback: si no llega el himno, vuelve al himnario.
+                  return const himnario.HomeScreen();
+                }
+                return HymnDetailScreen(himno: himno);
+              },
+            ),
+          ],
         ),
 
         // Configuración

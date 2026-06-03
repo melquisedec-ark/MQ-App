@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' hide ConnectionState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/enums/himno_tipo.dart';
 import '../../../core/network/connection_state.dart';
@@ -360,10 +361,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 himno,
                               );
                             } else {
-                              Navigator.pushNamed(
-                                context,
-                                '/hymn-detail',
-                                arguments: himno,
+                              // B4 fix: usar go_router (ruta 'hymn-detail'
+                              // vive en app_router.dart) en vez de
+                              // Navigator.pushNamed que falla silencioso.
+                              context.pushNamed(
+                                'hymn-detail',
+                                extra: himno,
                               );
                             }
                           },
