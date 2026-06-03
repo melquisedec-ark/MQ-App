@@ -16,7 +16,6 @@ import '../../../../core/database/bible_database_helper.dart';
 /// |-------------------------------|--------|-----------|
 /// | biblia.version_preferida      | String | RV1909    |
 /// | emitter.view_mode_default     | String | compact   |
-/// | ui.glassmorphism              | bool   | true      |
 /// | ui.theme_mode                 | String | system    |
 /// | biblia.auto_historial         | bool   | true      |
 /// | biblia.nota_color_default     | String | ninguno   |
@@ -119,9 +118,6 @@ abstract class BibliaConfigKeys {
 
   /// Modo de vista del emisor. Valores: "compact" | "preview".
   static const String emitterViewModeDefault = 'emitter.view_mode_default';
-
-  /// Habilita efectos de glassmorphism en la UI.
-  static const String glassmorphismEnabled = 'ui.glassmorphism';
 
   /// Modo de tema. Valores: "light" | "dark" | "system".
   /// NOTA: también existe en `mqapp.db` (Configuracion tabla del himnario).

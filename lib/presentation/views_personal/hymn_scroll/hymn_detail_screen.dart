@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1151,23 +1150,11 @@ class _FondoBackground extends StatelessWidget {
                     errorBuilder: (_, __, ___) => Container(color: bgColor),
                   ),
                 ),
-              // Full-screen glass overlay
-              if (appearance != null &&
-                  appearance!.glassEnabled &&
-                  fondo!.rutaArchivo != null)
+              // Overlay semitransparente para legibilidad (sin glassmorphism).
+              if (appearance != null && fondo!.rutaArchivo != null)
                 Positioned.fill(
-                  child: ClipRect(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(
-                        sigmaX: appearance!.glassBlurSigma,
-                        sigmaY: appearance!.glassBlurSigma,
-                      ),
-                      child: Container(
-                        color: appearance!.glassOverlayColor.withValues(
-                          alpha: appearance!.cardOpacity.clamp(0.0, 1.0),
-                        ),
-                      ),
-                    ),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.25),
                   ),
                 ),
               child,

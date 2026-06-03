@@ -120,7 +120,6 @@ void main() {
     expect(find.text('Color de nota por defecto'), findsOneWidget);
     expect(find.text('Modo de vista del emisor'), findsOneWidget);
     expect(find.text('Tema de la aplicación'), findsOneWidget);
-    expect(find.text('Glassmorphism'), findsOneWidget);
     expect(find.text('Versión'), findsOneWidget);
     expect(find.text('Repositorio'), findsOneWidget);
     expect(find.text('1.0.0-dev+1'), findsOneWidget);

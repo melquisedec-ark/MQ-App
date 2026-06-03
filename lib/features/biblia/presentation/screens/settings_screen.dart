@@ -20,7 +20,7 @@ import '../../application/providers/biblia_version_provider.dart';
 /// Secciones (siguiendo wireframe 01 §settings):
 /// - **Biblia**: versión por defecto, auto-historial, color de nota default
 /// - **Emisor**: modo de vista por defecto (Compact/Preview)
-/// - **Apariencia**: tema (Claro/Oscuro/Sistema), glassmorphism
+/// - **Apariencia**: tema (Claro/Oscuro/Sistema)
 /// - **Acerca de**: versión, link a GitHub
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -70,8 +70,6 @@ class SettingsScreen extends ConsumerWidget {
             const _Card(
               children: [
                 _ThemeModeTile(),
-                _Divider(),
-                _GlassmorphismTile(),
               ],
             ),
             const SizedBox(height: 24),
@@ -486,22 +484,5 @@ class _ThemeModeTile extends ConsumerWidget {
       case ThemeMode.system:
         return Icons.brightness_auto_rounded;
     }
-  }
-}
-
-class _GlassmorphismTile extends ConsumerWidget {
-  const _GlassmorphismTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final value = ref.watch(glassmorphismEnabledProvider);
-    return SwitchListTile(
-      secondary: const Icon(Icons.blur_on_rounded),
-      title: const Text('Glassmorphism'),
-      subtitle: const Text('Efectos de cristal en cards y surfaces'),
-      value: value,
-      onChanged: (v) =>
-          ref.read(glassmorphismEnabledProvider.notifier).setEnabled(v),
-    );
   }
 }

@@ -190,38 +190,6 @@ final currentEmitterViewModeProvider =
   return ref.watch(emitterViewModeDefaultProvider);
 });
 
-/// Glassmorphism habilitado (bool). Persistido en BD.
-final glassmorphismEnabledProvider =
-    StateNotifierProvider<GlassmorphismEnabledNotifier, bool>(
-  (ref) => GlassmorphismEnabledNotifier(ref),
-);
-
-class GlassmorphismEnabledNotifier extends StateNotifier<bool> {
-  final Ref _ref;
-
-  GlassmorphismEnabledNotifier(this._ref) : super(true) {
-    _loadFromDb();
-  }
-
-  Future<void> _loadFromDb() async {
-    try {
-      final repo = _ref.read(bibliaConfigRepositoryProvider);
-      state = await repo.getBool(
-        BibliaConfigKeys.glassmorphismEnabled,
-        defaultValue: true,
-      );
-    } catch (_) {}
-  }
-
-  Future<void> setEnabled(bool value) async {
-    state = value;
-    try {
-      final repo = _ref.read(bibliaConfigRepositoryProvider);
-      await repo.setBool(BibliaConfigKeys.glassmorphismEnabled, value);
-    } catch (_) {}
-  }
-}
-
 /// Auto-registrar historial al leer versículos.
 final autoHistorialProvider =
     StateNotifierProvider<AutoHistorialNotifier, bool>(
