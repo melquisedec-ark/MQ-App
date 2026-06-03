@@ -3,15 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/biblia/application/providers/biblia_config_provider.dart';
 
-/// Botón para alternar entre modo claro, oscuro y seguir el tema del dispositivo.
+/// Botón flotante para alternar entre modo claro, oscuro y seguir el dispositivo.
+///
+/// - **Tap** → cicla al siguiente modo (light → dark → system → light).
+/// - **Long press** → abre un [BottomSheet] con 3 [RadioListTile] para elegir.
 ///
 /// Muestra un icono dinámico según el modo actual:
-/// - ☀️ `light_mode` → modo claro
-/// - 🌙 `dark_mode` → modo oscuro
-/// - 🤖 `brightness_auto` → seguir dispositivo
+/// - `light_mode` → modo claro
+/// - `dark_mode` → modo oscuro
+/// - `brightness_auto` → seguir dispositivo
 ///
-/// Nota: el posicionamiento está a cargo del widget padre ([_BottomRightButtons]
-/// en mq_dual_app.dart). Este widget solo devuelve el [FloatingActionButton].
+/// El posicionamiento (Stack/Positioned o Scaffold.floatingActionButton) lo
+/// decide el widget padre.
 class ThemeModeToggleButton extends ConsumerWidget {
   const ThemeModeToggleButton({super.key});
 
@@ -19,14 +22,72 @@ class ThemeModeToggleButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
 
-    return FloatingActionButton(
-      heroTag: 'theme_mode_toggle',
-      backgroundColor: const Color(0xFFCCA43B),
-      foregroundColor: const Color(0xFF1A1A1A),
-      onPressed: () =>
-          ref.read(themeModeProvider.notifier).setThemeMode(themeMode.cycle),
-      tooltip: _tooltip(themeMode),
-      child: Icon(_icon(themeMode)),
+    return Tooltip(
+      message: _tooltip(themeMode),
+      child: GestureDetector(
+        onTap: () => ref
+            .read(themeModeProvider.notifier)
+            .setThemeMode(themeMode.cycle),
+        onLongPress: () => _showThemePicker(context, ref, themeMode),
+        child: Material(
+          shape: const CircleBorder(),
+          elevation: 6,
+          color: const Color(0xFFCCA43B),
+          child: SizedBox(
+            width: 56,
+            height: 56,
+            child: Icon(
+              _icon(themeMode),
+              color: const Color(0xFF1A1A1A),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Muestra un [BottomSheet] con 3 [RadioListTile] para seleccionar el tema.
+  void _showThemePicker(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeMode current,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Tema de la aplicación',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            for (final entry in const [
+              (ThemeMode.system, 'Seguir dispositivo',
+                  Icons.brightness_auto_rounded),
+              (ThemeMode.light, 'Modo claro', Icons.light_mode_rounded),
+              (ThemeMode.dark, 'Modo oscuro', Icons.dark_mode_rounded),
+            ])
+              RadioListTile<ThemeMode>(
+                title: Text(entry.$2),
+                secondary: Icon(entry.$3),
+                value: entry.$1,
+                groupValue: current,
+                onChanged: (val) {
+                  if (val != null) {
+                    ref
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(val);
+                    Navigator.pop(ctx);
+                  }
+                },
+              ),
+          ],
+        ),
+      ),
     );
   }
 

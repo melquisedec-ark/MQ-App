@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/network/connection_state.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
+import '../../../../presentation/shared_widgets/theme_mode_toggle_button.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
@@ -50,23 +51,32 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Logo + tagline ──
-              _LogoHeader(colorScheme: colorScheme, textTheme: textTheme),
-              const SizedBox(height: 24),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Logo + tagline ──
+                  _LogoHeader(colorScheme: colorScheme, textTheme: textTheme),
+                  const SizedBox(height: 24),
 
-              // ── Card de versículo del día ──
-              const _RandomVerseCard(),
-              const SizedBox(height: 24),
+                  // ── Card de versículo del día ──
+                  const _RandomVerseCard(),
+                  const SizedBox(height: 24),
 
-              // ── 2 cards principales ──
-              const _ModuleCardsRow(),
-            ],
-          ),
+                  // ── 2 cards principales ──
+                  const _ModuleCardsRow(),
+                ],
+              ),
+            ),
+            Positioned(
+              right: 16,
+              bottom: MediaQuery.of(context).padding.bottom + 16,
+              child: const ThemeModeToggleButton(),
+            ),
+          ],
         ),
       ),
     );

@@ -12,6 +12,7 @@ import '../../../core/utils/string_utils.dart';
 import '../../shared_widgets/alphabet_index_bar.dart';
 import '../../shared_widgets/search_bar.dart';
 import '../../shared_widgets/hymn_card.dart';
+import '../../shared_widgets/theme_mode_toggle_button.dart';
 import '../../views_projection/controller/widgets/discover_display_sheet.dart'
     show DiscoverDisplaySheet;
 import '../../views_projection/display/receptor_binding.dart';
@@ -200,33 +201,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Barra de búsqueda
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: HymnSearchBar(
-              controller: _searchController,
-              onChanged: (value) {
-                _debounce?.cancel();
-                _debounce = Timer(const Duration(milliseconds: 400), () {
-                  if (mounted) {
-                    setState(() {
-                      _searchQuery = value.trim();
+          Column(
+            children: [
+              // Barra de búsqueda
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: HymnSearchBar(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    _debounce?.cancel();
+                    _debounce = Timer(const Duration(milliseconds: 400), () {
+                      if (mounted) {
+                        setState(() {
+                          _searchQuery = value.trim();
+                        });
+                      }
                     });
-                  }
-                });
-              },
-              onClear: () {
-                _debounce?.cancel();
-                setState(() {
-                  _searchQuery = '';
-                });
-              },
-            ),
-          ),
+                  },
+                  onClear: () {
+                    _debounce?.cancel();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                ),
+              ),
 
-          // Chips de filtrado
+              // Chips de filtrado
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -382,7 +385,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
           ),
-        ],
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+          child: const ThemeModeToggleButton(),
+        ),
+      ],
       ),
     );
   }
