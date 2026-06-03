@@ -48,7 +48,6 @@ class _AboutScreenState extends State<AboutScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final disabledColor = colorScheme.onSurface.withValues(alpha: 0.30);
 
     return Scaffold(
       appBar: AppBar(
@@ -138,33 +137,37 @@ class _AboutScreenState extends State<AboutScreen> {
                     ListTile(
                       leading: Icon(
                         Icons.language_rounded,
-                        color: disabledColor,
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      title: Text(
-                        'Página oficial',
-                        style: TextStyle(color: disabledColor),
+                      title: const Text('Página oficial'),
+                      subtitle: const Text('melquisedec-ark.github.io'),
+                      trailing: const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
                       ),
-                      subtitle: Text(
-                        'Próximamente',
-                        style: TextStyle(color: disabledColor),
+                      onTap: () => _launchUrl(
+                        context,
+                        'https://melquisedec-ark.github.io',
+                        'No se pudo abrir el navegador',
                       ),
-                      enabled: false,
                     ),
                     const Divider(height: 1, indent: 56),
                     ListTile(
                       leading: Icon(
                         Icons.chat_rounded,
-                        color: disabledColor,
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      title: Text(
-                        'Comunidad WhatsApp',
-                        style: TextStyle(color: disabledColor),
+                      title: const Text('Comunidad WhatsApp'),
+                      subtitle: const Text('Chatea con la comunidad'),
+                      trailing: const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
                       ),
-                      subtitle: Text(
-                        'Próximamente',
-                        style: TextStyle(color: disabledColor),
+                      onTap: () => _launchUrl(
+                        context,
+                        'https://chat.whatsapp.com/IjXJP2HUAJjE0Dd4s5TW7I',
+                        'No se pudo abrir el navegador',
                       ),
-                      enabled: false,
                     ),
                     const Divider(height: 1, indent: 56),
                     ListTile(
@@ -173,6 +176,9 @@ class _AboutScreenState extends State<AboutScreen> {
                         color: colorScheme.onSurfaceVariant,
                       ),
                       title: const Text('Licencia'),
+                      subtitle: const Text(
+                        'Permite uso, copia, modificación y distribución del software',
+                      ),
                       trailing: Chip(
                         label: const Text('MIT'),
                         backgroundColor: colorScheme.surfaceContainerHigh,

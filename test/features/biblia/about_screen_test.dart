@@ -52,10 +52,11 @@ void main() {
         findsOneWidget,
       );
 
-      // Página oficial y comunidad (deshabilitadas, próximamente)
+      // Página oficial y comunidad (ahora habilitadas)
       expect(find.text('Página oficial'), findsOneWidget);
       expect(find.text('Comunidad WhatsApp'), findsOneWidget);
-      expect(find.text('Próximamente'), findsNWidgets(2));
+      expect(find.text('melquisedec-ark.github.io'), findsOneWidget);
+      expect(find.text('Chatea con la comunidad'), findsOneWidget);
 
       // Licencia MIT
       expect(find.text('Licencia'), findsOneWidget);
