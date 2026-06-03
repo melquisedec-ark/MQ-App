@@ -4,11 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common/sqflite.dart';
 
 import 'package:mqapp/core/database/bible_database_helper.dart';
+import 'package:mqapp/features/biblia/application/providers/biblia_config_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/biblia_version_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/favoritos_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/historial_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/notas_provider.dart';
 import 'package:mqapp/features/biblia/data/models/nota.dart';
+import 'package:mqapp/features/biblia/data/repositories/biblia_config_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_search_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
@@ -25,6 +27,7 @@ Widget _buildHarness({
   required HistorialRepository histRepo,
   required BibliaSearchRepository searchRepo,
   required BibleDatabaseHelper helper,
+  BibliaConfigRepository? configRepo,
   int versionId = 1,
   int libroId = 1,
   int capitulo = 1,
@@ -38,6 +41,8 @@ Widget _buildHarness({
       notasRepositoryProvider.overrideWithValue(notasRepo),
       historialRepositoryProvider.overrideWithValue(histRepo),
       notasStreamProvider.overrideWith((_) => notasRepo.watchAll()),
+      if (configRepo != null)
+        bibliaConfigRepositoryProvider.overrideWithValue(configRepo),
     ],
     child: MaterialApp(
       home: Scaffold(
@@ -115,7 +120,23 @@ void main() {
   });
 
   testWidgets('guardar persiste la nota en la BD', (tester) async {
-    await tester.pumpWidget(buildHarness());
+    // B1: sembramos el config con amarillo para mantener el comportamiento
+    // previo (nota nueva → amarillo). El test nuevo abajo prueba el caso
+    // en el que el usuario eligió un color distinto en Configuración.
+    final configRepo = BibliaConfigRepository(helper);
+    await configRepo.set(BibliaConfigKeys.notaColorDefault, 'amarillo');
+
+    await tester.pumpWidget(
+      _buildHarness(
+        bibliaRepo: bibliaRepo,
+        favRepo: favRepo,
+        notasRepo: notasRepo,
+        histRepo: histRepo,
+        searchRepo: searchRepo,
+        helper: helper,
+        configRepo: configRepo,
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Escribir contenido
@@ -131,5 +152,37 @@ void main() {
     expect(nota, isNotNull);
     expect(nota!.contenido, 'Mi reflexión personal');
     expect(nota.color, NotaColor.amarillo);
+  });
+
+  testWidgets('usa el color por defecto del provider cuando NO hay nota',
+      (tester) async {
+    // Sobrescribir el provider con un repo que ya tiene 'verde' como default.
+    final configRepo = BibliaConfigRepository(helper);
+    await configRepo.set(BibliaConfigKeys.notaColorDefault, 'verde');
+
+    await tester.pumpWidget(
+      _buildHarness(
+        bibliaRepo: bibliaRepo,
+        favRepo: favRepo,
+        notasRepo: notasRepo,
+        histRepo: histRepo,
+        searchRepo: searchRepo,
+        helper: helper,
+        configRepo: configRepo,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Escribir y guardar
+    await tester.enterText(find.byType(TextField), 'Nota con color verde');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+
+    // Verificar: el color guardado es el del provider, NO amarillo
+    final nota = await notasRepo.getNota(1, 1, 1, 1);
+    expect(nota, isNotNull);
+    expect(nota!.color, NotaColor.verde,
+        reason: 'B1: debe usar el default del provider (verde), no amarillo');
   });
 }

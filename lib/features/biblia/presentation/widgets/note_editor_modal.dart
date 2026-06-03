@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../presentation/shared_widgets/glass_card.dart';
+import '../../application/providers/biblia_config_provider.dart';
 import '../../application/providers/derived_providers.dart';
 import '../../application/providers/notas_provider.dart';
 import '../../data/models/nota.dart';
@@ -29,6 +30,8 @@ class NoteEditorModal extends ConsumerStatefulWidget {
 
 class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
   late final TextEditingController _controller;
+  // Se inicializa con un default seguro y se actualiza en el primer build
+  // usando la nota existente o el default del provider (B1 fix).
   NotaColor _selectedColor = NotaColor.amarillo;
   bool _initialized = false;
   bool _saving = false;
@@ -37,6 +40,9 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    // Lee sincrónicamente el color por defecto del provider (puede ser el
+    // valor inicial del notifier mientras se hidrata desde BD).
+    _selectedColor = ref.read(notaColorDefaultProvider);
   }
 
   @override
@@ -51,6 +57,8 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
     final textTheme = Theme.of(context).textTheme;
     final viewInsets = MediaQuery.of(context).viewInsets;
 
+    final defaultColor = ref.watch(notaColorDefaultProvider);
+
     final notaAsync = ref.watch(
       currentNotaProvider(
         NotaQuery(
@@ -62,14 +70,18 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
       ),
     );
 
-    // Cargar contenido/color existentes al primer frame
+    // Cargar contenido/color existentes al primer frame. Si NO hay nota
+    // existente, usar el color por defecto del provider (B1 fix).
     notaAsync.whenData((nota) {
-      if (!_initialized && nota != null) {
+      if (!_initialized) {
         _initialized = true;
-        _controller.text = nota.contenido;
-        _selectedColor = nota.color;
-      } else if (!_initialized) {
-        _initialized = true;
+        if (nota != null) {
+          _controller.text = nota.contenido;
+          _selectedColor = nota.color;
+        } else if (defaultColor != NotaColor.ninguno) {
+          // Solo actualizar si el provider ya tiene un valor real cargado.
+          _selectedColor = defaultColor;
+        }
       }
     });
 
