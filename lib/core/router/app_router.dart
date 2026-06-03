@@ -9,6 +9,7 @@ import '../../features/biblia/presentation/screens/home_screen.dart';
 import '../../features/biblia/presentation/screens/search_screen.dart';
 import '../../features/biblia/presentation/screens/settings_screen.dart';
 import '../../features/biblia/presentation/screens/about_screen.dart';
+import '../../features/himnario/presentation/screens/admin_himnario_screen.dart';
 import '../../presentation/views_personal/dashboard/home_screen.dart' as himnario;
 import '../../presentation/views_personal/hymn_scroll/hymn_detail_screen.dart';
 import '../../presentation/views_projection/controller/widgets/discover_display_sheet.dart';
@@ -133,6 +134,15 @@ final GoRouter appRouter = GoRouter(
           name: 'about',
           builder: (BuildContext context, GoRouterState state) {
             return const AboutScreen();
+          },
+        ),
+
+        // Administrar himnario (D8): himnos + catálogos unificados.
+        GoRoute(
+          path: 'administrar-himnario',
+          name: 'hymn-admin',
+          builder: (BuildContext context, GoRouterState state) {
+            return const AdminHimnarioScreen();
           },
         ),
       ],

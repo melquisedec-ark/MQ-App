@@ -229,6 +229,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
+              // D8: acceso rápido a Administrar himnario.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Card(
+                  elevation: 1,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.tune_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: const Text('Administrar himnario'),
+                    subtitle: const Text('Himnos, catálogos, importar/exportar'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.pushNamed('hymn-admin'),
+                  ),
+                ),
+              ),
+
               // Chips de filtrado
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,

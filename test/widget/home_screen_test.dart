@@ -3,19 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide ConnectionState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:mqapp/core/enums/himno_tipo.dart';
 import 'package:mqapp/data/datasources/remote/grpc_control_datasource.dart';
 import 'package:mqapp/domain/entities/categoria.dart';
 import 'package:mqapp/domain/entities/himno.dart';
 import 'package:mqapp/domain/entities/version_pais.dart';
+import 'package:mqapp/features/himnario/presentation/screens/admin_himnario_screen.dart';
 import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import 'package:mqapp/presentation/views_personal/dashboard/home_screen.dart';
 import 'package:mqapp/presentation/views_personal/providers/hymn_providers.dart';
 import 'package:mqapp/presentation/views_projection/providers/connection_providers.dart';
-import 'package:mocktail/mocktail.dart';
-
-/// Mock NavigatorObserver para verificar navegación.
-class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
 /// Mock de un himno de prueba.
 Himno _createTestHimno({
@@ -59,9 +58,38 @@ final _phoneModeOverride = isDesktopModeProvider.overrideWith(
   (ref) => false,
 );
 
+/// Construye un GoRouter de prueba con HomeScreen y hymn-detail.
+GoRouter _buildRouter() {
+  return GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, __) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/hymn-detail',
+        name: 'hymn-detail',
+        builder: (_, state) {
+          final args = state.extra;
+          if (args is! Himno) return const SizedBox.shrink();
+          return Scaffold(
+            appBar: AppBar(title: Text(args.titulo)),
+            body: const Text('Hymn Detail'),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/hymn-admin',
+        name: 'hymn-admin',
+        builder: (_, __) => const AdminHimnarioScreen(),
+      ),
+    ],
+  );
+}
+
 Widget _buildTestApp({
   List<Override> overrides = const [],
-  NavigatorObserver? navigatorObserver,
 }) {
   return ProviderScope(
     overrides: [
@@ -70,35 +98,17 @@ Widget _buildTestApp({
       _phoneModeOverride,
       ...overrides,
     ],
-    child: MaterialApp(
-      home: const HomeScreen(),
-      routes: {
-        '/hymn-detail': (context) {
-          final args = ModalRoute.of(context)?.settings.arguments;
-          if (args is! Himno) return const SizedBox.shrink();
-          return Scaffold(
-            appBar: AppBar(title: Text(args.titulo)),
-            body: const Text('Hymn Detail'),
-          );
-        },
-      },
-      navigatorObservers: navigatorObserver != null
-          ? [navigatorObserver]
-          : [],
-    ),
+    child: MaterialApp.router(routerConfig: _buildRouter()),
   );
 }
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(_FakeRoute());
-  });
-
   group('HomeScreen', () {
     testWidgets('Renderiza el buscador de himnos', (tester) async {
       _mockHimnos = [];
       await tester.pumpWidget(_buildTestApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       // Verificar que el buscador está presente
       expect(
@@ -117,7 +127,8 @@ void main() {
     testWidgets('Renderiza los chips de filtro', (tester) async {
       _mockHimnos = [];
       await tester.pumpWidget(_buildTestApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       // Verificar que los cuatro chips de filtro están presentes
       expect(find.text('Todos'), findsOneWidget);
@@ -150,7 +161,8 @@ void main() {
 
       // Completar para limpiar el timer y evitar fuga
       completer.complete([]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
     });
 
     testWidgets('Muestra lista de himnos cuando hay datos', (tester) async {
@@ -168,7 +180,8 @@ void main() {
       ];
 
       await tester.pumpWidget(_buildTestApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       // Verificar que los títulos de los himnos se renderizan
       expect(find.text('Santo, Santo, Santo'), findsOneWidget);
@@ -189,29 +202,27 @@ void main() {
           ),
         ];
 
-        final observer = MockNavigatorObserver();
+        await tester.pumpWidget(_buildTestApp());
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
-        await tester.pumpWidget(
-          _buildTestApp(navigatorObserver: observer),
-        );
-        await tester.pumpAndSettle();
+        // Encontrar el texto del himno y hacer tap en su InkWell ancestro.
+        final hymnText = find.text('Santo, Santo, Santo');
+        await tester.tap(hymnText);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
-        // Encontrar el HymnCard y hacer tap
-        final hymnCard = find.byType(InkWell).first;
-        await tester.tap(hymnCard);
-        await tester.pumpAndSettle();
-
-        // Verificar que se navegó a /hymn-detail
-        verify(
-          () => observer.didPush(any(), any()),
-        ).called(1);
+        // Verificar que se navegó al detalle: el título ahora aparece en
+        // el AppBar de HymnDetailScreen (además mantenemos Hymn Detail).
+        expect(find.text('Hymn Detail'), findsOneWidget);
       },
     );
 
     testWidgets('Muestra estado vacío cuando no hay himnos', (tester) async {
       _mockHimnos = [];
       await tester.pumpWidget(_buildTestApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('No hay himnos disponibles'), findsOneWidget);
       expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
@@ -220,13 +231,11 @@ void main() {
     testWidgets('El botón de conexión está presente', (tester) async {
       _mockHimnos = [];
       await tester.pumpWidget(_buildTestApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       // Verificar que el icono de cast está en la AppBar
       expect(find.byIcon(Icons.cast_rounded), findsOneWidget);
     });
   });
 }
-
-/// Fake Route para mocktail registerFallbackValue.
-class _FakeRoute extends Fake implements Route<dynamic> {}

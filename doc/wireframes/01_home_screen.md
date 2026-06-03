@@ -1,9 +1,10 @@
 # Wireframe 01 — Pantalla Principal (Home)
 
 > **Pantalla:** Landing al abrir la app
-> **Archivo destino (Flutter):** `lib/presentation/views_personal/home/home_screen.dart`
-> **Versión:** MQ App v1.0
+> **Archivo destino (Flutter):** `lib/presentation/views_personal/home/home_screen.dart` + `lib/features/himnario/presentation/screens/himnario_home_screen.dart` (sección 13)
+> **Versión:** MQ App v1.0.1 (actualizado 2026-06-02 — FAB temático y card Administrar agregados)
 > **Referencia:** `nuevaidea.md` §3 (Pantalla Principal) + revisiones v1.0–v1.4
+> **Decisiones v1.0.1 aplicadas:** D3 (FAB temático), D4 (sin glassmorphism), D8 (Administrar himnario)
 > **Idioma:** Español (es-419)
 
 ---
@@ -341,7 +342,7 @@ Tap debe mostrar mensaje en lugar de navegar.
 
 ---
 
-## 11. Preguntas abiertas para el usuario
+## 11. Preguntas abiertas para el usuario (v1.0)
 
 > Estas preguntas las dejo planteadas para que se resuelvan **antes** de implementar:
 
@@ -353,4 +354,356 @@ Tap debe mostrar mensaje en lugar de navegar.
 
 ---
 
-*Wireframe creado por @design — pendiente revisión de @arqui y del usuario antes de implementar.*
+# 12. FAB Temático (NUEVO v1.0.1)
+
+> **Versión:** v1.0.1 | Agregado: 2026-06-02 | Por: @design
+> **Estado:** ✅ FAB con animación sol/luna (decisión D3 de `CONTROL/DECISIONES.md`)
+> **Origen:** F3 de `CONTROL/PENDIENTE.md` + observación #4 del usuario en `BITACORA.md`
+
+## Propósito
+
+Ofrecer un **acceso directo al cambio de tema** desde la pantalla principal, sin necesidad de abrir Configuración. El FAB refleja el estado actual del tema (sol = light, luna = dark, sol+luna = system) y permite el cambio con un solo tap.
+
+## Vista (Portrait, móvil)
+
+```
++------------------------------------------------------------------------------+
+| [O]                                                                  [R]     |
++------------------------------------------------------------------------------+
+|                                                                              |
+|                          +========================+                          |
+|                          |       MQ App           |                          |
+|                          |   Biblia + Himnario    |                          |
+|                          +========================+                          |
+|                                                                              |
+|   +----------------------------------------------------------------------------+
+|   |   Versiculo del dia                                                        |
+|   |   "Porque yo se los pensamientos..."                                       |
+|   |   Jeremias 29:11     [RV1909 v]                              [*]  [<>]   |
+|   |                            [ Leer este versiculo --> ]                     |
+|   +----------------------------------------------------------------------------+
+|                                                                              |
+|   +------------------------+    +------------------------+                    |
+|   |   [B]  BIBLIA          |    |   [M]  HIMNARIO        |                    |
+|   |       Reina Valera     |    |       250 himnos       |                    |
+|   |       1909             |    |       disponibles      |                    |
+|   +------------------------+    +------------------------+                    |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                            [O]|  <- FAB (bottom-right)
++------------------------------------------------------------------------------+
+```
+
+## Vista detallada del FAB
+
+El FAB es un **circular de 56dp** anclado a la esquina inferior derecha, con safe area:
+
+```
+                                                       +----+
+                                                       | [] |  <- FAB
+                                                       +----+
+                                                          ↑
+                                            (16dp margin + safeArea bottom)
+```
+
+### Apariencia según tema
+
+| Modo | Icono | Color de fondo | Color del icono |
+|------|-------|----------------|-----------------|
+| **Light** | `Icons.light_mode_rounded` (sol) | `goldPrimary` (#CCA43B) | `onPrimary` negro |
+| **Dark** | `Icons.dark_mode_rounded` (luna) | `goldPrimary` (#CCA43B) | `onPrimary` negro |
+| **System** | `Icons.brightness_auto_rounded` (auto) | `goldPrimary` (#CCA43B) | `onPrimary` negro |
+
+> **Decisión:** el FAB siempre tiene fondo gold (consistente con la identidad de marca). Solo cambia el icono. Esto lo hace reconocible y consistente.
+
+### Animación de transición (sol ↔ luna)
+
+```dart
+AnimatedSwitcher(
+  duration: Duration(milliseconds: 250),
+  transitionBuilder: (child, anim) {
+    return RotationTransition(
+      turns: Tween<double>(begin: 0.75, end: 1.0).animate(anim),
+      child: FadeTransition(opacity: anim, child: child),
+    );
+  },
+  child: Icon(
+    _getIconForMode(themeMode),
+    key: ValueKey(themeMode),  // <- importante para que AnimatedSwitcher detecte el cambio
+    color: cs.onPrimary,
+    size: 24,
+  ),
+)
+```
+
+- **Duración:** 250ms (consistente con el resto de la app)
+- **Curva:** `Curves.easeInOutCubic`
+- **Rotación:** 270° → 360° (cambio sutil, no mareante)
+
+## Comportamiento
+
+### Tap corto
+
+`cycleMode()` — alterna entre los 3 modos en orden:
+
+```
+[System]  --tap-->  [Light]  --tap-->  [Dark]  --tap-->  [System]
+```
+
+Implementación:
+
+```dart
+extension on ThemeMode {
+  ThemeMode get cycle {
+    switch (this) {
+      case ThemeMode.system: return ThemeMode.light;
+      case ThemeMode.light:  return ThemeMode.dark;
+      case ThemeMode.dark:   return ThemeMode.system;
+    }
+  }
+}
+
+void _onTap() {
+  final current = ref.read(themeModeProvider);
+  ref.read(themeModeProvider.notifier).setThemeMode(current.cycle);
+}
+```
+
+### Long press
+
+Abre un **BottomSheet con las 3 opciones** explícitas (RadioListTile):
+
+```
++----------------------------------------------------------------+
+|                                                                |
+|   Tema de la aplicacion                                        |  <- título (titleMedium)
+|                                                                |
+|   [ O ]  Sistema     Sigue la configuracion del dispositivo    |  <- RadioListTile
+|   [ O ]  Claro       Fondo blanco, texto oscuro                |
+|   [ ● ]  Oscuro      Fondo negro, texto blanco    <- actual    |  <- selected
+|                                                                |
++----------------------------------------------------------------+
+```
+
+- **Drag handle bar** arriba (24x4dp, `outline` color)
+- **Border radius top:** 24px
+- **Padding:** 24dp lateral, 16dp top, 24dp bottom (safe area)
+- **Tap en una opción:** `setThemeMode(mode)` + cierre automático del sheet
+- **Sin glassmorphism** (D4): fondo `surfaceContainer` sólido
+
+### Persistencia
+
+- El cambio de tema se persiste en `Configuracion` (clave `ui.theme_mode`).
+- **Provider único consolidado** (D2): `themeModeProvider` en `biblia_config_provider.dart:19` (NO el duplicado de `shared_widgets/providers/`).
+- La preferencia se aplica globalmente al `MaterialApp` en `main.dart` (fix de 1 línea que lee del provider vía `Consumer`).
+
+## Visibilidad del FAB
+
+| Pantalla | ¿Visible? | Razón |
+|----------|-----------|-------|
+| Home Biblia (`home_screen.dart`) | ✅ SÍ | Es una pantalla principal |
+| Home Himnario (`himnario_home_screen.dart`) | ✅ SÍ | Es una pantalla principal |
+| Bible Reader (modo verso o capítulo) | ❌ NO | Pantalla de lectura, no se cambia tema en medio de la lectura |
+| Hymn Detail | ❌ NO | Pantalla de detalle |
+| Settings | ❌ NO | El setting de tema está AQUÍ, sería redundante |
+| Bible Search | ❌ NO | Pantalla auxiliar |
+| Admin Himnario | ❌ NO | Pantalla auxiliar |
+| Acerca de | ❌ NO | Pantalla informativa |
+
+**Implementación:** el FAB se renderiza en un wrapper compartido `BottomRightButtons` que solo aparece en las home screens.
+
+## Componente reusable (BottomRightButtons)
+
+```dart
+// lib/presentation/shared_widgets/bottom_right_buttons.dart (NUEVO)
+class BottomRightButtons extends StatelessWidget {
+  final Widget child;
+  
+  // Stack con:
+  // - child (el body de la pantalla)
+  // - Positioned (right: 16, bottom: 16 + safeArea)
+  //   - Column con ThemeModeToggleButton y otros FABs futuros
+}
+```
+
+> **Decisión:** extraer este patrón desde `mq_dual_app.dart:98-121` (código a eliminar en D12). Es reusable para futuros FABs (e.g., "compartir" en Bible Reader).
+
+## Elementos
+
+| Elemento | Tipo | Posición | Acción |
+|----------|------|----------|--------|
+| FAB temático | `FloatingActionButton.small` (56dp) | Bottom-right (16 + safeArea) | Tap = cycle / Long press = bottomSheet |
+
+## Componentes reutilizados
+
+- **`ThemeModeToggleButton`** (existente, `lib/presentation/shared_widgets/theme_mode_toggle_button.dart`) — reusar tal cual, extender con `onLongPress` (decisión D3, ~3 líneas).
+- **`themeModeProvider`** (existente en `biblia_config_provider.dart:19`) — consumir vía `ref.watch(themeModeProvider)`. NO crear provider nuevo.
+- **`BottomRightButtons`** (nuevo, extraer patrón de `mq_dual_app.dart`) — wrapper de Stack + Positioned + Column.
+- **Sin glassmorphism** (D4/D14): FAB Material 3 estándar con fondo `goldPrimary`.
+
+## Accesibilidad (WCAG 2.1 AA)
+
+| Criterio | Implementación |
+|----------|----------------|
+| Touch target | 56dp (cumple ≥ 48dp) |
+| Contraste icono | `onPrimary` (negro #1A1A1A) sobre `goldPrimary` (#CCA43B): ratio 8.6:1 ✓ |
+| Semantics | `Semantics(label: 'Cambiar tema, modo actual: ${_labelMode(themeMode)}', button: true, onTap: ..., onLongPress: ...)` |
+| Haptic feedback | Vibración sutil al cambiar modo (toggle en settings) |
+
+## Cambios vs versión anterior
+
+- **Nuevo FAB en esquina inferior derecha** del Home Biblia + Home Himnario.
+- Reutiliza `ThemeModeToggleButton` existente (NO widget nuevo).
+- Nueva dependencia de UI: `BottomRightButtons` wrapper.
+- Sincronización con Configuración → Apariencia (ambos leen del mismo provider).
+
+## Preguntas abiertas
+
+1. **¿El FAB debe tener un label extendido** (e.g., "Tema: Oscuro" con `FloatingActionButton.extended`) o solo el icono? Sugerencia: solo icono (más limpio, no compite con el versículo del día). El label está disponible en el bottomSheet de long press.
+
+2. **¿Debe haber un FAB secundario** para "conectar" o "compartir"? Sugerencia: NO en v1.0.1. El `[R]` (Conectar) ya está en el AppBar.
+
+3. **El usuario mencionó `gold #D4A574` para el FAB.** El style guide LOCKED dice `goldPrimary = #CCA43B`. **Conflicto:** usar #CCA43B (lock).
+
+4. **¿El long press debe vibrar** (haptic feedback) para indicar que hay más opciones? Sugerencia: SÍ, coherente con el patrón de FABs en iOS/Material 3.
+
+---
+
+# 13. HimnarioHomeScreen — Card "Administrar himnario" (NUEVO v1.0.1)
+
+> **Versión:** v1.0.1 | Agregado: 2026-06-02 | Por: @design
+> **Estado:** ✅ Card de descubrimiento (decisión D8 de `CONTROL/DECISIONES.md`)
+> **Origen:** F6 de `CONTROL/PENDIENTE.md` + observación #8 del usuario en `BITACORA.md`
+> **Archivo destino (Flutter):** `lib/features/himnario/presentation/screens/himnario_home_screen.dart`
+
+## Propósito
+
+Mover la entrada a "Administrar himnario" desde Configuración a la **pantalla principal del Himnario**, donde el usuario espera encontrarla (coherencia: si el himnario tiene un módulo admin, debe ser accesible desde el himnario, no escondido en Configuración).
+
+## Vista (Portrait, móvil)
+
+```
++------------------------------------------------------------------------------+
+|  <-  Himnario                            [buscar]                       [⋮]  |  <- AppBar
++------------------------------------------------------------------------------+
+|                                                                              |
+|   Ultimo himno:                                                              |
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  [45]  Sublime gracia                                                |   |  <- card "último himno" (existente)
+|   |        Autor: John Newton                          [continuar →]     |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|   Himnos recientes (5)                                                       |
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  [45]  Sublime gracia                              [★]         [>]   |   |
+|   |  [78]  Alabaré                                    [ ]         [>]   |   |
+|   |  [12]  Castillo fuerte                            [★]         [>]   |   |
+|   |  [203] Cuán grande es Él                          [ ]         [>]   |   |
+|   |  [98]  Cordero de Dios                            [ ]         [>]   |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  [tune]  Administrar himnario                                        |   |  <- NUEVA card
+|   |          Himnos, catalogos, importar / exportar          [chev >]   |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
++------------------------------------------------------------------------------+
+|  [O]  <- FAB temático (si la pantalla es Home Himnario, ver §12)            |
++------------------------------------------------------------------------------+
+```
+
+## Vista detallada de la card
+
+```
++----------------------------------------------------------------------+
+|                                                                      |
+|   [tune]   Administrar himnario                                       |
+|            Himnos, catalogos, importar / exportar              [>]   |
+|                                                                      |
++----------------------------------------------------------------------+
+```
+
+| Atributo | Valor |
+|----------|-------|
+| Icono | `Icons.tune_rounded` (28dp, gold) |
+| Título | "Administrar himnario" (bodyLarge, 600, onSurface) |
+| Subtítulo | "Himnos, catálogos, importar / exportar" (bodySmall, onSurfaceVariant) |
+| Trailing | `Icons.chevron_right_rounded` (20dp, onSurfaceVariant) |
+| Color de fondo | `surfaceContainer` con elevación 1, sin glassmorphism (D4) |
+| Border radius | 16dp |
+| Padding | 16dp interno |
+| Margin top | 16dp (separación de "Himnos recientes") |
+| Margin horizontal | 16dp |
+| Acción (tap) | `context.pushNamed('hymn-admin')` |
+| Acción alternativa | `AppBar action: Icons.tune_rounded` (opcional, ver pregunta abierta 1) |
+
+## Comportamiento
+
+### Tap
+
+```dart
+ListTile(
+  leading: Icon(Icons.tune_rounded, color: cs.primary, size: 28),
+  title: Text('Administrar himnario'),
+  subtitle: Text('Himnos, catálogos, importar / exportar'),
+  trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+  onTap: () => context.pushNamed('hymn-admin'),
+)
+```
+
+Navega a la pantalla `AdminHimnarioScreen` (ver wireframe `07_admin_himnario.md`).
+
+### Sin glassmorphism (D4)
+
+> **Antes:** la card usaba `GlassContainer` con backdrop blur
+> **Después:** `Card` Material 3 estándar con `surfaceContainer` + elevación 1
+
+```dart
+Card(
+  elevation: 1,
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  child: ListTile(...),
+)
+```
+
+## Acceso alternativo desde Configuración (mantener)
+
+En `lib/features/biblia/presentation/screens/settings_screen.dart`, mantener el `ListTile` "Administrar himnario" como **acceso alternativo** (no eliminar):
+
+```dart
+ListTile(
+  leading: Icon(Icons.tune_rounded),
+  title: Text('Administrar himnario'),
+  subtitle: Text('Himnos, catálogos, importar / exportar'),
+  trailing: Icon(Icons.chevron_right_rounded),
+  onTap: () => context.pushNamed('hymn-admin'),
+),
+```
+
+> **Razón:** algunos usuarios descubren features desde Configuración. Eliminar la entrada ahí reduciría descubribilidad. La card en el Himnario es **adicional**, no reemplazo.
+
+## Cambios vs versión anterior
+
+- **Nueva card "Administrar himnario"** en `HimnarioHomeScreen`, debajo de "Himnos recientes".
+- Acceso desde Configuración se mantiene (entrada duplicada, no redundante).
+- Consolida "Administrar himnos" + "Catálogos" en una sola entrada (D8).
+
+## Preguntas abiertas
+
+1. **¿La card debe estar en el AppBar como action** (`Icons.tune_rounded`) o como card en el body? Sugerencia: **preferir la card** (D8 lo confirma) porque es más descubrible. El action en AppBar es opcional y puede agregarse en v1.0.2 si la card no se descubre.
+
+2. **¿La card debe mostrar un badge de "Nuevo"** en v1.0.1? Sugerencia: NO. Es una feature, no un upsell. Los usuarios que llegan desde v1.0 ya entienden.
+
+3. **¿La card debe colapsar** en pantallas chicas (e.g., himnario con muchas cards) o siempre visible? Sugerencia: siempre visible. Es importante y debe estar a 1-2 scrolls.
+
+4. **¿La card debe ser un "header"** (sin padding inferior, pegado a los himnos) o un item independiente? Sugerencia: item independiente con margin top 16dp (más limpio).
+
+5. **¿La card debe mostrar el catálogo activo** como subtítulo? (e.g., "Catálogo: Himnario Adventista"). Sugerencia: NO, el subtítulo actual es más claro y universal. El catálogo activo se ve en Admin → Catálogos.
+
+---
+
+*Wireframe actualizado por @design para v1.0.1 — secciones 12 (FAB temático) y 13 (Administrar himnario) agregadas. Decisiones D3 (FAB), D4 (sin glassmorphism) y D8 (Administrar unificado) ya incorporadas. Pendiente revisión de @arqui.*

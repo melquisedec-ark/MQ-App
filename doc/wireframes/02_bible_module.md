@@ -1,12 +1,14 @@
 # Wireframe 02 — Módulo Biblia
 
-> **Módulo:** Biblia (RV1909 + RV1569)
+> **Módulo:** Biblia (RV1909; RV1569 eliminado en v1.0.1)
 > **Archivos destino (Flutter):**
 > - `lib/presentation/views_personal/bible/book_selector_screen.dart`
 > - `lib/presentation/views_personal/bible/chapter_selector_screen.dart`
 > - `lib/presentation/views_personal/bible/reader/reader_screen.dart`
-> **Versión:** MQ App v1.0
+> - `lib/features/biblia/presentation/widgets/verse_card.dart` (NUEVO v1.0.1)
+> **Versión:** MQ App v1.0.1 (actualizado 2026-06-02 — sección 2d agregada)
 > **Referencia:** `nuevaidea.md` §4.3, §4.4, §4.7 + revisiones v1.0–v1.4
+> **Decisiones v1.0.1 aplicadas:** D1 (RV1569 eliminado), D4 (sin glassmorphism), D5 (snackbars 3s), D6 (vista capítulo)
 > **Idioma:** Español (es-419)
 
 ---
@@ -571,6 +573,554 @@ Una barra de progreso **sutil** en la parte superior (debajo del AppBar) muestra
 | Tamaño de fuente | Slider en menú overflow (12sp–32sp). Persiste en `Configuracion`. |
 | Haptic feedback | Vibración sutil al cambiar de versículo (toggle en settings). |
 | Touch targets | Todos los botones del bottom bar ≥ 48x48dp. |
+
+---
+
+# Pantalla 2d — Bible Reader: Vista de Capítulo Completo (NUEVA v1.0.1)
+
+> **Versión:** v1.0.1 | Agregado: 2026-06-02 | Por: @design
+> **Estado:** ✅ Nueva vista alternativa (decisión D6 de `CONTROL/DECISIONES.md`)
+> **Origen:** F2 de `CONTROL/PENDIENTE.md` + observación #9 del usuario en `BITACORA.md`
+> **Archivo destino (Flutter):** `lib/features/biblia/presentation/screens/bible_reader_screen.dart` (refactor a stateful)
+> **Dependencia nueva:** `scrollable_positioned_list: ^0.3.8`
+
+## Propósito
+
+Ofrecer una **vista alternativa** al Reader "1 versículo a la vez" (modo `verse`) para usuarios que prefieren **leer todo el capítulo de un vistazo** (modo `chapter`). Toggle en AppBar, persistente solo en la sesión (NO en BD).
+
+Inspiración: YouVersion, Bible Gateway, Olive Tree — apps líderes permiten alternar entre estas dos vistas con preferencia del usuario.
+
+---
+
+## Vista (Portrait, móvil, modo capítulo)
+
+```
++------------------------------------------------------------------------------+
+|  <-  Genesis 3            [list]                              [...]   [menu] |  <- AppBar
+|                                                  (toggle: view_headline icon)|
++------------------------------------------------------------------------------+
+|                                                                              |
+|   [tag] Capitulo 3                                                           |  <- subtítulo goldDark
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  1  Y la serpiente era mas astuta que todos los animales            |   |  <- versículo 1 (default)
+|   |     de campo que Jehova Dios habia hecho...                         |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  2  Y esta dijo a la mujer: ¿Conque Dios os ha dicho: No            |   |  <- versículo 2
+|   |     comais de todo arbol del huerto?                                |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  3  Y la mujer respondio a la serpiente: Del fruto                  |   |  <- versículo 3 (no foco)
+|   |     de los arboles del huerto podemos comer;                        |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  4  Entonces la serpiente dijo a la mujer: No morireis;             |   |  <- versículo 4 (no foco)
+|   |     porque Dios sabe que...                                         |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|   ...                                                                        |
+|                                                                              |
+|   +----------------------------------------------------------------------+   |
+|   |  15  Y pondré enemistad entre ti y la mujer, y entre tu             |   |  <- versículo 15 (no foco)
+|   |      simiente y la simiente suya...  [yellow: indicador nota]       |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
++------------------------------------------------------------------------------+
+|  [tag]   RV1909                                                              |  <- footer de versión
++------------------------------------------------------------------------------+
+```
+
+### Versículo foco (highlight sutil)
+
+```
++----------------------------------------------------------------------+
+|  5  Porque Dios sabe que...                                 [FOCO]  |  <- fondo surfaceContainerHigh
+|     el dia que comiereis de el...                                  |     elevación 1
++----------------------------------------------------------------------+
+```
+
+El versículo donde el usuario **estaba leyendo** (en modo `verse`) se marca con un fondo `surfaceContainerHigh` y elevación sutil. Sirve como **ancla visual** al cambiar de modo.
+
+---
+
+## Vista (Portrait, móvil, modo verso - default al abrir)
+
+El modo verso (existente, sin cambios estructurales) se muestra en la sección anterior "Pantalla 2c — Reader".
+
+El toggle en la app bar cambia entre ambos modos. **El estado NO persiste** entre sesiones (decisión D6) — siempre abre en modo `verse`.
+
+---
+
+## AppBar — Toggle y Menú
+
+```
++------------------------------------------------------------------------------+
+|  <-  Genesis 3                  [list]                      [...]   [more] |
++------------------------------------------------------------------------------+
+```
+
+| Elemento | Icono | Acción |
+|----------|-------|--------|
+| `<-` | `arrow_back_rounded` | Pop al Chapter Selector (con confirm si nota sin guardar) |
+| Título "Genesis 3" | Texto (book + cap) | Estático, informativo |
+| **Toggle de modo** | `view_headline_rounded` (modo verse, default) ↔ `view_agenda_outline_rounded` (modo chapter) | Tap = `setState(() => _viewMode = _viewMode.toggle())` + auto-scroll al versículo foco |
+| `[buscar]` | `search_rounded` | Abre `BibleSearchScreen` (FTS5) |
+| `[more]` | `more_vert_rounded` | Overflow menu (compartir, tamaño fuente, ir a, fullscreen) — mismo que modo verso |
+
+### Comportamiento del toggle
+
+```dart
+enum ReaderViewMode { verse, chapter }
+
+extension on ReaderViewMode {
+  ReaderViewMode get toggle =>
+      this == ReaderViewMode.verse
+          ? ReaderViewMode.chapter
+          : ReaderViewMode.verse;
+}
+
+// En el IconButton:
+onPressed: () {
+  setState(() => _viewMode = _viewMode.toggle());
+  if (_viewMode == ReaderViewMode.chapter) {
+    // Auto-scroll al versículo foco después del build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollableListController.scrollToIndex(
+        index: _currentVerse - 1,
+        duration: Duration(milliseconds: 300),
+      );
+    });
+  }
+}
+```
+
+### Menú 3 puntos (overflow) — Diferencia vs compact/preview
+
+> **Importante:** este menú 3 puntos es **distinto** del modo compact/preview del emisor (wireframe 03). Es un menú propio del reader, no relacionado con proyección.
+
+| Opción | Acción |
+|--------|--------|
+| Compartir versículo | Comparte el versículo **foco** actual (no el capítulo) |
+| Tamaño de fuente | Slider 12sp–32sp (afecta AMBOS modos) |
+| Ir a | Input "Libro Cap:Vers" con autocompletar |
+| Modo fullscreen | Oculta chrome (AppBar + bottom bar) — funciona en modo chapter también |
+| Cambiar a modo presentación | Solo si emisor está conectado |
+
+---
+
+## Vista verso ↔ capítulo — Layout por versículo
+
+Cada versículo es un `VerseCard` (widget compartido) que se muestra en AMBOS modos. Cambia solo el contenedor:
+
+| Aspecto | Modo verse (1 a la vez) | Modo chapter (lista) |
+|---------|------------------------|---------------------|
+| Contenedor | `PageView` horizontal (swipe) | `ScrollablePositionedList` vertical |
+| Visibilidad | 1 versículo visible a la vez | Todos los versículos del capítulo |
+| Versículo foco | Centrado, con `AnimatedScale` 1.0 | Marcado con fondo `surfaceContainerHigh` |
+| Bottom bar | Visible (navegación versículo a versículo) | **Oculto** (navegación es el scroll) |
+| Tamaño del texto | bodyLarge 18sp | bodyLarge 18sp (igual) |
+| Padding horizontal | 16dp | 16dp |
+| Padding vertical | 24dp | 12dp entre versículos |
+
+---
+
+## VerseCard — Componente compartido
+
+```
++----------------------------------------------------------------------+
+|                                                                      |
+|  [N]    Texto del versículo. Continua con mas texto si es largo      |
+|         hasta ocupar varias lineas con line-height 1.6.              |
+|                                                                      |
+|  [N] = numero (displaySmall 36sp, 700, gold, align right, 40dp wide)|
+|                                                                      |
+|  [border-lateral 4dp] = color de nota (yellow/green/blue/none)      |
+|                                                                      |
++----------------------------------------------------------------------+
+```
+
+| Propiedad | Valor |
+|-----------|-------|
+| Layout | `Row` con número a la izquierda (40dp ancho, align top) + texto expandido |
+| Número | `displaySmall` 36sp, 700, `goldPrimary` (#CCA43B), right-aligned |
+| Texto | `bodyLarge` 18sp, `onSurface`, line-height 1.6 |
+| Padding interno | 16dp horizontal, 12dp vertical |
+| Border lateral | 4dp ancho, color de nota, full height |
+| Fondo (foco) | `surfaceContainerHigh` con elevación 1 |
+| Fondo (no foco) | `surface` plano (sin elevación) |
+| Border radius | 12dp (no glassmorphism) |
+| Margin | 4dp vertical entre cards |
+
+### Detección de "foco"
+
+- **Verso:** `currentVerse` (1-indexed) del provider
+- **Capítulo:** mismo `currentVerse`; la card con `verse.number == currentVerse` se renderiza con fondo foco
+
+### Animación de cambio de foco
+
+```dart
+AnimatedContainer(
+  duration: Duration(milliseconds: 200),
+  decoration: BoxDecoration(
+    color: isFocused 
+        ? cs.surfaceContainerHigh 
+        : cs.surface,
+    borderRadius: BorderRadius.circular(12),
+    border: Border(
+      left: BorderSide(
+        color: noteColor ?? Colors.transparent,
+        width: 4,
+      ),
+    ),
+  ),
+  child: VerseCard(...),
+)
+```
+
+---
+
+## BottomSheet contextual (tap en versículo)
+
+Al tap en un versículo (modo capítulo), se actualiza `currentVerseProvider` y se muestra un menú contextual pequeño:
+
+```
++----------------------------------------------------------------+
+|                                                                |
+|   [star]  Agregar a favoritos                                  |
+|   [note]  Crear/editar nota                                    |
+|   [share] Compartir                                            |
+|                                                                |
++----------------------------------------------------------------+
+```
+
+> **Decisión:** usar `showModalBottomSheet` con 3 opciones, no snackbar action. Es más descubrible y sigue el patrón Material 3.
+
+### Long press (alternativa)
+
+Long press en el versículo → mismo bottom sheet (alternativa para usuarios con tap rápido accidental).
+
+### SnackBar de "Agregado a favoritos" (post-bottomSheet)
+
+Al tap en "Agregar a favoritos":
+
+```
++----------------------------------------------------------------+
+| [✓] Agregado a favoritos                  Deshacer             |  <- SnackBar
++----------------------------------------------------------------+
+```
+
+- **Duración:** 3 segundos (auto-dismiss, decisión D5)
+- **Anti-stacking:** `hideCurrentSnackBar()` + `clearSnackBars()` antes de mostrar (helper `AppSnackBar.show()`)
+- **Acción "Deshacer":** quita el favorito y muestra snackbar "Quitado de favoritos" + Deshacer
+
+---
+
+## Auto-scroll al versículo foco
+
+Al cambiar a modo `chapter` desde modo `verse` (o al abrir el reader en modo chapter), la lista **scrollea automáticamente** al versículo donde estaba el usuario.
+
+### Implementación con `scrollable_positioned_list`
+
+```dart
+ScrollablePositionedList.builder(
+  itemScrollController: _scrollableController,
+  itemCount: chapter.verses.length,
+  itemBuilder: (context, index) {
+    final verse = chapter.verses[index];
+    final isFocused = verse.number == _currentVerse;
+    return VerseCard(
+      verse: verse,
+      isFocused: isFocused,
+      noteColor: notes[verse.id]?.color,
+      onTap: () => _onVerseTap(verse),
+      onLongPress: () => _showVerseMenu(verse),
+    );
+  },
+)
+
+// Al cambiar de modo o versículo:
+_scrollableController.scrollToIndex(
+  index: _currentVerse - 1,  // 0-indexed
+  duration: Duration(milliseconds: 300),
+  curve: Curves.easeInOutCubic,
+);
+```
+
+### Casos edge
+
+- **Salmos 119 (176 versículos):** `ScrollablePositionedList` lo maneja sin lag (lazy build).
+- **Capítulos con 1 versículo** (raros): no hay scroll, vista simple.
+- **Cambio rápido verso→capítulo→verso:** preservar el versículo foco, no resetear.
+
+---
+
+## Persistencia del versículo foco
+
+- **NO se persiste el modo de vista** (decisión D6) — siempre abre en `verse`.
+- **SÍ se persiste el `currentVerse`** (dentro de la sesión) — el provider `currentVerseProvider` lo mantiene.
+- Al cambiar de capítulo (botón `>>` o swipe), `currentVerse` se resetea a 1.
+
+---
+
+## Estados
+
+### Estado: Capítulo vacío (no debería pasar)
+
+```
++----------------------------------------------------------------+
+|                                                                |
+|                        [book 64dp]                             |
+|                                                                |
+|               Este capitulo no tiene versiculos                |
+|                                                                |
++----------------------------------------------------------------+
+```
+
+### Estado: Cambiando de modo (transición)
+
+```
++----------------------------------------------------------------+
+|                                                                |
+|   [verse 1]  <- fade out 150ms                                  |
+|                                                                |
+|   [chapter list]  <- fade in 150ms + scroll al foco 300ms     |
+|                                                                |
++----------------------------------------------------------------+
+```
+
+Animación combinada: crossfade del contenido + scroll programático.
+
+---
+
+## Elementos
+
+| Elemento | Tipo | Posición | Acción |
+|----------|------|----------|--------|
+| AppBar leading `<-` | IconButton | Top-left | Pop (con confirm si nota sin guardar) |
+| AppBar título | Text "Genesis 3" | Top-center | Estático |
+| Toggle de modo | IconButton `view_headline` / `view_agenda_outline` | AppBar actions[0] | Cambia `viewMode` + auto-scroll |
+| `[buscar]` | IconButton | AppBar actions[1] | Abre `BibleSearchScreen` |
+| `[more]` | PopupMenuButton | AppBar actions[2] | Menú overflow |
+| Subtítulo "Capitulo N" | Text bodyMedium goldDark | Padding 16dp top | Estático (solo en modo chapter) |
+| VerseCard | Widget compartido | Body (lista) | Tap = foco + bottomSheet |
+| FAB contextual (modo verse) | Existente (sin cambios) | Bottom-right | Favorito/nota/random |
+| Footer versión | Text caption | Bottom | "RV1909" |
+| SnackBar | Helper `AppSnackBar.show()` | Bottom (temporal) | Feedback de favorito (3s) |
+
+---
+
+## Componentes reutilizados
+
+- **`VerseCard`** (nuevo widget) — `lib/features/biblia/presentation/widgets/verse_card.dart`
+  - Usado en modo verse (1 a la vez) y modo chapter (lista)
+  - Maneja el foco, el indicador de nota, el tap y el long press
+- **`ScrollablePositionedList`** (nueva dependencia) — `scrollable_positioned_list: ^0.3.8`
+  - Solo en modo chapter
+  - Reemplaza al `ListView.builder` plano
+- **`AppSnackBar`** (helper de D5) — feedback de favorito con 3s auto-dismiss
+- **`NoteEditorModal`** (existente) — abre desde bottom sheet contextual
+- **Sin glassmorphism** (D4/D14) — usar `Card` Material 3 con elevación 1, no `GlassContainer`
+
+---
+
+## Notas de implementación
+
+### Estructura del widget
+
+```dart
+class BibleReaderScreen extends ConsumerStatefulWidget {
+  // Stateful porque tiene _viewMode y _scrollableController
+}
+
+class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
+  late ReaderViewMode _viewMode = ReaderViewMode.verse;  // default verso
+  late ItemScrollController _scrollableController;
+  
+  // currentVerse viene del provider:
+  // final currentVerse = ref.watch(currentVerseProvider);
+  
+  @override
+  void initState() {
+    super.initState();
+    _scrollableController = ItemScrollController();
+  }
+  
+  Widget _buildChapterView(List<Verse> verses) {
+    return ScrollablePositionedList.builder(
+      itemScrollController: _scrollableController,
+      itemCount: verses.length,
+      itemBuilder: (ctx, i) => VerseCard(
+        verse: verses[i],
+        isFocused: verses[i].number == ref.read(currentVerseProvider),
+        onTap: () => _onVerseTap(verses[i]),
+        onLongPress: () => _showVerseMenu(verses[i]),
+      ),
+    );
+  }
+  
+  Widget _buildVerseView(List<Verse> verses) {
+    // PageView horizontal (existente)
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final verses = ref.watch(chapterVersesProvider);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${book.name} $chapter'),
+        actions: [
+          IconButton(
+            icon: Icon(_viewMode == ReaderViewMode.verse
+                ? Icons.view_agenda_outline_rounded
+                : Icons.view_headline_rounded),
+            onPressed: _toggleViewMode,
+          ),
+          // ... buscar, more
+        ],
+      ),
+      body: _viewMode == ReaderViewMode.verse
+          ? _buildVerseView(verses)
+          : _buildChapterView(verses),
+    );
+  }
+}
+```
+
+### Providers nuevos
+
+```dart
+// lib/features/biblia/application/providers/reader_providers.dart
+
+final readerViewModeProvider = StateProvider<ReaderViewMode>(
+  (ref) => ReaderViewMode.verse,
+);
+
+final currentVerseProvider = StateProvider<int>(
+  (ref) => 1,  // default: versículo 1
+);
+```
+
+> **Decisión:** `currentVerseProvider` es **transitorio** (en memoria), no persiste entre sesiones. La "última lectura" se persiste vía el repositorio de historial (ya existe).
+
+### Comportamiento del bottomSheet contextual
+
+```dart
+void _showVerseMenu(Verse verse) {
+  showModalBottomSheet(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: Icon(Icons.star_outline_rounded),
+            title: Text('Agregar a favoritos'),
+            onTap: () async {
+              Navigator.pop(ctx);
+              await ref.read(favoritoRepositoryProvider).toggle(verse);
+              AppSnackBar.show(context, 'Agregado a favoritos',
+                action: SnackBarAction(label: 'Deshacer', onPressed: () { ... }),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.edit_note_rounded),
+            title: Text('Crear/editar nota'),
+            onTap: () {
+              Navigator.pop(ctx);
+              showNoteEditorModal(context, verse: verse);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.share_rounded),
+            title: Text('Compartir'),
+            onTap: () {
+              Navigator.pop(ctx);
+              Share.share('${verse.text}\n— ${verse.reference} (RV1909)');
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+```
+
+---
+
+## Responsive
+
+### Tablet (≥ 600dp)
+
+- **Layout 2 columnas en modo chapter** (mismo patrón que wireframe 02 §7 para verse):
+  - Izquierda (40%): lista de versículos con scroll
+  - Derecha (60%): versículo foco con texto grande y notas
+- El toggle se mantiene en AppBar.
+
+### Desktop (≥ 1024dp)
+
+- Modo chapter siempre en 2 columnas.
+- Atajos de teclado:
+  - `J` / `K`: siguiente/anterior versículo (cambia foco)
+  - `V`: toggle verso/capítulo
+  - `F`: toggle favorito del versículo foco
+  - `N`: nueva nota del versículo foco
+  - `Space`: scroll page down (modo chapter)
+
+---
+
+## Accesibilidad (WCAG 2.1 AA)
+
+| Criterio | Implementación |
+|----------|----------------|
+| Screen reader | Cada `VerseCard` con `Semantics(label: 'Versículo 5, [texto], referencia Génesis 3:5, [tiene nota amarilla]')` |
+| Contraste número | `goldPrimary` (#CCA43B) sobre `surface` cumple AA para texto ≥18pt (36sp ✓) |
+| Contraste texto | `onSurface` sobre `surfaceContainerHigh` (foco) y `surface` (no foco): ambos ≥ 7:1 |
+| Touch target | Cada `VerseCard` es tappable (toda la card), no solo el número |
+| Focus visible (desktop) | Outline 2px gold en el versículo foco |
+| Reduced motion | Auto-scroll respeta `prefers-reduced-motion` (duración 0 si está activo) |
+| Font scaling | `MediaQuery.textScaler` aplicado al texto del versículo |
+
+---
+
+## Cambios vs versión anterior
+
+- **Nuevo toggle en AppBar** (`view_headline` ↔ `view_agenda_outline`) que cambia entre modo verse y modo chapter.
+- **`BibleReaderScreen` refactorizado a `StatefulWidget`** con `_viewMode` local.
+- **Nuevo widget `VerseCard`** compartido entre ambos modos.
+- **Nueva dependencia `scrollable_positioned_list`** para el modo chapter.
+- **Bottom bar de navegación oculto en modo chapter** (la navegación es el scroll).
+- **Nuevo `bottomSheet` contextual** al tap en versículo (favorito, nota, compartir).
+- **No se persiste el modo de vista** entre sesiones.
+- **NO glassmorphism** (D4): cards sólidos con elevación 1, fondo `surfaceContainerHigh` solo en el versículo foco.
+
+---
+
+## Preguntas abiertas
+
+1. **¿La Snackbar de "Agregado a favoritos" debe mostrar también "Ver favoritos"** como segunda acción? (Estilo Material 3 idiom). Sugerencia: NO, mantener simple (solo "Deshacer").
+
+2. **¿El modo chapter debe permitir marcar múltiples versículos como favoritos a la vez** (selección múltiple)? Útil para marcar rangos (e.g., "Salmos 23:1-6 todos favoritos"). Sugerencia: NO en v1.0.1, NICE TO HAVE.
+
+3. **¿El bottomSheet contextual debe incluir "Ir al versículo"** (para modo chapter, saltar a ese versículo en modo verse)? Sugerencia: NO — el cambio de modo ya se hace con el toggle del AppBar.
+
+4. **¿Soporte para "compartir rango"** (e.g., "Génesis 3:1-5" en una sola acción)? Útil para compartir en WhatsApp. Sugerencia: NO en v1.0.1, NICE TO HAVE.
+
+5. **El usuario mencionó "Merriweather 16sp" para el texto del versículo.** El style guide LOCKED dice `bodyLarge = 18sp` y "No se carga ninguna fuente custom en v1.0" (Merriweather es custom). **Conflicto:** usar `bodyLarge` 18sp del sistema en v1.0.1 (lock del style guide) y evaluar Merriweather en v1.1+.
+
+6. **El usuario mencionó `gold #D4A574` para el número de versículo.** El style guide LOCKED dice `goldPrimary = #CCA43B`. **Conflicto:** usar #CCA43B (lock) por consistencia.
+
+7. **¿El toggle debe mostrar el icono del MODO AL QUE VA A CAMBIAR** (preview) o del MODO ACTUAL? Sugerencia: mostrar el icono del MODO ACTUAL (consistente con el patrón Material 3).
+
+8. **¿El `currentVerseProvider` debe persistir en BD** junto con la última lectura? Sugerencia: NO — ya existe el sistema de historial (`historial_versiculo`) que cubre esa necesidad.
+
+---
+
+*Sección agregada por @design para v1.0.1 — pendiente revisión de @arqui. Decisiones D4 (quitar glassmorphism), D5 (snackbars centralizados) y D6 (modo capítulo) ya incorporadas.*
 
 ---
 

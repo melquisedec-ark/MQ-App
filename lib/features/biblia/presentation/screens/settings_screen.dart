@@ -63,6 +63,26 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // ── Himnario ──
+            const _SectionHeader(title: 'Himnario'),
+            _Card(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.tune_rounded,
+                    color: colorScheme.primary,
+                  ),
+                  title: const Text('Administrar himnario'),
+                  subtitle: const Text(
+                    'Himnos, catálogos, importar y exportar',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.pushNamed('hymn-admin'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
             // ── Apariencia ──
             const _SectionHeader(title: 'Apariencia'),
             const _Card(
