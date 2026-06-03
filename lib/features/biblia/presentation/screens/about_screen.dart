@@ -1,0 +1,220 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../../core/ui/app_snackbar.dart';
+
+/// Pantalla "Acerca de" de MQ-App.
+///
+/// Muestra:
+/// - Logo (placeholder por ahora, no se carga asset).
+/// - Nombre app + versión real (leída de [PackageInfo]).
+/// - Tagline.
+/// - Tarjeta "Información" con repositorio GitHub, página oficial, comunidad,
+///   licencia.
+/// - Botón "Volver".
+class AboutScreen extends StatefulWidget {
+  const AboutScreen({super.key});
+
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  String _version = '…';
+  String _buildNumber = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // PackageInfo requiere que la inicialización del canal de plataforma
+    // haya ocurrido; usamos addPostFrameCallback para diferir la lectura.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final info = await PackageInfo.fromPlatform();
+        if (!mounted) return;
+        setState(() {
+          _version = info.version;
+          _buildNumber = info.buildNumber;
+        });
+      } catch (_) {
+        // Si falla (ej. tests), dejamos el placeholder.
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final disabledColor = colorScheme.onSurface.withValues(alpha: 0.30);
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+          tooltip: 'Atrás',
+        ),
+        title: const Text('Acerca de'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Logo + nombre app ──
+              Center(
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    size: 96,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'MQ-App',
+                textAlign: TextAlign.center,
+                style: textTheme.displayMedium?.copyWith(
+                  color: const Color(0xFFCCA43B),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'v$_version${_buildNumber.isNotEmpty ? ' ($_buildNumber)' : ''}',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Biblia y Himnario en un solo lugar',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 32),
+
+              // ── Tarjeta Información ──
+              Card(
+                elevation: 1,
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Icon(
+                        Icons.code_rounded,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      title: const Text('Repositorio'),
+                      subtitle: const Text(
+                        'github.com/melquisedec-ark/MQ-App',
+                      ),
+                      trailing: const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
+                      ),
+                      onTap: () => _launchUrl(
+                        context,
+                        'https://github.com/melquisedec-ark/MQ-App',
+                        'No se pudo abrir el navegador',
+                      ),
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    ListTile(
+                      leading: Icon(
+                        Icons.language_rounded,
+                        color: disabledColor,
+                      ),
+                      title: Text(
+                        'Página oficial',
+                        style: TextStyle(color: disabledColor),
+                      ),
+                      subtitle: Text(
+                        'Próximamente',
+                        style: TextStyle(color: disabledColor),
+                      ),
+                      enabled: false,
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    ListTile(
+                      leading: Icon(
+                        Icons.chat_rounded,
+                        color: disabledColor,
+                      ),
+                      title: Text(
+                        'Comunidad WhatsApp',
+                        style: TextStyle(color: disabledColor),
+                      ),
+                      subtitle: Text(
+                        'Próximamente',
+                        style: TextStyle(color: disabledColor),
+                      ),
+                      enabled: false,
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    ListTile(
+                      leading: Icon(
+                        Icons.description_rounded,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      title: const Text('Licencia'),
+                      trailing: Chip(
+                        label: const Text('MIT'),
+                        backgroundColor: colorScheme.surfaceContainerHigh,
+                        side: BorderSide(
+                          color: colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Botón Volver ──
+              FilledButton(
+                onPressed: () => context.pop(),
+                child: const Text('Volver'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(
+    BuildContext context,
+    String url,
+    String errorMsg,
+  ) async {
+    final uri = Uri.parse(url);
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && context.mounted) {
+        _showError(context, errorMsg);
+      }
+    } catch (_) {
+      if (context.mounted) _showError(context, errorMsg);
+    }
+  }
+
+  void _showError(BuildContext context, String msg) {
+    showAppSnackBar(context, msg, type: AppSnackBarType.error);
+  }
+}

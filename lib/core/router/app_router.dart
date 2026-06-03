@@ -8,6 +8,7 @@ import '../../features/biblia/presentation/screens/chapter_grid_screen.dart';
 import '../../features/biblia/presentation/screens/home_screen.dart';
 import '../../features/biblia/presentation/screens/search_screen.dart';
 import '../../features/biblia/presentation/screens/settings_screen.dart';
+import '../../features/biblia/presentation/screens/about_screen.dart';
 import '../../presentation/views_personal/dashboard/home_screen.dart' as himnario;
 import '../../presentation/views_personal/hymn_scroll/hymn_detail_screen.dart';
 import '../../presentation/views_projection/controller/widgets/discover_display_sheet.dart';
@@ -123,6 +124,15 @@ final GoRouter appRouter = GoRouter(
             // Devolvemos el sheet como pantalla completa. Al cerrarse
             // (back o tap fuera), go_router hace pop automático.
             return const _ConnectScreen();
+          },
+        ),
+
+        // Acerca de (D7)
+        GoRoute(
+          path: 'acerca-de',
+          name: 'about',
+          builder: (BuildContext context, GoRouterState state) {
+            return const AboutScreen();
           },
         ),
       ],

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../data/models/biblia_version.dart';
 import '../../data/models/nota.dart';
@@ -80,27 +78,13 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 ListTile(
                   leading: Icon(
-                    Icons.info_outline_rounded,
+                    Icons.info_rounded,
                     color: colorScheme.onSurfaceVariant,
                   ),
-                  title: const Text('Versión'),
-                  subtitle: const Text('1.0.0-dev+1'),
-                ),
-                const _Divider(),
-                ListTile(
-                  leading: Icon(
-                    Icons.code_rounded,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  title: const Text('Repositorio'),
-                  subtitle: Text(
-                    'github.com/melquisedec-ark/MQ-App',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                  onTap: () => _launchGitHub(context),
+                  title: const Text('Acerca de MQ-App'),
+                  subtitle: const Text('Versión, repositorio y comunidad'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.pushNamed('about'),
                 ),
               ],
             ),
@@ -108,28 +92,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _launchGitHub(BuildContext context) async {
-    final uri = Uri.parse('https://github.com/melquisedec-ark/MQ-App');
-    try {
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok && context.mounted) {
-        showAppSnackBar(
-          context,
-          'No se pudo abrir el navegador',
-          type: AppSnackBarType.error,
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        showAppSnackBar(
-          context,
-          'No se pudo abrir el navegador',
-          type: AppSnackBarType.error,
-        );
-      }
-    }
   }
 }
 
