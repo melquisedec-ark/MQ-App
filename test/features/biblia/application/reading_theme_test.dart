@@ -17,14 +17,15 @@ void main() {
   });
 
   group('ReadingTheme enum', () {
-    test('tiene exactamente 5 temas', () {
-      expect(ReadingTheme.values.length, 5);
+    test('tiene exactamente 6 temas', () {
+      expect(ReadingTheme.values.length, 6);
     });
 
     test('fromId retorna el tema correcto', () {
       expect(ReadingTheme.fromId('papel'), ReadingTheme.papel);
       expect(ReadingTheme.fromId('sepia'), ReadingTheme.sepia);
       expect(ReadingTheme.fromId('noche'), ReadingTheme.noche);
+      expect(ReadingTheme.fromId('dark'), ReadingTheme.dark);
       expect(ReadingTheme.fromId('azulNoche'), ReadingTheme.azulNoche);
       expect(ReadingTheme.fromId('altoContraste'), ReadingTheme.altoContraste);
     });

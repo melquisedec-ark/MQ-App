@@ -6,9 +6,9 @@ import '../../application/providers/bible_appearance_provider.dart';
 /// Bottom sheet con ajustes de apariencia para el lector bíblico.
 ///
 /// Controles:
-/// - Slider de tamaño de letra (0.8 – 1.5)
+/// - Slider de tamaño de letra (0.8 – 4.0)
 /// - Selector de fuente (system / serif / monospace)
-/// - Selector de tema de lectura (5 temas predefinidos)
+/// - Selector de tema de lectura (6 temas predefinidos)
 /// - Slider de interlineado (1.4 – 2.0)
 ///
 /// El modo de lectura (verse/chapter) se controla desde el bottom bar
@@ -94,8 +94,8 @@ class _ReadingSettingsSheetState extends ConsumerState<ReadingSettingsSheet> {
                   child: Slider(
                     value: appearance.fontScale,
                     min: 0.8,
-                    max: 1.5,
-                    divisions: 7,
+                    max: 4.0,
+                    divisions: 32,
                     label: '${appearance.fontScale.toStringAsFixed(1)}x',
                     onChanged: (v) =>
                         ref.read(bibleAppearanceProvider.notifier).setFontScale(v),
@@ -219,7 +219,7 @@ class _FontFamilySelector extends StatelessWidget {
   }
 }
 
-/// Selector de tema de lectura con 5 opciones predefinidas.
+/// Selector de tema de lectura con 6 opciones predefinidas.
 class _ThemeSelector extends StatelessWidget {
   const _ThemeSelector({
     required this.current,

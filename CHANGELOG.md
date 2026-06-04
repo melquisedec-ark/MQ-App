@@ -4,6 +4,25 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ---
 
+## [1.0.6] — 2026-06-04
+
+### Fixed
+- **📖 Resultados de búsqueda ordenados Génesis→Apocalipsis**
+  - Tab "Versículos": cambiado `ORDER BY rank` → `ORDER BY l.numero ASC, c.numero ASC, v.numero ASC`
+  - Tab "Referencias": añadido `JOIN libro`, orden canónico por libro/capítulo/versículo
+  - Cross-references en modo versículo: orden canónico (antes por votos)
+  - `getByFromVerse`, `getByFromVerseWithPreview`, `getByToVerse` actualizados
+
+### Added
+- **🌑 Tema "Dark" (negro puro AMOLED)**
+  - Fondo `#000000`, texto `#E8E8E8`
+  - 6 temas totales: Papel, Sepia, Noche, **Dark**, Azul noche, Alto contraste
+- **🔤 Escala de fuente extendida hasta 4.0x** (antes 1.5x)
+  - Slider: 32 divisiones (0.8 → 4.0, paso 0.1)
+  - Valores existentes preservados (sin migración)
+
+---
+
 ## [1.0.5] — 2026-06-04
 
 ### Added

@@ -60,9 +60,9 @@ void main() {
         final refs =
             await providerContainer.read(crossReferenciasProvider(query).future);
         expect(refs, hasLength(3));
-        // El más votado primero
-        expect(refs[0].votos, 5);
-        expect(refs[2].votos, 2);
+        // Orden canónico: Gn(1) → Jn(43) → 1Jn(62)
+        expect(refs[0].toLibroId, 1);
+        expect(refs[2].toLibroId, 6);
         expect(versionId, 1); // sanity
       } finally {
         await closeBibleRepos(

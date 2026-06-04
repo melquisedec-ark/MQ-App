@@ -11,10 +11,10 @@ void main() {
 
   group('CrossReferenciasRepository', () {
     group('getByFromVerse', () {
-      test('retorna refs ordenadas por votos DESC', () async {
+      test('retorna refs ordenadas por libro/capítulo/versículo destino', () async {
         final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
         try {
-          // Juan 3:16 tiene 3 refs en el seed con votos 5, 3, 2
+          // Juan 3:16 tiene 3 refs: Gn 22:12-14 (libro#1), Jn 3:17 (libro#43), 1Jn 4:9-10 (libro#62)
           final refs = await bundle.crossRefs.getByFromVerse(
             versionId: 1,
             libroId: 4, // Juan
@@ -22,10 +22,10 @@ void main() {
             versiculo: 16,
           );
           expect(refs, hasLength(3));
-          // Verificar orden: 5 → 3 → 2
-          expect(refs[0].votos, 5);
-          expect(refs[1].votos, 3);
-          expect(refs[2].votos, 2);
+          // Verificar orden canónico: Gn → Jn → 1Jn
+          expect(refs[0].toLibroId, 1);  // Génesis
+          expect(refs[1].toLibroId, 4);  // Juan
+          expect(refs[2].toLibroId, 6);  // 1 Juan
         } finally {
           await closeBibleRepos(
             db: bundle.db,
@@ -567,7 +567,7 @@ void main() {
         }
       });
 
-      test('ordena por votos DESC igual que getByFromVerse', () async {
+      test('ordena por libro/capítulo/versículo destino igual que getByFromVerse', () async {
         final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
         try {
           final refs = await bundle.crossRefs.getByFromVerseWithPreview(
@@ -577,9 +577,10 @@ void main() {
             versiculo: 16,
           );
           expect(refs, hasLength(3));
-          expect(refs[0].votos, 5);
-          expect(refs[1].votos, 3);
-          expect(refs[2].votos, 2);
+          // Orden canónico: Gn → Jn → 1Jn
+          expect(refs[0].toLibroId, 1);  // Génesis
+          expect(refs[1].toLibroId, 4);  // Juan
+          expect(refs[2].toLibroId, 6);  // 1 Juan
         } finally {
           await closeBibleRepos(
             db: bundle.db,

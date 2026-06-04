@@ -59,7 +59,7 @@ class BibliaSearchRepository {
     final ftsQuery = _sanitizeQuery(cleanQuery);
 
     // Query con JOINs a libro y capítulo para devolver contexto completo.
-    // Filtro por versión opcional. Orden por `rank` (relevancia FTS5).
+    // Filtro por versión opcional. Orden por libro/capítulo/versículo (Génesis→Apocalipsis).
     final sql = '''
       SELECT
         v.id, v.capitulo_id, v.numero, v.texto,
@@ -72,7 +72,7 @@ class BibliaSearchRepository {
       JOIN libro     l ON l.id = c.libro_id
       WHERE versiculo_fts MATCH ?
         ${versionId != null ? 'AND l.version_id = ?' : ''}
-      ORDER BY rank
+      ORDER BY l.numero ASC, c.numero ASC, v.numero ASC
       LIMIT ?;
     ''';
 

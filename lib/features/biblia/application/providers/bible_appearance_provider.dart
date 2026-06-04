@@ -13,6 +13,7 @@ enum ReadingTheme {
   papel('Papel', Color(0xFFFAFAFA), Color(0xFF2D2D2D)),
   sepia('Sepia', Color(0xFFF5E6C8), Color(0xFF5C4033)),
   noche('Noche', Color(0xFF1A1A1A), Color(0xFFE8E8E8)),
+  dark('Dark', Color(0xFF000000), Color(0xFFE8E8E8)),
   azulNoche('Azul noche', Color(0xFF1E293B), Color(0xFFCBD5E1)),
   altoContraste('Alto contraste', Color(0xFFFFFFFF), Color(0xFF000000));
 
@@ -163,9 +164,9 @@ class BibleAppearanceNotifier extends StateNotifier<BibleAppearanceState> {
     }
   }
 
-  /// Escala de fuente (0.8 – 1.5).
+  /// Escala de fuente (0.8 – 4.0).
   void setFontScale(double value) {
-    final clamped = value.clamp(0.8, 1.5);
+    final clamped = value.clamp(0.8, 4.0);
     state = state.copyWith(fontScale: clamped);
     _persist(BibliaConfigKeys.bibliaFontScale, clamped.toStringAsFixed(1));
   }
