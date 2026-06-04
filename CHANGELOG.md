@@ -4,6 +4,26 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ---
 
+## [1.0.7] — 2026-06-04
+
+### Fixed
+- **⭐ Indicador de favorito en modo verso**
+  - Ahora muestra `Icon(Icons.star_rounded)` dorado junto al número del versículo cuando está marcado como favorito
+  - Usa `favoritosStreamProvider` para verificar en tiempo real
+- **📖 Libro y capítulo reflejan favoritos (no historial)**
+  - `_LibroTile`: cambiado icono de `bookmark_rounded` (historial) → `star_rounded` dorado (favoritos)
+  - `_ChapterCell`: highlight priority — favorito (primary color) > última lectura (primaryContainer)
+  - Al desmarcar todos los favoritos de un capítulo, el capítulo deja de estar resaltado
+  - Al desmarcar todos los favoritos de un libro, el icono desaparece
+
+### Added
+- **3 nuevos derived providers** (`favoritos_provider.dart`):
+  - `_favoritosPorLibroYCapituloProvider`: `Map<int, Set<int>>` (libroId → capítulos con favoritos)
+  - `favoritosPorLibroProvider`: `Set<int>` de libros con favoritos
+  - `favoritosPorCapituloProvider(libroId)`: `Set<int>` de capítulos con favoritos
+
+---
+
 ## [1.0.6] — 2026-06-04
 
 ### Fixed

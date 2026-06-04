@@ -134,11 +134,10 @@ class _LibroTile extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // Buscar si este libro tiene última lectura
-    final lastReadAsync = ref.watch(
-      lastReadItemProvider(libro.id),
-    );
-    final lastReadCap = lastReadAsync.valueOrNull?.capitulo;
+    // Verificar si este libro tiene versículos favoritos.
+    final hasFavoritosAsync = ref.watch(favoritosPorLibroProvider);
+    final hasFavoritos =
+        hasFavoritosAsync.valueOrNull?.contains(libro.id) ?? false;
 
     return GlassCard(
       onTap: () {
@@ -186,14 +185,14 @@ class _LibroTile extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (lastReadCap != null) ...[
+                    if (hasFavoritos) ...[
                       const SizedBox(width: 6),
                       Tooltip(
-                        message: 'Última lectura: cap. $lastReadCap',
+                        message: 'Tiene versículos favoritos',
                         child: Icon(
-                          Icons.bookmark_rounded,
+                          Icons.star_rounded,
                           size: 16,
-                          color: colorScheme.primary,
+                          color: const Color(0xFFF59E0B),
                         ),
                       ),
                     ],

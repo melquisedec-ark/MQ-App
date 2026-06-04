@@ -8,6 +8,7 @@ import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/derived_providers.dart';
+import '../../application/providers/favoritos_provider.dart';
 import '../../data/models/capitulo.dart';
 import '../../data/models/libro.dart';
 
@@ -151,7 +152,7 @@ class ChapterGridScreen extends ConsumerWidget {
 }
 
 /// Grid de capítulos (5 columnas).
-class _ChapterGrid extends StatelessWidget {
+class _ChapterGrid extends ConsumerWidget {
   const _ChapterGrid({
     required this.capitulos,
     required this.lastReadCapitulo,
@@ -163,7 +164,12 @@ class _ChapterGrid extends StatelessWidget {
   final void Function(Capitulo) onChapterTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final libroId = capitulos.first.libroId;
+    final favChaptersAsync =
+        ref.watch(favoritosPorCapituloProvider(libroId));
+    final favChapters = favChaptersAsync.valueOrNull ?? const <int>{};
+
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -178,6 +184,7 @@ class _ChapterGrid extends StatelessWidget {
         return _ChapterCell(
           capitulo: cap,
           isLastRead: cap.numero == lastReadCapitulo,
+          hasFavorite: favChapters.contains(cap.numero),
           onTap: () => onChapterTap(cap),
         );
       },
@@ -190,18 +197,21 @@ class _ChapterCell extends StatelessWidget {
   const _ChapterCell({
     required this.capitulo,
     required this.isLastRead,
+    required this.hasFavorite,
     required this.onTap,
   });
 
   final Capitulo capitulo;
   final bool isLastRead;
+  final bool hasFavorite;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isVisited = isLastRead; // Por ahora solo resaltamos el último
+    // El favorito tiene prioridad sobre última lectura.
+    final isHighlighted = hasFavorite || isLastRead;
 
     return Semantics(
       label: 'Capítulo ${capitulo.numero}, ${capitulo.totalVersiculos} versículos',
@@ -209,19 +219,21 @@ class _ChapterCell extends StatelessWidget {
       child: GlassCard(
         onTap: onTap,
         padding: EdgeInsets.zero,
-        backgroundColor: isLastRead
+        backgroundColor: hasFavorite
             ? colorScheme.primary
-            : (isVisited
+            : (isLastRead
                 ? colorScheme.primaryContainer.withValues(alpha: 0.5)
                 : null),
         child: Center(
           child: Text(
             '${capitulo.numero}',
             style: textTheme.titleMedium?.copyWith(
-              color: isLastRead
-                  ? colorScheme.onPrimary
+              color: isHighlighted
+                  ? (hasFavorite
+                      ? colorScheme.onPrimary
+                      : colorScheme.onPrimaryContainer)
                   : colorScheme.onSurface,
-              fontWeight: isLastRead ? FontWeight.w800 : FontWeight.w600,
+              fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
         ),

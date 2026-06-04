@@ -879,6 +879,18 @@ class _VerseCard extends ConsumerWidget {
     );
     final nota = notaAsync.valueOrNull;
 
+    // Verificar si el versículo actual es favorito.
+    final favoritosAsync = ref.watch(favoritosStreamProvider);
+    final esFavorito = favoritosAsync.maybeWhen(
+      data: (list) => list.any(
+        (f) =>
+            f.libroId == libroId &&
+            f.capitulo == capitulo &&
+            f.numero == versiculo.numero,
+      ),
+      orElse: () => false,
+    );
+
     final showBorder = nota != null && nota.color != NotaColor.ninguno;
 
     final textStyle = textTheme.bodyLarge?.copyWith(
@@ -970,6 +982,15 @@ class _VerseCard extends ConsumerWidget {
                             ],
                           ),
                         ),
+                      // Indicador de favorito en modo versículo.
+                      if (esFavorito) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.star_rounded,
+                          size: 16,
+                          color: const Color(0xFFF59E0B),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
