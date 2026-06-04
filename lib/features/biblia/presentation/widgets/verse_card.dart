@@ -23,6 +23,7 @@ class VerseCard extends StatelessWidget {
     required this.numero,
     required this.texto,
     this.esFoco = false,
+    this.esFavorito = false,
     this.onTap,
     this.onLongPress,
     this.notaIndicatorColor,
@@ -39,6 +40,9 @@ class VerseCard extends StatelessWidget {
 
   /// Si es `true`, muestra un fondo elevado que destaca el versículo.
   final bool esFoco;
+
+  /// Si es `true`, muestra un icono ⭐ de 14dp debajo del número.
+  final bool esFavorito;
 
   /// Callback al tap normal.
   final VoidCallback? onTap;
@@ -76,31 +80,45 @@ class VerseCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Número gold a la izquierda
+          // Columna izquierda: número gold, ⭐ si es favorito, dot si hay nota.
           SizedBox(
             width: 32,
-            child: Text(
-              '$numero',
-              style: textTheme.titleSmall?.copyWith(
-                color: const Color(0xFFCCA43B),
-                fontWeight: FontWeight.w700,
-                fontFamily:
-                    fontFamily == 'system' ? null : fontFamily,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$numero',
+                  style: textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFFCCA43B),
+                    fontWeight: FontWeight.w700,
+                    fontFamily:
+                        fontFamily == 'system' ? null : fontFamily,
+                  ),
+                ),
+                if (esFavorito)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                if (notaIndicatorColor != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: notaIndicatorColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-          // Indicador de nota (14×14)
-          if (notaIndicatorColor != null) ...[
-            const SizedBox(width: 4),
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: notaIndicatorColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
           const SizedBox(width: 8),
           // Texto del versículo
           Expanded(

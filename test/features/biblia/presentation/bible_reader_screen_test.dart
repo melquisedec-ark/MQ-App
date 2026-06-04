@@ -11,6 +11,7 @@ import 'package:mqapp/features/biblia/application/providers/historial_provider.d
 import 'package:mqapp/features/biblia/application/providers/notas_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/reader_providers.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
+import 'package:mqapp/features/biblia/data/models/nota.dart';
 import 'package:mqapp/features/biblia/presentation/widgets/verse_card.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_search_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
@@ -138,6 +139,22 @@ void main() {
         initialViewMode: initialViewMode,
       );
 
+  /// Escribe un valor en la tabla `config`. Necesario para tests que
+  /// necesitan que el `ReaderViewModeNotifier` cargue el modo desde BD
+  /// (su `_loadFromDb` async sobrescribe el `state` inicial del override).
+  Future<void> setConfig(String clave, String valor) async {
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+    await db.insert(
+      'config',
+      {
+        'clave': clave,
+        'valor': valor,
+        'fecha_modificacion': now,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   testWidgets('muestra el título del libro y el versículo inicial',
       (tester) async {
     await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
@@ -235,5 +252,79 @@ void main() {
     // Con conexión, el botón ENVIAR aparece en la AppBar.
     expect(find.text('ENVIAR'), findsOneWidget);
     expect(find.byIcon(Icons.cast_rounded), findsOneWidget);
+  });
+
+  // B1: preview de nota inline en verse mode.
+  testWidgets('verse mode muestra preview de nota cuando existe',
+      (tester) async {
+    // Pre-poblar config con view_mode=verse (el _loadFromDb async del
+    // notifier sobrescribe el state inicial del override; sin esto el
+    // test termina corriendo en chapter mode por default).
+    await setConfig('biblia.reader_view_mode', 'verse');
+
+    // Sembrar una nota en Génesis 1:1.
+    await notasRepo.upsert(
+      1, // versionId
+      1, // libroId
+      1, // capitulo
+      1, // versiculo numero
+      'Mi nota sobre la creación',
+      NotaColor.amarillo,
+    );
+
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // El texto de la nota debe ser visible en el preview inline.
+    expect(find.text('Mi nota sobre la creación'), findsOneWidget);
+  });
+
+  testWidgets('verse mode sin nota NO muestra preview', (tester) async {
+    await setConfig('biblia.reader_view_mode', 'verse');
+    // Sin notas sembradas.
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // El badge "Tiene nota" no debe aparecer.
+    expect(find.text('Tiene nota'), findsNothing);
+  });
+
+  testWidgets('tap en preview de nota abre modal Editar nota',
+      (tester) async {
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await notasRepo.upsert(
+      1,
+      1,
+      1,
+      1,
+      'Nota a editar',
+      NotaColor.verde,
+    );
+
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // Tap en el _NotaPreview widget usando la key.
+    final preview = find.byKey(ValueKey('nota_preview_1'));
+    expect(preview, findsOneWidget);
+    await tester.tap(preview);
+    // El padre tiene onDoubleTap, hay que esperar el delay de gesture arena.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    // El modal se abre con título "Editar nota" (porque ya existe).
+    expect(find.text('Editar nota'), findsOneWidget);
   });
 }

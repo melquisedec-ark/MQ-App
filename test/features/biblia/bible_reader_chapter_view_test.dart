@@ -109,6 +109,74 @@ void main() {
       expect(find.byType(VerseCard), findsNWidgets(2));
     });
 
+    // A4: tests del icono ⭐ inline.
+    testWidgets('VerseCard con esFavorito: true renderiza icono de estrella',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VerseCard(
+              numero: 7,
+              texto: 'Versículo favorito de prueba',
+              esFavorito: true,
+            ),
+          ),
+        ),
+      );
+
+      // Aparece un Icon de estrella (Filled/outlined ambos usan star_rounded
+      // / star_outline_rounded). En este caso es el star_rounded (filled).
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+    });
+
+    testWidgets('VerseCard sin esFavorito NO renderiza icono de estrella',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VerseCard(
+              numero: 8,
+              texto: 'Versículo normal sin favorito',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.star_rounded), findsNothing);
+      expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
+    });
+
+    testWidgets(
+      'VerseCard con nota + favorito + 320dp width renderiza denso',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 320,
+                child: VerseCard(
+                  numero: 12,
+                  texto: 'Versículo con nota y marcado como favorito',
+                  esFavorito: true,
+                  notaIndicatorColor: Color(0xFFF59E0B),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Ambos iconos están presentes en la columna izquierda.
+        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+        // Dot de nota presente.
+        expect(find.byType(Container), findsWidgets);
+        // Texto principal visible.
+        expect(
+          find.text('Versículo con nota y marcado como favorito'),
+          findsOneWidget,
+        );
+      },
+    );
+
     test('toggle de readerViewModeProvider alterna verse <-> chapter', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);

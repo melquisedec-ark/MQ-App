@@ -224,6 +224,21 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
     final currentVerse = ref.watch(currentVerseProvider);
     final appearance = ref.watch(bibleAppearanceProvider);
 
+    // A4: set de números de versículo favoritos en el capítulo actual.
+    final favoritosAsync = ref.watch(favoritosStreamProvider);
+    final favoritosEnCapitulo = favoritosAsync.maybeWhen(
+      data: (list) {
+        final set = <int>{};
+        for (final f in list) {
+          if (f.libroId == libroId && f.capitulo == capitulo) {
+            set.add(f.numero);
+          }
+        }
+        return set;
+      },
+      orElse: () => <int>{},
+    );
+
     // O7b: mapa de número de versículo → color de nota para el capítulo actual.
     final notasAsync = ref.watch(notasStreamProvider);
     final notasEnCapitulo = notasAsync.maybeWhen(
@@ -288,6 +303,7 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
                     numero: numero,
                     texto: texto,
                     esFoco: numero == currentVerse,
+                    esFavorito: favoritosEnCapitulo.contains(numero),
                     notaIndicatorColor: notasEnCapitulo[numero],
                     fontFamily: appearance.fontFamily,
                     textColor: appearance.textColor,
@@ -832,6 +848,15 @@ class _VerseCard extends ConsumerWidget {
                     versiculo.texto,
                     style: textStyle,
                   ),
+                  // B1: preview de nota inline (verse mode).
+                  if (nota != null) ...[
+                    const SizedBox(height: 12),
+                    _NotaPreview(
+                      key: ValueKey('nota_preview_${versiculo.numero}'),
+                      nota: nota,
+                      onTap: () => _openNoteEditorInline(context, ref, nota),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Text(
                     '${versiculo.numero}/$totalVersiculos',
@@ -841,6 +866,73 @@ class _VerseCard extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Abre el modal de edición de nota con la nota existente precargada.
+  void _openNoteEditorInline(
+    BuildContext context,
+    WidgetRef ref,
+    Nota nota,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => NoteEditorModal(
+        versionId: versionId,
+        libroId: libroId,
+        capitulo: capitulo,
+        versiculoNumero: versiculo.numero,
+        existingNote: nota,
+      ),
+    );
+  }
+}
+
+/// Preview inline de una nota en verse mode.
+///
+/// Renderiza un mini-card con borde izquierdo 3dp del color de la nota,
+/// el texto truncado a 3 líneas, y un `GestureDetector` que abre el
+/// editor al tap. Usa `GestureDetector` (no `InkWell`) para no robar
+/// el `onLongPress` del wrapper de la card.
+class _NotaPreview extends StatelessWidget {
+  const _NotaPreview({
+    super.key,
+    required this.nota,
+    required this.onTap,
+  });
+
+  final Nota nota;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorForNota(nota.color);
+    final textTheme = Theme.of(context).textTheme;
+    return Semantics(
+      label: 'Editar nota',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: color, width: 3),
+            ),
+          ),
+          child: Text(
+            nota.contenido,
+            style: textTheme.bodyMedium?.copyWith(
+              fontStyle: FontStyle.italic,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ),
     );
