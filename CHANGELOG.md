@@ -6,56 +6,57 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ## [1.0.3] — 2026-06-04
 
-### Cross-references bíblicas (openbible.info)
+### Added
+- **Sistema de Cross-References bíblicas (C1-C9)** ⭐
+  - 340,000 referencias bíblicas de openbible.info vía scrollmapper/bible_databases (CC-BY 4.0 / MIT)
+  - Nueva tabla `cross_referencia` con FKs a libro (cross-versión, no FK a versiculo.id)
+  - 3 índices optimizados (from, to, votos) + 4 triggers de validación de FK
+  - Modelo Dart `CrossReferencia` con `Equatable`, `fromMap/toMap/copyWith`
+  - Repositorio con `getByFromVerse`, `getByToVerse`, `countByFromVerse`, `getCountsByFromVerseBatch`
+  - Providers: `crossReferenciasProvider`, `crossReferenciasCountProvider`, `crossRefCountsProvider` (batch), `crossReferenciasResueltasProvider` (con resolución de nombres)
+  - UI en **verse mode**: sección `🔗 N referencias` ANTES de la sección de nota
+  - UI en **chapter mode**: icono `🔗` debajo del número del versículo cuando tiene refs
+  - **Navegación con query param `?v=N`**: tap en una ref abre el reader en ese versículo
+  - **Stack de navegación**: atrás desde una ref vuelve al versículo de origen (pushNamed, NO replace)
+  - **Búsqueda de refs**: nueva tab "Referencias" en SearchScreen (busca versículos que CITAN a uno dado)
+  - Atribuciones en AboutScreen + LICENSE file
+- **Botones inline en chapter mode (A4)** ⭐
+  - Versículos favoritos muestran ⭐ debajo del número
+  - Indicador de nota (dot color) ahora más visible (14dp)
+  - Icono de cross-refs (link) cuando aplica
+- **Preview de nota en verse mode (B1+A5)** 🐛
+  - Bug fix: el usuario ahora SÍ ve y edita notas en verse mode (preview inline con Card tinted)
+  - Botón "Editar" explícito en el card de preview
+  - Color de la nota como tint del card
+- **Toggle de modo lectura en bottom bar (A1+A2)**
+  - Eliminado del AppBar, trasladado al bottom bar (más accesible)
+- **ReadingSettingsSheet simplificado (A3)**
+  - Toggle de modo lectura eliminado del sheet (ya está en bottom bar)
+- **Bottom bar consolidado a 1 fila densa (D1)**
+  - 7 IconButton compactos (toggle view mode, skip_prev, chevron_left, verse_num, chevron_right, skip_next, settings)
 
-#### Added
-- **C4+C5+C6**: UI de cross-references en Bible reader
-  - `ReferenciasCruzadasSection` (verse mode): sección colapsable con
-    header "🔗 N referencias", muestra 2 refs + "Ver todas" expandible
-  - `VerseCard.crossRefCount` (chapter mode): badge `Icons.link_rounded`
-    12dp en la columna izquierda con tooltip "N referencia/referencias"
-  - Integración: sección entre el texto del versículo y la nota (verse);
-    badge en cada `VerseCard` (chapter)
-  - Provider `crossRefCountsProvider` con batch query
-    `getCountsByFromVerseBatch` (1 query para el capítulo completo,
-    evita 176 queries individuales en Salmo 119)
-- **C7+C8**: Navegación de cross-references
-  - Tap en una ref → `context.pushNamed('biblia_reader', ..., ?v=N)`
-  - Router acepta query param `?v=N` para versículo inicial
-  - `BibleReaderScreen.initialVersiculo` (opcional) abre directamente
-    en el versículo destino
-  - Edge case: `to_libro_id` no existe en la versión actual →
-    SnackBar "Versículo no disponible en esta versión" y NO navega
-- **C9**: Búsqueda de cross-references
-  - `SearchScreen` ahora tiene 2 tabs (TabBar + TabController):
-    * "Versículos" (default, búsqueda FTS5 como antes)
-    * "Referencias" (nuevo): input "Buscar referencias (ej. Juan 3:16)"
-  - Parser regex `(.+?)\s+(\d+)[:.](\d+)` resuelve libro por nombre
-    o abreviatura (case+accent insensitive)
-  - Query `crossRefsRepo.getByToVerse()` retorna versículos que CITAN
-    al versículo destino, ordenados por votos DESC
-  - Tap en resultado navega al versículo origen (FROM) con `?v=N`
-- **Atribuciones**: LICENSE + sección en AboutScreen
-  - `LICENSE` (raíz): MIT para el código de MQ-App + sección
-    THIRD-PARTY ATTRIBUTIONS para openbible.info (CC-BY 4.0),
-    scrollmapper/bible_databases (MIT), y Treasury of Scripture
-    Knowledge (dominio público, 1850)
-  - AboutScreen: nueva Card "Atribuciones" con bullets tappables a
-    las URLs de los datasets
+### Changed
+- `pubspec.yaml`: `1.0.2+2` → `1.0.3+3`
+- `assets/db/biblia_version.json`: `version: 2` → `version: 3` (nueva tabla cross_referencia)
+- `lib/core/database/bible_database_helper.dart`: `SCHEMA_VERSION: 1` → `2` (migración 004)
+- `_loadFromDb()` de `ReaderViewModeNotifier` ahora respeta flag `_hydrated` (race condition fix)
+- Bottom bar: 2 filas → 1 fila densa
+- Indicadores de favorito/nota/refs en chapter mode son **always-visible** (no solo en focus)
 
-#### Changed
-- `app_router.dart`: ruta `biblia_reader` ahora parsea query param `?v=N`
-- `BibleReaderScreen`: nuevo param opcional `initialVersiculo` + uso
-  en `initState` para sobrescribir `currentVersiculoNumeroProvider`
-- `bible_reader_screen.dart` (chapter mode): carga batch de cross-ref
-  counts al inicio, pasa `crossRefCount` a cada `VerseCard`
-- `VerseCard`: nueva prop opcional `crossRefCount` (default `null`)
+### Fixed
+- **Bug crítico**: Race condition en `ReaderViewModeNotifier` — si el usuario cambia el modo antes de que `_loadFromDb` complete, el cambio se sobrescribe
+- **Bug de UX**: Nota no visible/editable en verse mode (B1) — ahora con preview inline
+- Docstring obsoleto en `BibleSchemaVersion` (formato JSON actualizado)
+- Docstring incorrecto en `libro.dart` (AT: 1..46 → 1..39)
+- Debug `print` y `debugPrint` leftovers en 2 tests
+- `db_version.json` de himnario bumped sin justificación (revertido)
 
-#### Stats
-- 4 commits (1 por fase funcional)
-- 602/602 tests pasando (+24 nuevos desde v1.0.2)
-- Bundle size: +27MB aceptado (dataset de cross-refs ~340k filas)
-- Branch: `mq-app-init`
+### Stats
+- 12 commits (Fase 1+2+3 + C1-C9 + auditoría)
+- 602/602 tests pasando (514 baseline + 88 nuevos)
+- 0 errores en flutter analyze
+- Bundle size: +27MB (de 7.45MB a ~34-35MB por las 340k cross-references)
+- Aceptado por el usuario
 
 ---
 
