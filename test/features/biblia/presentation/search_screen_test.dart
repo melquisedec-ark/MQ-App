@@ -208,15 +208,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
 
-    // Debug
-    final allText = find
-        .byType(Text)
-        .evaluate()
-        .map((e) => (e.widget as Text).data)
-        .where((t) => t != null)
-        .toList();
-    debugPrint('Text widgets: $allText');
-
     // El resultado debe mostrar que Juan 3:16 cita Génesis 22:12.
     expect(find.text('Jn 3:16'), findsOneWidget);
     // Y el header "1 versículo cita a Génesis 22:12" (1 sola ref en el seed).

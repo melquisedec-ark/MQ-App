@@ -22,8 +22,18 @@ import 'package:flutter/services.dart' show rootBundle;
 /// ## Formato esperado
 ///
 /// ```json
-/// {"version": 1}
+/// {
+///   "version": 3,
+///   "schema_version": 2,
+///   "created_at": "2026-06-04",
+///   "migrations_applied": [...]
+/// }
 /// ```
+///
+/// Solo se lee `version` (asset). `schema_version` y `migrations_applied`
+/// son decorativos. Si el archivo no existe, está mal formado, o la
+/// plataforma no soporta `rootBundle` (tests), se retorna `0` y la app
+/// continúa con la BD local existente (o vacía en primera instalación).
 ///
 /// Si el archivo no existe, está mal formado, o la plataforma no soporta
 /// `rootBundle` (tests), se retorna `0` y la app continúa con la BD local

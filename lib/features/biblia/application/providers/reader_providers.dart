@@ -18,8 +18,13 @@ final readerViewModeProvider =
 /// - Default: [BibleReaderViewMode.chapter] (modo scroll).
 /// - Se hidrata desde [BibliaConfigKeys.readerViewMode] al iniciar.
 /// - Cada cambio se persiste con [BibliaConfigRepository.set].
+///
+/// Usa el flag [_hydrated] para evitar que la carga asíncrona desde BD
+/// sobrescriba un cambio que el usuario haya hecho mientras tanto
+/// (race condition reportada por @arqui en auditoría v1.0.3).
 class ReaderViewModeNotifier extends StateNotifier<BibleReaderViewMode> {
   final Ref _ref;
+  bool _hydrated = false;
 
   ReaderViewModeNotifier(this._ref) : super(BibleReaderViewMode.chapter) {
     _loadFromDb();
@@ -32,8 +37,12 @@ class ReaderViewModeNotifier extends StateNotifier<BibleReaderViewMode> {
         BibliaConfigKeys.readerViewMode,
         defaultValue: 'chapter',
       );
-      state = _parseMode(raw);
+      if (!_hydrated) {
+        _hydrated = true;
+        state = _parseMode(raw);
+      }
     } catch (_) {
+      _hydrated = true;
       // Mantener default (chapter)
     }
   }
@@ -41,6 +50,7 @@ class ReaderViewModeNotifier extends StateNotifier<BibleReaderViewMode> {
   /// Cambia el modo de vista y lo persiste en BD.
   Future<void> setViewMode(BibleReaderViewMode mode) async {
     state = mode;
+    _hydrated = true;
     try {
       final repo = _ref.read(bibliaConfigRepositoryProvider);
       await repo.set(BibliaConfigKeys.readerViewMode, _modeName(mode));

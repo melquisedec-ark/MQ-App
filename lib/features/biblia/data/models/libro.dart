@@ -41,7 +41,7 @@ extension TestamentoX on Testamento {
 /// Uno de los 66 libros canónicos de la Biblia.
 ///
 /// `numero` sigue el orden canónico estándar:
-///   AT: 1..46  (Génesis = 1, Malaquías = 39)
+///   AT: 1..39  (Génesis = 1, Malaquías = 39)
 ///   NT: 47..66 (Mateo = 40, Apocalipsis = 66)
 ///
 /// `totalCapitulos` se desnormaliza para evitar `COUNT(*)` en la UI.

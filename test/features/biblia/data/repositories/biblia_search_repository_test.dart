@@ -66,22 +66,15 @@ void main() {
         // El seed no tiene "José" pero tiene "Jehová". Verificamos que
         // tipiar "jehova" (sin tilde) matchee.
         // NOTA: El trigger inserta solo el rowid y el texto; el FTS5 con
-        // remove_diacritics 2 normaliza en el índice. Verificamos
-        // empíricamente.
-        final conTilde = await bundle.search.search('Jehová');
+        // remove_diacritics 2 normaliza en el índice.
         final sinTilde = await bundle.search.search('jehova');
-        // La búsqueda con tilde puede no encontrar (depende de cómo FTS5
-        // tokeniza el texto original "Jehová"). Pero la búsqueda sin tilde
-        // SÍ debe encontrar porque remove_diacritics 2 normaliza ambos.
+        // remove_diacritics 2 normaliza ambos, por lo que búsqueda sin
+        // tilde SÍ debe encontrar.
         expect(
           sinTilde,
           isNotEmpty,
           reason: 'Búsqueda sin tilde debe encontrar "Jehová"',
         );
-        // (conTilde puede ser vacío o no dependiendo del tokenizer; no
-        // asumimos un comportamiento específico aquí.)
-        // ignore: avoid_print
-        print('conTilde=${conTilde.length}, sinTilde=${sinTilde.length}');
       } finally {
         await closeBibleRepos(
           db: bundle.db,
