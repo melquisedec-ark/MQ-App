@@ -27,6 +27,7 @@ class VerseCard extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.notaIndicatorColor,
+    this.crossRefCount,
     this.fontFamily,
     this.textColor,
     this.lineHeight,
@@ -52,6 +53,12 @@ class VerseCard extends StatelessWidget {
 
   /// Color del indicador de nota (si no es null, muestra un dot 14×14).
   final Color? notaIndicatorColor;
+
+  /// C5: cantidad de cross-references que SALEN del versículo.
+  /// Si es `null` o `0`, no se muestra el icono link.
+  /// Si es `> 0`, muestra un icono `Icons.link_rounded` de 12dp
+  /// DEBAJO del número, ⭐ favorito y dot de nota.
+  final int? crossRefCount;
 
   /// Familia tipográfica opcional (null = system default).
   final String? fontFamily;
@@ -80,7 +87,8 @@ class VerseCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Columna izquierda: número gold, ⭐ si es favorito, dot si hay nota.
+          // Columna izquierda: número gold, ⭐ si es favorito, dot si hay nota,
+          // 🔗 si tiene cross-references.
           SizedBox(
             width: 32,
             child: Column(
@@ -113,6 +121,21 @@ class VerseCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: notaIndicatorColor,
                         shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                // C5: badge link si tiene cross-references. Tooltip
+                // muestra el conteo exacto con singular/plural.
+                if (crossRefCount != null && crossRefCount! > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Tooltip(
+                      message: '$crossRefCount '
+                          '${crossRefCount == 1 ? 'referencia' : 'referencias'}',
+                      child: Icon(
+                        Icons.link_rounded,
+                        size: 12,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),

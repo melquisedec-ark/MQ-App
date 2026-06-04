@@ -274,6 +274,146 @@ void main() {
       });
     });
 
+    // C6: batch query para evitar N+1 al renderizar chapter view.
+    group('getCountsByFromVerseBatch', () {
+      test('retorna Map con counts por versículo en el capítulo', () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          // Juan cap 3: solo el versículo 16 tiene refs (3 en el seed).
+          final map = await bundle.crossRefs.getCountsByFromVerseBatch(
+            versionId: 1,
+            libroId: 4, // Juan
+            capitulo: 3,
+          );
+          expect(map, isA<Map<int, int>>());
+          // Solo aparece el versículo 16 (con count 3). El 17 y 18 no
+          // tienen refs salientes en el seed, no aparecen en el Map.
+          expect(map.length, 1);
+          expect(map[16], 3);
+          expect(map.containsKey(17), isFalse);
+          expect(map.containsKey(18), isFalse);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('versículos sin refs no aparecen en el Map', () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          // Génesis cap 1: versículo 1 tiene 2 refs; versículo 2 no tiene
+          // refs salientes (es destino, no origen).
+          final map = await bundle.crossRefs.getCountsByFromVerseBatch(
+            versionId: 1,
+            libroId: 1,
+            capitulo: 1,
+          );
+          expect(map.containsKey(1), isTrue);
+          expect(map[1], 2);
+          expect(map.containsKey(2), isFalse);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('capítulo sin refs retorna Map vacío', () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          // Génesis cap 2: ninguna ref sale de aquí en el seed.
+          final map = await bundle.crossRefs.getCountsByFromVerseBatch(
+            versionId: 1,
+            libroId: 1,
+            capitulo: 2,
+          );
+          expect(map, isEmpty);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('respeta versionId (no cuenta refs de otra versión)', () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          // Las refs del seed son de version_id=1; en version=2 no hay.
+          final map = await bundle.crossRefs.getCountsByFromVerseBatch(
+            versionId: 2,
+            libroId: 4,
+            capitulo: 3,
+          );
+          expect(map, isEmpty);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('con seed vacío (sin refs), retorna Map vacío', () async {
+        final bundle = await createBibleReposWithSeed();
+        try {
+          final map = await bundle.crossRefs.getCountsByFromVerseBatch(
+            versionId: 1,
+            libroId: 1,
+            capitulo: 1,
+          );
+          expect(map, isEmpty);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('Génesis 1:1 con 2 refs y Salmos 23:1 con 1 ref en sus caps',
+          () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          // Cap 1 de Génesis: versículo 1 tiene 2 refs.
+          final gen1 = await bundle.crossRefs.getCountsByFromVerseBatch(
+            versionId: 1,
+            libroId: 1,
+            capitulo: 1,
+          );
+          expect(gen1[1], 2);
+
+          // Cap 23 de Salmos: versículo 1 tiene 1 ref.
+          final sal23 = await bundle.crossRefs.getCountsByFromVerseBatch(
+            versionId: 1,
+            libroId: 3,
+            capitulo: 23,
+          );
+          expect(sal23[1], 1);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+    });
+
     group('Integridad referencial (triggers)', () {
       test('insertar con version_id inexistente falla con error de trigger',
           () async {

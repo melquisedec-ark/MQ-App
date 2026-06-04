@@ -137,6 +137,43 @@ class CrossReferenciasRepository {
     return 0;
   }
 
+  /// Batch: cuenta refs que SALEN de cada versículo de un capítulo entero,
+  /// agrupadas por `from_versiculo`.
+  ///
+  /// C6: optimización para chapter view. Sin esta query, renderizar
+  /// 176 versículos (Salmo 119) dispararía 176 `countByFromVerse`
+  /// consecutivos. Con esta batch, una sola query retorna el Map
+  /// completo `{versiculo → count}` para todo el capítulo.
+  ///
+  /// El índice `idx_cross_ref_from` (version_id, from_libro_id, from_capitulo,
+  /// from_versiculo) hace esta query eficiente: usa solo el prefijo
+  /// (libro_id, capitulo) y agrega en memoria.
+  Future<Map<int, int>> getCountsByFromVerseBatch({
+    required int versionId,
+    required int libroId,
+    required int capitulo,
+  }) async {
+    final db = await _database;
+    final rows = await db.rawQuery(
+      '''
+      SELECT from_versiculo, COUNT(*) AS c FROM cross_referencia
+      WHERE version_id    = ?
+        AND from_libro_id = ?
+        AND from_capitulo  = ?
+      GROUP BY from_versiculo
+      ''',
+      [versionId, libroId, capitulo],
+    );
+    final result = <int, int>{};
+    for (final row in rows) {
+      final versiculo = row['from_versiculo'] as int;
+      final raw = row['c'];
+      final count = raw is int ? raw : (raw as num).toInt();
+      result[versiculo] = count;
+    }
+    return result;
+  }
+
   /// Cuenta cuántas refs LLEGAN a un versículo.
   ///
   /// Complemento de [countByFromVerse] para badges "citado por N refs".

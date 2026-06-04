@@ -177,6 +177,115 @@ void main() {
       },
     );
 
+    // C5: crossRefCount prop.
+    testWidgets('VerseCard con crossRefCount: 5 renderiza icono link',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VerseCard(
+              numero: 16,
+              texto: 'Versículo con 5 referencias',
+              crossRefCount: 5,
+            ),
+          ),
+        ),
+      );
+
+      // El icono link_rounded debe estar visible.
+      expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+      // El tooltip muestra el conteo exacto.
+      expect(find.byTooltip('5 referencias'), findsOneWidget);
+    });
+
+    testWidgets('VerseCard con crossRefCount: 0 NO renderiza icono link',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VerseCard(
+              numero: 16,
+              texto: 'Versículo sin referencias (count=0)',
+              crossRefCount: 0,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.link_rounded), findsNothing);
+    });
+
+    testWidgets('VerseCard con crossRefCount: null NO renderiza icono link',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VerseCard(
+              numero: 16,
+              texto: 'Versículo sin prop crossRefCount',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.link_rounded), findsNothing);
+    });
+
+    testWidgets('VerseCard con crossRefCount: 1 renderiza icono link',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VerseCard(
+              numero: 16,
+              texto: 'Versículo con 1 referencia',
+              crossRefCount: 1,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+      // Tooltip usa singular (1 referencia, no "1 referencias").
+      expect(find.byTooltip('1 referencia'), findsOneWidget);
+    });
+
+    testWidgets(
+      'VerseCard con fav + nota + refs en 320dp renderiza los 3 indicadores',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 320,
+                child: VerseCard(
+                  numero: 16,
+                  texto:
+                      'Versículo completo: favorito, con nota y con referencias',
+                  esFavorito: true,
+                  notaIndicatorColor: Color(0xFFF59E0B),
+                  crossRefCount: 7,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Los 3 iconos/indicadores están en la columna izquierda.
+        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+        // Tooltip del link con el conteo.
+        expect(find.byTooltip('7 referencias'), findsOneWidget);
+        // Texto principal visible.
+        expect(
+          find.text(
+            'Versículo completo: favorito, con nota y con referencias',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
     test('toggle de readerViewModeProvider alterna verse <-> chapter', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);

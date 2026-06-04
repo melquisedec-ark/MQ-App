@@ -6,6 +6,7 @@ import 'package:sqflite_common/sqflite.dart';
 
 import 'package:mqapp/core/database/bible_database_helper.dart';
 import 'package:mqapp/features/biblia/application/providers/biblia_version_provider.dart';
+import 'package:mqapp/features/biblia/application/providers/cross_referencias_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/favoritos_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/historial_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/notas_provider.dart';
@@ -14,6 +15,7 @@ import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
 import 'package:mqapp/features/biblia/data/models/nota.dart';
 import 'package:mqapp/features/biblia/presentation/widgets/verse_card.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_search_repository.dart';
+import 'package:mqapp/features/biblia/data/repositories/cross_referencias_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/notas_repository.dart';
@@ -28,6 +30,7 @@ Widget _buildHarness({
   required NotasRepository notasRepo,
   required HistorialRepository histRepo,
   required BibliaSearchRepository searchRepo,
+  required CrossReferenciasRepository crossRefsRepo,
   required BibleDatabaseHelper helper,
   int libroId = 1,
   int capitulo = 1,
@@ -41,6 +44,7 @@ Widget _buildHarness({
       favoritosRepositoryProvider.overrideWithValue(favRepo),
       notasRepositoryProvider.overrideWithValue(notasRepo),
       historialRepositoryProvider.overrideWithValue(histRepo),
+      crossReferenciasRepositoryProvider.overrideWithValue(crossRefsRepo),
       favoritosStreamProvider.overrideWith((_) => favRepo.watchAll()),
       notasStreamProvider.overrideWith((_) => notasRepo.watchAll()),
       historialStreamProvider.overrideWith((_) => histRepo.watchAll()),
@@ -103,6 +107,7 @@ void main() {
   late NotasRepository notasRepo;
   late HistorialRepository histRepo;
   late BibliaSearchRepository searchRepo;
+  late CrossReferenciasRepository crossRefsRepo;
   late BibleDatabaseHelper helper;
 
   setUp(() async {
@@ -113,6 +118,7 @@ void main() {
     notasRepo = bundle.notas;
     histRepo = bundle.historial;
     searchRepo = bundle.search;
+    crossRefsRepo = bundle.crossRefs;
     helper = BibleDatabaseHelper.forTesting(db);
   });
 
@@ -125,13 +131,19 @@ void main() {
     );
   });
 
-  Widget buildHarness({int libroId = 1, int capitulo = 1, bool isConnected = false, BibleReaderViewMode initialViewMode = BibleReaderViewMode.chapter}) =>
+  Widget buildHarness({
+    int libroId = 1,
+    int capitulo = 1,
+    bool isConnected = false,
+    BibleReaderViewMode initialViewMode = BibleReaderViewMode.chapter,
+  }) =>
       _buildHarness(
         bibliaRepo: bibliaRepo,
         favRepo: favRepo,
         notasRepo: notasRepo,
         histRepo: histRepo,
         searchRepo: searchRepo,
+        crossRefsRepo: crossRefsRepo,
         helper: helper,
         libroId: libroId,
         capitulo: capitulo,
@@ -412,5 +424,48 @@ void main() {
 
     expect(find.text('Tu nota'), findsOneWidget);
     expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // C4+C5+C6: cross-references en Bible reader
+  // ─────────────────────────────────────────────────────────────
+
+  testWidgets('verse mode con cross-refs en BD muestra sección N referencias',
+      (tester) async {
+    // Sembrar cross-refs directamente en la BD: Génesis 1:1 tiene 2
+    // refs en el seed (→ Gn 1:2 y → Gn 2:4). El reader abre en
+    // versículo 1 por default, no hay que navegar.
+    await seedCrossReferenciasTestDb(db);
+
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await tester.pumpWidget(buildHarness(
+      libroId: 1, // Génesis
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // La sección muestra "2 referencias" (plural porque hay 2).
+    expect(find.text('2 referencias'), findsOneWidget);
+    // El icono link_rounded del header está visible.
+    expect(find.byIcon(Icons.link_rounded), findsAtLeastNWidgets(1));
+    // La primera ref se muestra (Génesis 1:2 — versículo único).
+    expect(find.text('Génesis 1:2'), findsOneWidget);
+  });
+
+  testWidgets('verse mode sin cross-refs NO muestra sección de referencias',
+      (tester) async {
+    // El setUp default NO incluye cross-refs, así que Génesis 1:1
+    // no tiene refs salientes. Modo verse.
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // El header "N referencias" no debe aparecer en absoluto.
+    expect(find.textContaining('referencia'), findsNothing);
   });
 }

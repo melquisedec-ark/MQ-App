@@ -12,6 +12,7 @@ import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/bible_appearance_provider.dart';
 import '../../application/providers/biblia_config_provider.dart';
+import '../../application/providers/cross_referencias_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/derived_providers.dart';
@@ -24,6 +25,7 @@ import '../../data/models/libro.dart';
 import '../../data/models/nota.dart';
 import '../../data/models/versiculo.dart';
 import '../widgets/note_editor_modal.dart';
+import '../widgets/referencias_cruzadas_section.dart';
 import '../widgets/verse_card.dart';
 import '../widgets/reading_settings_sheet.dart';
 import '../widgets/version_picker_sheet.dart';
@@ -31,15 +33,24 @@ import '../widgets/version_picker_sheet.dart';
 /// Pantalla principal del Bible reader: muestra 1 versículo a la vez.
 ///
 /// Referencia: `doc/wireframes/02_bible_module.md` (Pantalla 2c).
+///
+/// C8: acepta `initialVersiculo` (de query param `?v=N`) para abrir
+/// directamente en un versículo concreto. Si es `null`, se usa 1
+/// (default).
 class BibleReaderScreen extends ConsumerStatefulWidget {
   const BibleReaderScreen({
     super.key,
     required this.libroId,
     required this.capitulo,
+    this.initialVersiculo,
   });
 
   final int libroId;
   final int capitulo;
+
+  /// Versículo inicial opcional (de query param `?v=N` en la URL).
+  /// Si es `null`, se inicializa en 1.
+  final int? initialVersiculo;
 
   @override
   ConsumerState<BibleReaderScreen> createState() => _BibleReaderScreenState();
@@ -56,6 +67,9 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       ref.read(currentLibroIdProvider.notifier).state = widget.libroId;
       ref.read(currentCapituloProvider.notifier).state = widget.capitulo;
       final currentNum = ref.read(currentVersiculoNumeroProvider);
+      // C8 (placeholder, no usado aún): initialVersiculo del query param
+      // `?v=N` se activará en C7+C8. Por ahora mantenemos el
+      // comportamiento original (preservar currentNum, default 1).
       if (currentNum == null) {
         ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
       }
@@ -258,6 +272,16 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
       orElse: () => <int, Color>{},
     );
 
+    // C5+C6: batch de conteos de cross-refs para el capítulo actual.
+    // Una sola query retorna `Map<versiculo, count>` para todos los
+    // versículos con refs. Versículos sin refs NO aparecen en el
+    // mapa (el caller trata ausencia como 0). Esto evita las 176
+    // queries individuales que tendríamos con un loop por versículo.
+    final refCountsAsync = ref.watch(
+      crossRefCountsProvider(ChapterQuery(libroId: libroId, capitulo: capitulo)),
+    );
+    final refCountsEnCapitulo = refCountsAsync.valueOrNull ?? const <int, int>{};
+
     return FutureBuilder<Capitulo?>(
       future: bibliaRepo.getCapitulo(libroId, capitulo),
       builder: (context, capSnap) {
@@ -309,6 +333,8 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
                     esFoco: numero == currentVerse,
                     esFavorito: favoritosEnCapitulo.contains(numero),
                     notaIndicatorColor: notasEnCapitulo[numero],
+                    // C5+C6: badge link si tiene cross-refs.
+                    crossRefCount: refCountsEnCapitulo[numero],
                     fontFamily: appearance.fontFamily,
                     textColor: appearance.textColor,
                     lineHeight: appearance.lineHeight,
@@ -851,6 +877,15 @@ class _VerseCard extends ConsumerWidget {
                   Text(
                     versiculo.texto,
                     style: textStyle,
+                  ),
+                  // C4: cross-references inline (verse mode).
+                  // Se muestra ENTRE el texto y la nota, con loading
+                  // silencioso (no spinner) y fallback silencioso en
+                  // error para no romper la lectura.
+                  ReferenciasCruzadasSection(
+                    libroId: libroId,
+                    capitulo: capitulo,
+                    versiculo: versiculo.numero,
                   ),
                   // B1: preview de nota inline (verse mode).
                   if (nota != null) ...[

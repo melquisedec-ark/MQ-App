@@ -82,3 +82,40 @@ final crossReferenciasCountProvider = FutureProvider.family
     versiculo: query.versiculo,
   );
 });
+
+/// Query tipada para [crossRefCountsProvider].
+/// Identifica un capítulo por su par (libro, capítulo).
+class ChapterQuery {
+  const ChapterQuery({required this.libroId, required this.capitulo});
+
+  final int libroId;
+  final int capitulo;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ChapterQuery &&
+      other.libroId == libroId &&
+      other.capitulo == capitulo;
+
+  @override
+  int get hashCode => Object.hash(libroId, capitulo);
+}
+
+/// C6: batch de conteos de refs por versículo para un capítulo.
+///
+/// Una sola query retorna `Map<versiculo, count>` para todos los
+/// versículos del capítulo que tengan refs. Versículos sin refs
+/// NO aparecen en el mapa (el caller debe tratar ausencia como 0).
+///
+/// Reemplaza 176 queries individuales (Salmo 119) por 1 sola query
+/// batch al renderizar la vista de capítulo.
+final crossRefCountsProvider = FutureProvider.family
+    .autoDispose<Map<int, int>, ChapterQuery>((ref, query) async {
+  final versionId = ref.watch(currentVersionIdProvider);
+  final repo = ref.read(crossReferenciasRepositoryProvider);
+  return repo.getCountsByFromVerseBatch(
+    versionId: versionId,
+    libroId: query.libroId,
+    capitulo: query.capitulo,
+  );
+});
