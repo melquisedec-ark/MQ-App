@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
-import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/derived_providers.dart';
 import '../../data/models/capitulo.dart';
 import '../../data/models/libro.dart';
@@ -16,90 +15,44 @@ import '../../data/models/libro.dart';
 ///
 /// Referencia: `doc/wireframes/02_bible_module.md` (Pantalla 2b).
 ///
-/// O5 — Incluye un selector de número de versículo que permite al usuario
-/// elegir un versículo específico antes de navegar al reader.
-/// Si el campo está vacío o el valor no es válido, se usa 1 por defecto.
-class ChapterGridScreen extends ConsumerStatefulWidget {
+/// Al tap en un capítulo, navega al [BibleReaderScreen] en modo `chapter`
+/// (default desde v1.0.2), donde el usuario puede ver todos los versículos
+/// y tocar el que quiera (auto-scroll + foco automático vía
+/// `currentVerseProvider`).
+class ChapterGridScreen extends ConsumerWidget {
   const ChapterGridScreen({super.key, required this.libroId});
 
   final int libroId;
 
-  @override
-  ConsumerState<ChapterGridScreen> createState() => _ChapterGridScreenState();
-}
-
-class _ChapterGridScreenState extends ConsumerState<ChapterGridScreen> {
-  final _verseController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _verseController.text = '';
-  }
-
-  @override
-  void dispose() {
-    _verseController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(covariant ChapterGridScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.libroId != widget.libroId) {
-      _verseController.text = '';
-    }
-  }
-
-  /// Parsea el texto del controlador y retorna un número válido de versículo.
-  /// Si está vacío o inválido, retorna 1 por defecto.
-  int get _verseNumber {
-    final text = _verseController.text.trim();
-    final parsed = int.tryParse(text);
-    return (parsed != null && parsed > 0) ? parsed : 1;
-  }
-
-  void _decrementVerse() {
-    final current = _verseNumber;
-    if (current > 1) {
-      _verseController.text = '${current - 1}';
-    }
-  }
-
-  void _incrementVerse() {
-    final current = _verseNumber;
-    _verseController.text = '${current + 1}';
-  }
-
-  void _navigateToChapter(int chapterNum) {
-    final verse = _verseNumber;
-    ref.read(currentLibroIdProvider.notifier).state = widget.libroId;
+  void _navigateToChapter(BuildContext context, WidgetRef ref, int chapterNum) {
+    ref.read(currentLibroIdProvider.notifier).state = libroId;
     ref.read(currentCapituloProvider.notifier).state = chapterNum;
-    ref.read(currentVersiculoNumeroProvider.notifier).state = verse;
+    // El reader abre en modo `chapter` (default) y muestra todos los
+    // versículos del capítulo. El usuario hace tap en el que quiere leer;
+    // `_ChapterVerseList` hace auto-scroll al versículo target vía
+    // `currentVerseProvider`.
     context.pushNamed(
       'biblia_reader',
       pathParameters: {
-        'libroId': '${widget.libroId}',
+        'libroId': '$libroId',
         'capitulo': '$chapterNum',
       },
     );
-    // Reiniciar selector tras navegar (O5)
-    _verseController.text = '';
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final versionId = ref.watch(currentVersionIdProvider);
 
     // Cargar libro para mostrar el nombre en el AppBar
     final libroRepo = ref.read(bibliaRepositoryProvider);
-    final libroFuture = libroRepo.getLibroById(widget.libroId);
-    final capsFuture = ref.watch(capitulosProvider(widget.libroId));
+    final libroFuture = libroRepo.getLibroById(libroId);
+    final capsFuture = ref.watch(capitulosProvider(libroId));
     final lastReadCap = ref.watch(
       lastReadCapituloProvider(
-        LastReadQuery(versionId: versionId, libroId: widget.libroId),
+        LastReadQuery(versionId: versionId, libroId: libroId),
       ),
     );
 
@@ -140,63 +93,7 @@ class _ChapterGridScreenState extends ConsumerState<ChapterGridScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            // ── Selector de número de versículo (O5) ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.menu_book_rounded,
-                    size: 18,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Versículo:',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 56,
-                    child: TextField(
-                      controller: _verseController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        hintText: 'n°',
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.remove_rounded),
-                    onPressed: _decrementVerse,
-                    iconSize: 20,
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Versículo anterior',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_rounded),
-                    onPressed: _incrementVerse,
-                    iconSize: 20,
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Versículo siguiente',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Expanded(
               child: capsFuture.when(
                 loading: () => const Center(
@@ -215,9 +112,8 @@ class _ChapterGridScreenState extends ConsumerState<ChapterGridScreen> {
                   return _ChapterGrid(
                     capitulos: caps,
                     lastReadCapitulo: lastRead,
-                    onChapterTap: (cap) {
-                      _navigateToChapter(cap.numero);
-                    },
+                    onChapterTap: (cap) =>
+                        _navigateToChapter(context, ref, cap.numero),
                   );
                 },
               ),
@@ -232,7 +128,7 @@ class _ChapterGridScreenState extends ConsumerState<ChapterGridScreen> {
                     final caps = capsFuture.valueOrNull;
                     if (caps == null || caps.isEmpty) return;
                     final random = caps[math.Random().nextInt(caps.length)];
-                    _navigateToChapter(random.numero);
+                    _navigateToChapter(context, ref, random.numero);
                   },
                   icon: const Icon(Icons.casino_rounded),
                   label: const Text('Capítulo aleatorio'),

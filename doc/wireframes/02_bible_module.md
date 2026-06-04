@@ -231,10 +231,101 @@ Al tap en `[buscar]`:
 
 ## Propósito
 
-Mostrar los capítulos del libro seleccionado en formato grid (no list, es más rápido). En v1.0.2 se agregó un **selector de versículo** (O5) que permite al usuario elegir un versículo específico antes de entrar al reader.
+Mostrar los capítulos del libro seleccionado en formato grid (no list, es más rápido). Al tap en un capítulo, navega al [BibleReaderScreen] en modo `chapter` (default desde v1.0.2), donde el usuario puede ver todos los versículos y tocar el que quiera (auto-scroll + foco automático vía `currentVerseProvider`).
 
-## Layout (Génesis, 50 capítulos) — v1.0.2
+> **Histórico — v1.0.2 (O5)**: Se implementó un selector numérico de versículo (TextField + botones +/-). Fue removido en v1.0.3 tras feedback del usuario: era ineficiente y no era un flujo cómodo (si pones "70" en un capítulo con 31 versículos, abre en versículo 1 silenciosamente). Ver §"Decisión v1.0.3" abajo.
 
+## Layout (Génesis, 50 capítulos) — v1.0.3
+
+```
++------------------------------------------------------------------------------+
+| <- Genesis                                                [buscar]           |
++------------------------------------------------------------------------------+
+|                                                                              |
+|   Selecciona un capitulo                                                      |
+|                                                                              |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   | 1 | 2 | 3 | 4 | 5 |      | 26| 27| 28| 29| 30|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   | 6 | 7 | 8 | 9 |10 |      | 31| 32| 33| 34| 35|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   |11 |12 |13 |14 |15 |      | 36| 37| 38| 39| 40|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   |16 |17 |18 |19 |20 |      | 41| 42| 43 |44 |45 |                          |
+|   +---+---+---+---+---+      +---+---+---+---+---+                           |
+|   |21 |22 |23 |24 |25 |      | 46| 47| 48| 49| 50|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                           |
+|                                                                              |
+|                            [ Capitulo aleatorio ]                             |
++------------------------------------------------------------------------------+
+```
+
+## Elementos — v1.0.3
+
+| Elemento | Comportamiento | Notas |
+|----------|----------------|-------|
+| Botón chapter (cuadrado 56x56dp) | Tap → push `BibleReaderScreen(libro, cap)` | Abre en modo `chapter` (lista de versículos) |
+| **Color de fondo del botón** | - **Blanco/gris** = no visitado. - **Gold claro** = visitado. - **Gold fuerte** = última lectura. | |
+| `[buscar]` | Igual que en Book Selector. | |
+| `[ Capitulo aleatorio ]` | Botón full-width outlined. Tap → push `BibleReaderScreen` con `Random.nextInt(numCapitulos) + 1` del libro actual. | |
+
+## Flujo de selección de versículo (post v1.0.3)
+
+Después del tap en un capítulo, el usuario selecciona el versículo **directamente en el reader**:
+
+1. El reader abre en **modo `chapter`** (default desde v1.0.2).
+2. Se muestra una **lista scrollable de todos los versículos** del capítulo (`_ChapterVerseList` con `ScrollablePositionedList`).
+3. El usuario hace **tap en cualquier versículo** → se setea `currentVerseProvider`.
+4. `_ChapterVerseList` hace **auto-scroll** al versículo target (líneas 242-272 de `bible_reader_screen.dart`).
+5. El versículo se marca como "foco" (highlight visual).
+
+> **No hay paso intermedio.** El reader cumple el rol de "verse picker" + "reader" en una sola pantalla. Es el patrón estándar de la industria (YouVersion, Bible Gateway, Olive Tree, Logos).
+
+## Decisión v1.0.3 (eliminación del selector)
+
+### Investigación @arqui + @curie (3 jun 2026)
+
+El usuario reportó:
+> "cuando estoy seleccionando el capitulo que quiero leer arriba me aparece la opción para elegir el versiculo, pero no lo veo eficiente, porque si yo pongo el 70 y luego selecciono el capitulo, obviamente me va abrir en el verso 1, si ves no entra en conflicto pero tampoco estoy creando un flujo comodo para el usuario"
+
+**Hallazgos clave:**
+
+1. **El TextField es un anti-patrón** en Bible apps. Ningún líder (YouVersion, Bible Gateway, Olive Tree, Logos) tiene una pantalla de "verse picker" separada.
+
+2. **El reader en modo `chapter` ya cumple el rol** que el usuario pidió: lista todos los versículos, tap selecciona, auto-scroll funciona. El flujo ya existía en:
+   - `search_screen.dart:277-301` (búsqueda → reader → auto-scroll)
+   - `home_screen.dart:259-283` (versículo del día → reader → auto-scroll)
+
+3. **El TextField tenía un bug latente**: si el usuario ponía "70" en un capítulo con 31 versículos, no validaba — abría en versículo 1 silenciosamente.
+
+### Acción tomada (v1.0.3)
+
+- **Eliminadas** las 54 líneas del bloque UI del selector (líneas 144-198 de `chapter_grid_screen.dart` v1.0.2)
+- **Eliminados** `_verseController`, `_decrementVerse`, `_incrementVerse`, `_verseNumber`, el reset en `didUpdateWidget`
+- **Simplificado** `_navigateToChapter`: ya no setea `currentVersiculoNumeroProvider` (queda en default 1)
+- **Convertida** la clase de `ConsumerStatefulWidget` de vuelta a `ConsumerWidget` (sin estado local)
+- **Refactorizado** el layout: ahora subtítulo seguido directo del grid (sin row intermedio)
+
+### Veredicto
+
+- ✅ Tests: 514/514 siguen pasando (3 tests del chapter grid + 8 del chapter view + 5 del reader)
+- ✅ `flutter analyze`: 0 errores
+- ✅ No se rompió ninguna feature existente
+- ✅ Coherencia con `search_screen.dart` y `home_screen.dart` (todos usan el mismo flujo)
+
+## Variantes
+
+- **Libros con 1 capítulo** (e.g., Abdías, Judas): El grid muestra 1 sola celda, centrada.
+- **Salmos (150 caps):** Grid de 5 columnas, scroll vertical. ~30 filas.
+
+## Indicador "última lectura"
+
+Al volver al Book Selector, la fila del último libro visitado muestra un dot gold al lado del nombre:
+
+```
++------------------------------------------------------------------------+
+|  [01]  Genesis  *  50 capitulos                              [>]      |  <- * = ultima lectura
++------------------------------------------------------------------------+
 ```
 +------------------------------------------------------------------------------+
 | <- Genesis                                                [buscar]           |
