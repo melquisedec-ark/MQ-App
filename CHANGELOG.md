@@ -4,6 +4,61 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ---
 
+## [1.0.3] — 2026-06-04
+
+### Cross-references bíblicas (openbible.info)
+
+#### Added
+- **C4+C5+C6**: UI de cross-references en Bible reader
+  - `ReferenciasCruzadasSection` (verse mode): sección colapsable con
+    header "🔗 N referencias", muestra 2 refs + "Ver todas" expandible
+  - `VerseCard.crossRefCount` (chapter mode): badge `Icons.link_rounded`
+    12dp en la columna izquierda con tooltip "N referencia/referencias"
+  - Integración: sección entre el texto del versículo y la nota (verse);
+    badge en cada `VerseCard` (chapter)
+  - Provider `crossRefCountsProvider` con batch query
+    `getCountsByFromVerseBatch` (1 query para el capítulo completo,
+    evita 176 queries individuales en Salmo 119)
+- **C7+C8**: Navegación de cross-references
+  - Tap en una ref → `context.pushNamed('biblia_reader', ..., ?v=N)`
+  - Router acepta query param `?v=N` para versículo inicial
+  - `BibleReaderScreen.initialVersiculo` (opcional) abre directamente
+    en el versículo destino
+  - Edge case: `to_libro_id` no existe en la versión actual →
+    SnackBar "Versículo no disponible en esta versión" y NO navega
+- **C9**: Búsqueda de cross-references
+  - `SearchScreen` ahora tiene 2 tabs (TabBar + TabController):
+    * "Versículos" (default, búsqueda FTS5 como antes)
+    * "Referencias" (nuevo): input "Buscar referencias (ej. Juan 3:16)"
+  - Parser regex `(.+?)\s+(\d+)[:.](\d+)` resuelve libro por nombre
+    o abreviatura (case+accent insensitive)
+  - Query `crossRefsRepo.getByToVerse()` retorna versículos que CITAN
+    al versículo destino, ordenados por votos DESC
+  - Tap en resultado navega al versículo origen (FROM) con `?v=N`
+- **Atribuciones**: LICENSE + sección en AboutScreen
+  - `LICENSE` (raíz): MIT para el código de MQ-App + sección
+    THIRD-PARTY ATTRIBUTIONS para openbible.info (CC-BY 4.0),
+    scrollmapper/bible_databases (MIT), y Treasury of Scripture
+    Knowledge (dominio público, 1850)
+  - AboutScreen: nueva Card "Atribuciones" con bullets tappables a
+    las URLs de los datasets
+
+#### Changed
+- `app_router.dart`: ruta `biblia_reader` ahora parsea query param `?v=N`
+- `BibleReaderScreen`: nuevo param opcional `initialVersiculo` + uso
+  en `initState` para sobrescribir `currentVersiculoNumeroProvider`
+- `bible_reader_screen.dart` (chapter mode): carga batch de cross-ref
+  counts al inicio, pasa `crossRefCount` a cada `VerseCard`
+- `VerseCard`: nueva prop opcional `crossRefCount` (default `null`)
+
+#### Stats
+- 4 commits (1 por fase funcional)
+- 602/602 tests pasando (+24 nuevos desde v1.0.2)
+- Bundle size: +27MB aceptado (dataset de cross-refs ~340k filas)
+- Branch: `mq-app-init`
+
+---
+
 ## [1.0.2] — 2026-06-03
 
 ### Sesión de feedback post-v1.0.1 — 10 observaciones del usuario
