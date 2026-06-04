@@ -66,18 +66,18 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       if (!mounted) return;
       ref.read(currentLibroIdProvider.notifier).state = widget.libroId;
       ref.read(currentCapituloProvider.notifier).state = widget.capitulo;
+      // C8: si la ruta trae `?v=N` (deep link desde cross-ref), abrir
+      // directamente en ese versículo. Si no, preservar el actual
+      // (compatibilidad con navegación interna) o default 1.
       final currentNum = ref.read(currentVersiculoNumeroProvider);
-      // C8 (placeholder, no usado aún): initialVersiculo del query param
-      // `?v=N` se activará en C7+C8. Por ahora mantenemos el
-      // comportamiento original (preservar currentNum, default 1).
-      if (currentNum == null) {
-        ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
+      final initialVerse = widget.initialVersiculo ?? currentNum ?? 1;
+      if (currentNum != initialVerse) {
+        ref.read(currentVersiculoNumeroProvider.notifier).state = initialVerse;
       }
       // Inicializar currentVerseProvider (vista de capítulo) con el
-      // versículo actual (default 1) para que el scroll programático
-      // arranque en la posición correcta.
-      ref.read(currentVerseProvider.notifier).state =
-          ref.read(currentVersiculoNumeroProvider) ?? 1;
+      // versículo actual para que el scroll programático arranque en
+      // la posición correcta.
+      ref.read(currentVerseProvider.notifier).state = initialVerse;
       // Resolver libroId → libroNumero (canónico) y cachearlo para el
       // cliente gRPC (BibleClientActions lo lee al enviar comandos).
       _syncLibroNumeroFromId(widget.libroId);

@@ -71,9 +71,17 @@ final GoRouter appRouter = GoRouter(
                         int.parse(state.pathParameters['libroId']!);
                     final capitulo =
                         int.parse(state.pathParameters['capitulo']!);
+                    // C8: query param `?v=N` (verso inicial opcional).
+                    // Usado por deep links desde cross-refs y desde
+                    // bookmarks/historial. Si el parse falla o no viene,
+                    // se omite y el reader abre en versículo 1 (default).
+                    final vParam = state.uri.queryParameters['v'];
+                    final initialVersiculo =
+                        vParam != null ? int.tryParse(vParam) : null;
                     return BibleReaderScreen(
                       libroId: libroId,
                       capitulo: capitulo,
+                      initialVersiculo: initialVersiculo,
                     );
                   },
                 ),

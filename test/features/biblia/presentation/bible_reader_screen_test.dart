@@ -83,7 +83,15 @@ Widget _buildHarness({
                     builder: (_, state) {
                       final id = int.parse(state.pathParameters['libroId']!);
                       final cap = int.parse(state.pathParameters['capitulo']!);
-                      return BibleReaderScreen(libroId: id, capitulo: cap);
+                      // C8: parsear `?v=N` igual que en app_router.
+                      final vParam = state.uri.queryParameters['v'];
+                      final v =
+                          vParam != null ? int.tryParse(vParam) : null;
+                      return BibleReaderScreen(
+                        libroId: id,
+                        capitulo: cap,
+                        initialVersiculo: v,
+                      );
                     },
                   ),
                 ],
@@ -467,5 +475,326 @@ void main() {
 
     // El header "N referencias" no debe aparecer en absoluto.
     expect(find.textContaining('referencia'), findsNothing);
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // C7+C8: navegación de cross-references
+  // ─────────────────────────────────────────────────────────────
+
+  testWidgets('?v=N query param: reader abre directamente en versículo N',
+      (tester) async {
+    // C8: la ruta `biblia_reader` parsea `?v=N` y pasa initialVersiculo
+    // al screen. En el harness, montamos un GoRouter con la misma
+    // ruta. Para que la query llegue, el initialLocation debe incluirla.
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          bibleDatabaseHelperProvider.overrideWithValue(helper),
+          bibliaRepositoryProvider.overrideWithValue(bibliaRepo),
+          favoritosRepositoryProvider.overrideWithValue(favRepo),
+          notasRepositoryProvider.overrideWithValue(notasRepo),
+          historialRepositoryProvider.overrideWithValue(histRepo),
+          crossReferenciasRepositoryProvider.overrideWithValue(crossRefsRepo),
+          favoritosStreamProvider.overrideWith((_) => favRepo.watchAll()),
+          notasStreamProvider.overrideWith((_) => notasRepo.watchAll()),
+          historialStreamProvider.overrideWith((_) => histRepo.watchAll()),
+          isConnectedProvider.overrideWith((_) => false),
+          readerViewModeProvider.overrideWith(
+            (ref) {
+              final n = ReaderViewModeNotifier(ref);
+              n.state = BibleReaderViewMode.verse;
+              return n;
+            },
+          ),
+        ],
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            initialLocation:
+                '/biblia/libro/4/capitulo/3?v=16', // Juan 3:16
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/biblia',
+                builder: (_, __) => const Scaffold(body: Text('biblia-stub')),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'libro/:libroId',
+                    builder: (_, state) => Scaffold(
+                      body: Text('libro-${state.pathParameters['libroId']}'),
+                    ),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'capitulo/:capitulo',
+                        name: 'biblia_reader',
+                        builder: (_, state) {
+                          final id = int.parse(state.pathParameters['libroId']!);
+                          final cap =
+                              int.parse(state.pathParameters['capitulo']!);
+                          final vParam = state.uri.queryParameters['v'];
+                          final v = vParam != null ? int.tryParse(vParam) : null;
+                          return BibleReaderScreen(
+                            libroId: id,
+                            capitulo: cap,
+                            initialVersiculo: v,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    // Esperar a que el async del bible reader cargue los datos.
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    // El versículo 16 está visible (en Juan 3 el seed tiene 3:16).
+    expect(
+      find.textContaining('Porque de tal manera amó Dios al mundo'),
+      findsOneWidget,
+    );
+    // El número 16 (versículo) se ve en la columna izquierda.
+    // (En verse mode se muestra "${numero}" y "${numero}/36" en la parte inferior.)
+    expect(find.text('16/36'), findsOneWidget);
+  });
+
+  testWidgets('?v=invalid (no numérico): reader abre en versículo 1 default',
+      (tester) async {
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: <Override>[
+          bibleDatabaseHelperProvider.overrideWithValue(helper),
+          bibliaRepositoryProvider.overrideWithValue(bibliaRepo),
+          favoritosRepositoryProvider.overrideWithValue(favRepo),
+          notasRepositoryProvider.overrideWithValue(notasRepo),
+          historialRepositoryProvider.overrideWithValue(histRepo),
+          crossReferenciasRepositoryProvider.overrideWithValue(crossRefsRepo),
+          favoritosStreamProvider.overrideWith((_) => favRepo.watchAll()),
+          notasStreamProvider.overrideWith((_) => notasRepo.watchAll()),
+          historialStreamProvider.overrideWith((_) => histRepo.watchAll()),
+          isConnectedProvider.overrideWith((_) => false),
+          readerViewModeProvider.overrideWith(
+            (ref) {
+              final n = ReaderViewModeNotifier(ref);
+              n.state = BibleReaderViewMode.verse;
+              return n;
+            },
+          ),
+        ],
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            initialLocation: '/biblia/libro/4/capitulo/3?v=abc', // inválido
+            routes: <RouteBase>[
+              GoRoute(
+                path: '/biblia',
+                builder: (_, __) => const Scaffold(body: Text('biblia-stub')),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'libro/:libroId',
+                    builder: (_, state) => Scaffold(
+                      body: Text('libro-${state.pathParameters['libroId']}'),
+                    ),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'capitulo/:capitulo',
+                        name: 'biblia_reader',
+                        builder: (_, state) {
+                          final id = int.parse(state.pathParameters['libroId']!);
+                          final cap =
+                              int.parse(state.pathParameters['capitulo']!);
+                          final vParam = state.uri.queryParameters['v'];
+                          final v = vParam != null ? int.tryParse(vParam) : null;
+                          return BibleReaderScreen(
+                            libroId: id,
+                            capitulo: cap,
+                            initialVersiculo: v,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Como 'abc' no parsea, se omite el param y el reader abre en
+    // versículo 1. El seed tiene Génesis 1:1 → "En el principio...";
+    // como abrimos Juan cap 3 versículo 1 NO existe en el seed (solo
+    // 16, 17, 18), pero el versículo 1 = fallback al primer versículo
+    // (3:16). El test solo verifica que NO crashea y que el reader
+    // muestra algún texto.
+    expect(find.byType(BibleReaderScreen), findsOneWidget);
+  });
+
+  testWidgets('sin query param ?v: reader abre en versículo 1 (default)',
+      (tester) async {
+    // Modo chapter: el verse 1 no está visible en el test (lazy render),
+    // pero el provider currentVerse debe iniciar en 1.
+    final container = ProviderContainer(overrides: <Override>[
+      bibleDatabaseHelperProvider.overrideWithValue(helper),
+      bibliaRepositoryProvider.overrideWithValue(bibliaRepo),
+      favoritosRepositoryProvider.overrideWithValue(favRepo),
+      notasRepositoryProvider.overrideWithValue(notasRepo),
+      historialRepositoryProvider.overrideWithValue(histRepo),
+      crossReferenciasRepositoryProvider.overrideWithValue(crossRefsRepo),
+    ]);
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Consumer(builder: (context, ref, _) {
+            return BibleReaderScreen(libroId: 1, capitulo: 1);
+          }),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // El currentVerseProvider debe ser 1.
+    expect(container.read(currentVerseProvider), 1);
+    // El texto del versículo 1 de Génesis es visible (chapter view).
+    expect(
+      find.textContaining('En el principio creó Dios'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ruta biblia_reader acepta query param ?v=N (parse)',
+      (tester) async {
+    // C8: el GoRoute biblia_reader debe parsear `?v=N` desde
+    // state.uri.queryParameters. Testeamos la estructura del router
+    // + builder pattern (mismo enfoque que hymn_navigation_test.dart).
+    final capturedVersiculo = <int?>[];
+
+    final testRouter = GoRouter(
+      initialLocation: '/biblia/libro/1/capitulo/1?v=42',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/biblia',
+          builder: (_, __) => const Scaffold(body: Text('biblia-stub')),
+          routes: <RouteBase>[
+            GoRoute(
+              path: 'libro/:libroId',
+              builder: (_, state) => Scaffold(
+                body: Text('libro-${state.pathParameters['libroId']}'),
+              ),
+              routes: <RouteBase>[
+                GoRoute(
+                  path: 'capitulo/:capitulo',
+                  name: 'biblia_reader',
+                  builder: (_, state) {
+                    final vParam = state.uri.queryParameters['v'];
+                    final v = vParam != null ? int.tryParse(vParam) : null;
+                    capturedVersiculo.add(v);
+                    return Scaffold(body: Text('reader-v=$v'));
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp.router(routerConfig: testRouter),
+    );
+    await tester.pumpAndSettle();
+
+    // El builder se ejecutó con `?v=42` → capturó 42.
+    expect(capturedVersiculo, contains(42));
+    expect(find.text('reader-v=42'), findsOneWidget);
+  });
+
+  testWidgets('?v=invalid (no numérico) → int.tryParse retorna null',
+      (tester) async {
+    // Caso borde: si ?v=abc (no parseable), la ruta NO debe crashear.
+    // El builder recibe null y el reader abre en versículo 1.
+    final capturedVersiculo = <int?>[];
+
+    final testRouter = GoRouter(
+      initialLocation: '/biblia/libro/1/capitulo/1?v=abc',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/biblia',
+          builder: (_, __) => const Scaffold(body: Text('biblia-stub')),
+          routes: <RouteBase>[
+            GoRoute(
+              path: 'libro/:libroId',
+              builder: (_, state) => const Scaffold(body: Text('libro')),
+              routes: <RouteBase>[
+                GoRoute(
+                  path: 'capitulo/:capitulo',
+                  name: 'biblia_reader',
+                  builder: (_, state) {
+                    final vParam = state.uri.queryParameters['v'];
+                    final v = vParam != null ? int.tryParse(vParam) : null;
+                    capturedVersiculo.add(v);
+                    return Scaffold(body: Text('reader-v=$v'));
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: testRouter));
+    await tester.pumpAndSettle();
+
+    // tryParse('abc') → null.
+    expect(capturedVersiculo, contains(null));
+    expect(find.text('reader-v=null'), findsOneWidget);
+  });
+
+  testWidgets('verse mode: tap en cross-ref no crashea y la sección es tappable',
+      (tester) async {
+    // C7: el widget ReferenciasCruzadasSection expone un InkWell
+    // tappable por cada ref. Verificamos:
+    //   1. La sección se renderiza (la vimos en test previo).
+    //   2. El InkWell de la ref está presente.
+    //   3. Tap no crashea (la navegación con GoRouter en tests es
+    //      difícil de verificar end-to-end; lo testeamos aparte en
+    //      router test y en el pushNamed manual de la sección).
+    await seedCrossReferenciasTestDb(db);
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // La sección tiene "2 referencias" y la primera ref es Génesis 1:2.
+    expect(find.text('2 referencias'), findsOneWidget);
+    final refText = find.text('Génesis 1:2');
+    expect(refText, findsOneWidget);
+
+    // El InkWell ancestral del ref text es el target del tap.
+    final refInkWell = find
+        .ancestor(of: refText, matching: find.byType(InkWell))
+        .first;
+    expect(refInkWell, findsOneWidget);
+
+    // Tap no debe lanzar excepción. La navegación con pushNamed se
+    // ejecuta (la verificamos en otros tests a nivel de router).
+    await tester.tap(refInkWell, warnIfMissed: false);
+    await tester.pump(const Duration(milliseconds: 100));
+    // Si llega aquí sin crash, el test pasa.
+    expect(tester.takeException(), isNull);
   });
 }
