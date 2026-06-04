@@ -104,5 +104,57 @@ void main() {
       popped++;
       expect(popped, 1);
     });
+
+    // C9 follow-up: la sección de atribuciones lista los datasets
+    // openbible / scrollmapper (CC-BY 4.0, MIT) y la fuente del texto
+    // bíblico (RV1909, dominio público).
+    testWidgets('muestra sección de Atribuciones con openbible/scrollmapper',
+        (tester) async {
+      final router = GoRouter(
+        initialLocation: '/about',
+        routes: [
+          GoRoute(
+            path: '/about',
+            name: 'about',
+            builder: (_, __) => const AboutScreen(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Header de la sección.
+      expect(find.text('Atribuciones'), findsOneWidget);
+
+      // Cross-references (requerido por CC-BY 4.0).
+      expect(
+        find.text('Datos de cross-references bíblicas:'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('openbible.info/labs/cross-references/ (CC-BY 4.0)'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Vía scrollmapper/bible_databases (MIT)'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Treasury of Scripture Knowledge'),
+        findsOneWidget,
+      );
+
+      // Texto bíblico.
+      expect(find.text('Texto bíblico (RV1909):'), findsOneWidget);
+      expect(
+        find.text('Reina Valera 1909 — dominio público'),
+        findsOneWidget,
+      );
+    });
   });
 }

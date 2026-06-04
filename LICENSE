@@ -1,0 +1,62 @@
+MIT License
+
+Copyright (c) 2026 Melquisedec
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+THIRD-PARTY ATTRIBUTIONS
+================================================================================
+
+This software includes third-party data and libraries. The following
+attributions are provided in accordance with the licenses of those
+components.
+
+--------------------------------------------------------------------------------
+1. Reina Valera 1909 (RVR1909) — Bible text
+--------------------------------------------------------------------------------
+The Spanish Bible text bundled with this app is the Reina Valera 1909
+revision, which is in the public domain in its country of origin and most
+other countries. See https://en.wikipedia.org/wiki/Reina-Valera_bible for
+background.
+
+--------------------------------------------------------------------------------
+2. Cross-References — openbible.info / scrollmapper/bible_databases
+--------------------------------------------------------------------------------
+The cross-references feature uses data derived from the
+"openbible.info Cross-References" dataset, distributed under the
+Creative Commons Attribution 4.0 International License (CC-BY 4.0).
+
+The data was obtained via the scrollmapper/bible_databases project on
+GitHub: https://github.com/scrollmapper/bible_databases (MIT licensed).
+
+The data is derived from the public-domain "Treasury of Scripture
+Knowledge" (1850).
+
+- Original source: https://www.openbible.info/labs/cross-references/
+- License: CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+- Required attribution: openbible.info
+- Distribution channel: scrollmapper/bible_databases (MIT)
+
+--------------------------------------------------------------------------------
+3. Flutter and other dependencies
+--------------------------------------------------------------------------------
+This software is built on the Flutter framework and many other open-source
+libraries. See pubspec.yaml for the full list of dependencies and their
+respective licenses.
