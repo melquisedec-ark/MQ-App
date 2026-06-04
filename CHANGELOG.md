@@ -4,6 +4,46 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ---
 
+## [1.0.2] — 2026-06-03
+
+### Sesión de feedback post-v1.0.1 — 10 observaciones del usuario
+
+### Fixed
+- **O2**: Himnario home — botón de configuración reemplazado por flecha de retroceso; card "Administrar Himnario" eliminada
+- **O4**: FAB de cambio de tema en Biblia alineado a la misma altura que el FAB del himnario (SafeArea removido)
+- **O6a**: Modo de vista del lector bíblico ahora persiste en BD — al cerrar y reabrir la app, se mantiene el modo seleccionado
+- **O6b/O10**: Auto-scroll al seleccionar resultado de búsqueda — fuerza modo capítulo y usa el scroll programático existente
+- **O7**: Notas — modal puede abrir notas existentes para edición (recibe `existingNote` como parámetro); indicador visual agrandado a 14×14 con color de nota; badge "Tiene nota" en modo verso
+- **O7 bug fix**: `ref.read(notaColorDefaultProvider)` ahora se llama DENTRO del listener, no capturado del build scope (evita usar el valor inicial `ninguno` antes de que el provider cargue de BD)
+- **O8**: Eliminado menú de tres puntitos redundante del AppBar del Bible Reader (su función la cubre el toggle de modo de lectura adyacente)
+
+### Added
+- **O1**: About screen — enlaces habilitados a página oficial (https://melquisedec-ark.github.io) y comunidad WhatsApp; licencia MIT con subtítulo explicativo
+- **O3 ⭐**: Glassmorphism restaurado COMPLETO — `glass_container.dart` portado desde HimnarioID_2.0, `BackdropFilter` restaurado en `hymn_detail_screen.dart`, `GlassContainer` en `live_projection_screen.dart`. El himnario queda IDÉNTICO a HimnarioID_2.0
+- **O5**: Selector de versículo en `ChapterGridScreen` — TextField numérico con botones +/- para elegir versículo individual antes de entrar al reader
+- **O9 ⭐**: Botón de ajustes de lectura reemplaza al icono de dado aleatorio. Nuevo `bibleAppearanceProvider` INDEPENDIENTE con 4 campos (fontScale, fontFamily, textColor, lineHeight). Nuevo `ReadingSettingsSheet` con 5 controles (slider tamaño letra, fuente, color texto, slider interlineado, modo lectura). Aplicación en vivo de los cambios
+- **O9 ⭐**: Default del modo de vista cambiado de `verse` a `chapter` (modo scrollable, solicitado por el usuario)
+- 4 nuevas claves en `BibliaConfigKeys`: `biblia.reader_view_mode`, `biblia.font_scale`, `biblia.font_family`, `biblia.text_color`, `biblia.line_height`
+- Wireframe 08 (`08_reading_settings.md`) — Documentación del nuevo bottom sheet de ajustes
+
+### Changed
+- Versión en `pubspec.yaml`: `1.0.0+1` → `1.0.2+2`
+- `readerViewModeProvider` migrado de `StateProvider` a `StateNotifierProvider<ReaderViewModeNotifier, BibleReaderViewMode>` (sigue patrón de `ThemeModeNotifier`)
+- Style guide wireframe 05 §2 — actualizado de "ELIMINADO" a "RESTAURADO en v1.0.2"
+- 7 tests actualizados para reflejar los cambios de UI (títulos "Agregar nota" en lugar de "Nota", "Capítulo X" en chapter mode, etc.)
+
+### Architecture
+- `bibleAppearanceProvider` (nuevo, 153 líneas) — INDEPENDIENTE de `hymnAppearanceProvider` (Clean Architecture entre features)
+- `ReadingSettingsSheet` (nuevo, 411 líneas) — bottom sheet modal con 5 controles
+- `glass_container.dart` (nuevo, port desde HimnarioID_2.0) — widget reutilizable con `BackdropFilter` + `ImageFilter.blur` + `ClipRRect`
+
+### Stats
+- 12 commits (1 por observación + docs)
+- 514/514 tests pasando
+- Branch: `mq-app-init` (push a `origin` exitoso)
+
+---
+
 ## [1.0.1] — 2026-06-02
 
 ### Fixed

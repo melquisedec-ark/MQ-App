@@ -231,10 +231,89 @@ Al tap en `[buscar]`:
 
 ## Propósito
 
-Mostrar los capítulos del libro seleccionado en formato grid (no list, es más rápido).
+Mostrar los capítulos del libro seleccionado en formato grid (no list, es más rápido). En v1.0.2 se agregó un **selector de versículo** (O5) que permite al usuario elegir un versículo específico antes de entrar al reader.
 
-## Layout (Génesis, 50 capítulos)
+## Layout (Génesis, 50 capítulos) — v1.0.2
 
+```
++------------------------------------------------------------------------------+
+| <- Genesis                                                [buscar]           |
++------------------------------------------------------------------------------+
+|                                                                              |
+|   Selecciona un capitulo                                                      |
+|                                                                              |
+|   [📖] Versiculo:  [-] [  1  ] [+]                                            |
+|                                                                              |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   | 1 | 2 | 3 | 4 | 5 |      | 26| 27| 28| 29| 30|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   | 6 | 7 | 8 | 9 |10 |      | 31| 32| 33| 34| 35|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   |11 |12 |13 |14 |15 |      | 36| 37| 38| 39| 40|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                            |
+|   |16 |17 |18 |19 |20 |      | 41| 42| 43 |44 |45 |                          |
+|   +---+---+---+---+---+      +---+---+---+---+---+                           |
+|   |21 |22 |23 |24 |25 |      | 46| 47| 48| 49| 50|                            |
+|   +---+---+---+---+---+      +---+---+---+---+---+                           |
+|                                                                              |
+|                            [ Capitulo aleatorio ]                             |
++------------------------------------------------------------------------------+
+```
+
+## Elementos — v1.0.2
+
+| Elemento | Comportamiento | Notas |
+|----------|----------------|-------|
+| Selector de versículo | Row entre subtítulo y grid | NUEVO en v1.0.2 (O5) |
+| `[-]` botón | Decrementa versículo (mín 1) | IconButton pequeño |
+| TextField numérico | Ingreso manual del versículo | Teclado numérico, sin `0` inicial |
+| `[+]` botón | Incrementa versículo (máx total del capítulo) | Validar contra `totalVersiculos` |
+| Botón chapter (cuadrado 56x56dp) | Tap → push `ReaderScreen(libro, cap, **versiculo seleccionado**)` | Cambió de `1` hardcoded a versículo del selector |
+| **Color de fondo del botón** | - **Blanco/gris** = no visitado. - **Gold claro** = visitado. - **Gold fuerte** = última lectura. | |
+| `[buscar]` | Igual que en Book Selector. | |
+| `[ Capitulo aleatorio ]` | Botón full-width outlined. Tap → push `ReaderScreen` con `Random.nextInt(numCapitulos) + 1` del libro actual y versículo 1. | |
+
+## Selector de versículo (O5) — Detalle
+
+### Decisión arquitectónica (DO4)
+
+**NO se creó `VerseSelectorScreen` independiente**. Se integró un selector numérico en `ChapterGridScreen` por estas razones:
+- Reusar `VerseCard`, `currentVerseProvider` y `_ChapterVerseList` scrollable ya implementados
+- El auto-scroll existente (de `_ChapterVerseList` con `currentVerseProvider`) funciona sin código adicional
+- Sin nueva ruta, sin nueva pantalla
+- Cero duplicación de lógica de scroll
+
+### Validación
+
+- Si el campo está vacío → default 1
+- Si el valor es inválido (no numérico, fuera de rango) → default 1
+- Si el valor excede `totalVersiculos` del capítulo → mostrar error inline o cap al máximo
+- Mínimo: 1, Máximo: `totalVersiculos` del capítulo seleccionado
+
+### Reset behavior
+
+- `didUpdateWidget` resetea el versículo a vacío cuando cambia `libroId`
+- Esto evita que al cambiar de libro, el versículo quede fuera de rango
+
+### Implementación
+
+- `ChapterGridScreen` se convirtió de `ConsumerWidget` a `ConsumerStatefulWidget`
+- Nuevo `_VerseNumberController` para el TextField
+- Lógica extraída a `_navigateToChapter(int chapterNum)`
+
+## Variantes
+
+- **Libros con 1 capítulo** (e.g., Abdías, Judas): El grid muestra 1 sola celda, centrada. El selector de versículo sigue visible (puede ser útil para libros cortos).
+- **Salmos (150 caps):** Grid de 5 columnas, scroll vertical. ~30 filas.
+
+## Indicador "última lectura"
+
+Al volver al Book Selector, la fila del último libro visitado muestra un dot gold al lado del nombre:
+
+```
++------------------------------------------------------------------------+
+|  [01]  Genesis  *  50 capitulos                              [>]      |  <- * = ultima lectura
++------------------------------------------------------------------------+
 ```
 +------------------------------------------------------------------------------+
 | <- Genesis                                                [buscar]           |
