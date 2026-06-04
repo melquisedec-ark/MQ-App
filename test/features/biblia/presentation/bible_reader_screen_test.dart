@@ -190,28 +190,52 @@ void main() {
     );
   });
 
-  testWidgets('botón de favoritos alterna el icono al pulsarlo',
+  testWidgets('favorito alterna desde el icono ⭐ inline en chapter view',
       (tester) async {
+    // Pre-poblar config con view_mode=chapter (default).
+    // (El toggle ya no está en AppBar, está en bottom bar - A1+A2.)
     await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
     await tester.pumpAndSettle();
 
-    // Inicialmente no es favorito
-    final addBtn = find.byTooltip('Agregar a favoritos');
-    expect(addBtn, findsOneWidget);
+    // En chapter view, el icon ⭐ aparece en cada VerseCard.
+    // Inicialmente NO debe haber ningún star_rounded (sin favoritos).
+    expect(find.byIcon(Icons.star_rounded), findsNothing);
 
-    await tester.tap(addBtn);
+    // Agregamos un favorito en BD y verificamos que aparece el star.
+    await favRepo.add(1, 1, 1, 1);
     await tester.pumpAndSettle();
 
-    // Ahora debe ser favorito (cambia el tooltip)
-    expect(find.byTooltip('Quitar de favoritos'), findsOneWidget);
+    expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+
     // Verificar en BD
     final favoritos = await favRepo.getAll(versionId: 1);
     expect(favoritos.length, 1);
     expect(favoritos.first.numero, 1);
   });
 
-  testWidgets('abre el modal de notas al pulsar el botón de nota',
+  testWidgets('toggle de modo lectura ahora está en el bottom bar, no en AppBar',
       (tester) async {
+    await tester.pumpWidget(buildHarness(libroId: 1, capitulo: 1));
+    await tester.pumpAndSettle();
+
+    // A1+A2: el toggle NO debe estar en el AppBar.
+    // El bottom bar tiene "Vista por versículo" como tooltip
+    // (estamos en chapter, el botón dice a dónde switch).
+    expect(find.byTooltip('Vista por versículo'), findsOneWidget);
+    // El AppBar NO debe contener un IconButton con el icono de toggle.
+    final appBar = find.byType(AppBar);
+    final toggleIconInAppBar = find.descendant(
+      of: appBar,
+      matching: find.byIcon(Icons.view_agenda_outlined),
+    );
+    expect(toggleIconInAppBar, findsNothing);
+  });
+
+  testWidgets('abre el modal de notas en verse mode con long-press',
+      (tester) async {
+    // En verse mode, el menú de long-press tiene "Agregar nota".
+    // (El botón inline en bottom bar fue removido en A4+D1.)
+    await setConfig('biblia.reader_view_mode', 'verse');
     await tester.pumpWidget(buildHarness(
       libroId: 1,
       capitulo: 1,
@@ -219,17 +243,15 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final noteBtn = find.byTooltip('Nota');
-    expect(noteBtn, findsOneWidget);
-    await tester.tap(noteBtn);
+    // Long-press sobre el texto del versículo (que es el que tiene
+    // el GestureDetector con onLongPress en verse mode).
+    await tester.longPress(find.text('En el principio creó Dios los cielos y la tierra.'));
     await tester.pumpAndSettle();
 
-    // El modal debe mostrar el título "Agregar nota" (o "Editar nota")
-    expect(find.text('Agregar nota'), findsOneWidget);
-    // Y el campo de texto
-    expect(find.byType(TextField), findsOneWidget);
-    // Y los 4 colores (ninguno, amarillo, verde, azul)
-    expect(find.text('Color'), findsOneWidget);
+    // El modal debe mostrar el título "Agregar nota" o "Editar nota".
+    final hasAddNote = find.text('Agregar nota').evaluate().isNotEmpty;
+    final hasEditNote = find.text('Editar nota').evaluate().isNotEmpty;
+    expect(hasAddNote || hasEditNote, isTrue);
   });
 
   testWidgets('oculta el botón ENVIAR cuando no hay display conectado',

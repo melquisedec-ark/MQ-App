@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers/bible_appearance_provider.dart';
-import '../../application/providers/reader_providers.dart';
-import '../widgets/verse_card.dart' show BibleReaderViewMode;
 
 /// Bottom sheet con ajustes de apariencia para el lector bíblico.
 ///
@@ -12,7 +10,9 @@ import '../widgets/verse_card.dart' show BibleReaderViewMode;
 /// - Selector de fuente (system / serif / monospace)
 /// - Ajuste de color de texto (blanco / negro / sepia / azul)
 /// - Slider de interlineado (1.4 – 2.0)
-/// - Toggle modo lectura (verse / chapter)
+///
+/// El modo de lectura (verse/chapter) se controla desde el bottom bar
+/// del Bible reader (A1+A2), no desde este sheet (A3).
 ///
 /// Los cambios se aplican EN VIVO mientras se interactúa con los controles.
 class ReadingSettingsSheet extends ConsumerStatefulWidget {
@@ -42,7 +42,6 @@ class _ReadingSettingsSheetState extends ConsumerState<ReadingSettingsSheet> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final appearance = ref.watch(bibleAppearanceProvider);
-    final viewMode = ref.watch(readerViewModeProvider);
 
     return SafeArea(
       top: false,
@@ -157,17 +156,6 @@ class _ReadingSettingsSheetState extends ConsumerState<ReadingSettingsSheet> {
                 ),
               ],
             ),
-
-            // ── Modo de lectura ──
-            const _SectionLabel(label: 'Modo de lectura'),
-            const SizedBox(height: 8),
-            _ViewModeSelector(
-              current: viewMode,
-              onChanged: (mode) {
-                ref.read(readerViewModeProvider.notifier).setViewMode(mode);
-              },
-            ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -312,100 +300,4 @@ class _ColorOptionData {
   final String label;
 
   const _ColorOptionData(this.color, this.label);
-}
-
-/// Selector de modo de vista (verse / chapter).
-class _ViewModeSelector extends StatelessWidget {
-  const _ViewModeSelector({
-    required this.current,
-    required this.onChanged,
-  });
-
-  final BibleReaderViewMode current;
-  final ValueChanged<BibleReaderViewMode> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ViewModeOption(
-            icon: Icons.view_headline_rounded,
-            label: 'Versículo',
-            isSelected: current == BibleReaderViewMode.verse,
-            onTap: () => onChanged(BibleReaderViewMode.verse),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ViewModeOption(
-            icon: Icons.view_agenda_outlined,
-            label: 'Capítulo',
-            isSelected: current == BibleReaderViewMode.chapter,
-            onTap: () => onChanged(BibleReaderViewMode.chapter),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ViewModeOption extends StatelessWidget {
-  const _ViewModeOption({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
