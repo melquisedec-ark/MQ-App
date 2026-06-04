@@ -483,5 +483,112 @@ void main() {
         }
       });
     });
+
+    // Feature #2: preview del texto del versículo destino.
+    group('getByFromVerseWithPreview', () {
+      test('retorna refs con preview_texto cuando el versículo existe',
+          () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          // Génesis 1:1 → Génesis 1:2 (versículo 2 existe en el seed).
+          final refs = await bundle.crossRefs.getByFromVerseWithPreview(
+            versionId: 1,
+            libroId: 1,
+            capitulo: 1,
+            versiculo: 1,
+          );
+          expect(refs, hasLength(2));
+          // La primera ref va a Génesis 1:2 → debe tener preview.
+          final refGn12 =
+              refs.firstWhere((r) => r.toCapitulo == 1 && r.toVersiculoInicio == 2);
+          expect(refGn12.previewTexto, isNotNull);
+          expect(
+            refGn12.previewTexto!,
+            contains('Y la tierra estaba desordenada'),
+          );
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('preview_texto es null cuando el versículo destino no existe',
+          () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          // Juan 3:16 → 3 refs. La preview query usa LEFT JOIN a todo,
+          // así que todas las refs se incluyen.
+          final refs = await bundle.crossRefs.getByFromVerseWithPreview(
+            versionId: 1,
+            libroId: 4,
+            capitulo: 3,
+            versiculo: 16,
+          );
+          expect(refs, hasLength(3));
+          // La ref a Génesis 22:12: cap 22 no existe en seed → preview null.
+          final refGn22 =
+              refs.firstWhere((r) => r.toLibroId == 1 && r.toCapitulo == 22);
+          expect(refGn22.previewTexto, isNull);
+          // La ref a Juan 3:17 SÍ existe → preview no null.
+          final refJn317 =
+              refs.firstWhere((r) => r.toLibroId == 4 && r.toCapitulo == 3);
+          expect(refJn317.previewTexto, isNotNull);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('retorna lista vacía si no hay refs', () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          final refs = await bundle.crossRefs.getByFromVerseWithPreview(
+            versionId: 1,
+            libroId: 4,
+            capitulo: 3,
+            versiculo: 17,
+          );
+          expect(refs, isEmpty);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+
+      test('ordena por votos DESC igual que getByFromVerse', () async {
+        final bundle = await createBibleReposWithSeed(includeCrossRefs: true);
+        try {
+          final refs = await bundle.crossRefs.getByFromVerseWithPreview(
+            versionId: 1,
+            libroId: 4,
+            capitulo: 3,
+            versiculo: 16,
+          );
+          expect(refs, hasLength(3));
+          expect(refs[0].votos, 5);
+          expect(refs[1].votos, 3);
+          expect(refs[2].votos, 2);
+        } finally {
+          await closeBibleRepos(
+            db: bundle.db,
+            favoritos: bundle.favoritos,
+            notas: bundle.notas,
+            historial: bundle.historial,
+          );
+        }
+      });
+    });
   });
 }

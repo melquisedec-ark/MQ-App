@@ -157,3 +157,58 @@ class CrossReferencia extends Equatable {
         votos,
       ];
 }
+
+/// Cross-reference con texto preview del versículo destino.
+///
+/// Se obtiene mediante una query con LEFT JOIN a la tabla `versiculo`.
+/// Si el versículo destino no existe en la BD (caso raro), `previewTexto`
+/// será null y la UI no mostrará snippet.
+class CrossReferenciaConPreview extends CrossReferencia {
+  /// Primeros ~50 chars del texto del versículo destino (o null).
+  final String? previewTexto;
+
+  const CrossReferenciaConPreview({
+    required super.id,
+    required super.versionId,
+    required super.fromLibroId,
+    required super.fromCapitulo,
+    required super.fromVersiculo,
+    required super.toLibroId,
+    required super.toCapitulo,
+    required super.toVersiculoInicio,
+    required super.toVersiculoFin,
+    required super.votos,
+    this.previewTexto,
+  });
+
+  /// Construye desde una fila de SQLite con `preview_texto` opcional.
+  factory CrossReferenciaConPreview.fromMap(Map<String, dynamic> map) {
+    final rawPreview = map['preview_texto'] as String?;
+    // Truncar a ~50 chars con ellipsis si es más largo.
+    String? preview;
+    if (rawPreview != null && rawPreview.isNotEmpty) {
+      preview = rawPreview.length > 55
+          ? '${rawPreview.substring(0, 52)}...'
+          : rawPreview;
+    }
+    return CrossReferenciaConPreview(
+      id: map['id'] as int,
+      versionId: map['version_id'] as int,
+      fromLibroId: map['from_libro_id'] as int,
+      fromCapitulo: map['from_capitulo'] as int,
+      fromVersiculo: map['from_versiculo'] as int,
+      toLibroId: map['to_libro_id'] as int,
+      toCapitulo: map['to_capitulo'] as int,
+      toVersiculoInicio: map['to_versiculo_inicio'] as int,
+      toVersiculoFin: map['to_versiculo_fin'] as int,
+      votos: (map['votos'] as int?) ?? 1,
+      previewTexto: preview,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        ...super.props,
+        previewTexto,
+      ];
+}

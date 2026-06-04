@@ -270,8 +270,8 @@ Future<int> main(List<String> args) async {
 
   final db = sqlite3.open(tempDbPath);
   db.execute('PRAGMA foreign_keys = ON;');
-  db.execute('PRAGMA journal_mode = WAL;');
-  db.execute('PRAGMA synchronous = NORMAL;');
+  db.execute('PRAGMA journal_mode = DELETE;'); // DELETE: produce DB autocontenida (sin WAL)
+  db.execute('PRAGMA synchronous = FULL;');    // FULL: máxima seguridad para build offline
   db.execute('PRAGMA temp_store = MEMORY;');
   db.execute('PRAGMA cache_size = -20000;'); // 20 MB
 

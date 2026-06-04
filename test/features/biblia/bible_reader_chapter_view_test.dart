@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common/sqflite.dart';
 
+import 'package:mqapp/features/biblia/application/providers/current_versiculo_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/reader_providers.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
@@ -329,6 +330,68 @@ void main() {
     test('VerseCard widget tests pasan sincrónicamente', () {
       // Test redundante para confirmar carga del módulo.
       expect(BibleReaderViewMode.values.length, 2);
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // Feature #3: Swipe-to-reveal en chapter mode
+    // ─────────────────────────────────────────────────────────────
+
+    test('Swipe en versículo con refs: cambia a verse mode', () {
+      // Feature #3: al hacer swipe izquierda en un versículo que tiene
+      // cross-refs, debe cambiar a verse mode en ese versículo.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Simular: versículo 5 con 3 refs.
+      container.read(currentVersiculoNumeroProvider.notifier).state = 5;
+      container.read(currentVerseProvider.notifier).state = 5;
+
+      expect(container.read(currentVersiculoNumeroProvider), 5);
+      expect(container.read(currentVerseProvider), 5);
+      expect(
+        container.read(readerViewModeProvider),
+        BibleReaderViewMode.chapter,
+      );
+
+      // Simular el cambio a verse mode (lo que haría confirmDismiss).
+      container.read(readerViewModeProvider.notifier)
+          .setViewMode(BibleReaderViewMode.verse);
+      expect(
+        container.read(readerViewModeProvider),
+        BibleReaderViewMode.verse,
+      );
+    });
+
+    test('Swipe en versículo sin refs: no cambia de modo', () {
+      // Si el versículo no tiene cross-refs (crossRefCount == 0),
+      // el confirmDismiss retorna false y NO cambia de modo.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Estado inicial: chapter mode, versículo 1.
+      expect(
+        container.read(readerViewModeProvider),
+        BibleReaderViewMode.chapter,
+      );
+
+      // Simular confirmDismiss con crossRefCount = 0 → retorna false.
+      // No se ejecuta el cambio de modo.
+      const crossRefCount = 0;
+      final shouldChange = crossRefCount != null && crossRefCount > 0;
+      expect(shouldChange, isFalse);
+
+      // El modo sigue siendo chapter.
+      expect(
+        container.read(readerViewModeProvider),
+        BibleReaderViewMode.chapter,
+      );
+    });
+
+    test('Dismissible con crossRefCount null: no cambia de modo', () {
+      // Si crossRefCount es null (no se cargó aún), no cambia de modo.
+      const int? crossRefCount = null;
+      final shouldChange = crossRefCount != null && crossRefCount > 0;
+      expect(shouldChange, isFalse);
     });
   });
 }

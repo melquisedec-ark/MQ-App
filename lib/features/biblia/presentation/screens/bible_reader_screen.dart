@@ -327,13 +327,13 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
                   final texto = index < versiculos.length
                       ? versiculos[index].texto
                       : '';
-                  return VerseCard(
+                  // Feature #3: swipe-to-reveal para cambiar a verse mode.
+                  return _SwipeableVerseCard(
                     numero: numero,
                     texto: texto,
                     esFoco: numero == currentVerse,
                     esFavorito: favoritosEnCapitulo.contains(numero),
                     notaIndicatorColor: notasEnCapitulo[numero],
-                    // C5+C6: badge link si tiene cross-refs.
                     crossRefCount: refCountsEnCapitulo[numero],
                     fontFamily: appearance.fontFamily,
                     textColor: appearance.textColor,
@@ -351,6 +351,79 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
           },
         );
       },
+    );
+  }
+}
+
+/// Feature #3: VerseCard envuelto en Dismissible para swipe-to-reveal.
+///
+/// Swipe izquierda → cambia a verse mode en ese versículo (si tiene refs).
+/// Swipe en versículo sin refs → snap back (sin acción).
+class _SwipeableVerseCard extends ConsumerWidget {
+  const _SwipeableVerseCard({
+    required this.numero,
+    required this.texto,
+    required this.esFoco,
+    required this.esFavorito,
+    this.notaIndicatorColor,
+    this.crossRefCount,
+    this.fontFamily,
+    this.textColor,
+    this.lineHeight,
+    this.onTap,
+  });
+
+  final int numero;
+  final String texto;
+  final bool esFoco;
+  final bool esFavorito;
+  final Color? notaIndicatorColor;
+  final int? crossRefCount;
+  final String? fontFamily;
+  final Color? textColor;
+  final double? lineHeight;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Dismissible(
+      key: ValueKey('verse_$numero'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: colorScheme.primaryContainer,
+        child: Icon(
+          Icons.arrow_forward_ios,
+          color: colorScheme.onPrimaryContainer,
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        // Solo cambiar a verse mode si el versículo tiene cross-refs.
+        if (crossRefCount == null || crossRefCount == 0) return false;
+        // Actualizar providers y cambiar a verse mode.
+        ref.read(currentVersiculoNumeroProvider.notifier).state = numero;
+        ref.read(currentVerseProvider.notifier).state = numero;
+        ref.read(readerViewModeProvider.notifier).setViewMode(
+              BibleReaderViewMode.verse,
+            );
+        // Retornar false para que NO se elimine (solo cambia de modo).
+        return false;
+      },
+      child: VerseCard(
+        numero: numero,
+        texto: texto,
+        esFoco: esFoco,
+        esFavorito: esFavorito,
+        notaIndicatorColor: notaIndicatorColor,
+        crossRefCount: crossRefCount,
+        fontFamily: fontFamily,
+        textColor: textColor,
+        lineHeight: lineHeight,
+        onTap: onTap,
+      ),
     );
   }
 }

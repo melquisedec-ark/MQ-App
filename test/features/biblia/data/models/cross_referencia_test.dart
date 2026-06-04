@@ -168,4 +168,116 @@ void main() {
       expect(a, isNot(equals(b)));
     });
   });
+
+  // Feature #2: CrossReferenciaConPreview
+  group('CrossReferenciaConPreview', () {
+    test('fromMap con preview_texto parsea correctamente', () {
+      final m = CrossReferenciaConPreview.fromMap({
+        'id': 1,
+        'version_id': 1,
+        'from_libro_id': 43,
+        'from_capitulo': 3,
+        'from_versiculo': 16,
+        'to_libro_id': 1,
+        'to_capitulo': 22,
+        'to_versiculo_inicio': 12,
+        'to_versiculo_fin': 14,
+        'votos': 5,
+        'preview_texto':
+            'Por tanto, el Señor mismo os dará señal: He aquí que la '
+            'virgen concebirá, y dará a luz un hijo, y llamará su nombre '
+            'Emanuel',
+      });
+      expect(m.id, 1);
+      expect(m.toLibroId, 1);
+      expect(m.votos, 5);
+      // Preview truncado a ~52 chars + ellipsis.
+      expect(m.previewTexto, isNotNull);
+      expect(m.previewTexto!.length, lessThanOrEqualTo(55));
+      expect(m.previewTexto, contains('Por tanto, el Señor'));
+    });
+
+    test('fromMap sin preview_texto: preview es null', () {
+      final m = CrossReferenciaConPreview.fromMap({
+        'id': 2,
+        'version_id': 1,
+        'from_libro_id': 43,
+        'from_capitulo': 3,
+        'from_versiculo': 16,
+        'to_libro_id': 1,
+        'to_capitulo': 22,
+        'to_versiculo_inicio': 12,
+        'to_versiculo_fin': 14,
+        'votos': 5,
+        'preview_texto': null,
+      });
+      expect(m.previewTexto, isNull);
+    });
+
+    test('preview texto corto (<=55 chars) no se trunca', () {
+      final m = CrossReferenciaConPreview.fromMap({
+        'id': 3,
+        'version_id': 1,
+        'from_libro_id': 1,
+        'from_capitulo': 1,
+        'from_versiculo': 1,
+        'to_libro_id': 1,
+        'to_capitulo': 1,
+        'to_versiculo_inicio': 2,
+        'to_versiculo_fin': 2,
+        'votos': 1,
+        'preview_texto': 'Texto corto',
+      });
+      expect(m.previewTexto, 'Texto corto');
+    });
+
+    test('hereda propiedades de CrossReferencia (esRango)', () {
+      final m = CrossReferenciaConPreview.fromMap({
+        'id': 4,
+        'version_id': 1,
+        'from_libro_id': 43,
+        'from_capitulo': 3,
+        'from_versiculo': 16,
+        'to_libro_id': 1,
+        'to_capitulo': 22,
+        'to_versiculo_inicio': 12,
+        'to_versiculo_fin': 14,
+        'votos': 5,
+        'preview_texto': 'Preview',
+      });
+      expect(m.esRango, isTrue);
+      expect(m.toVersiculoInicio, 12);
+      expect(m.toVersiculoFin, 14);
+    });
+
+    test('equality incluye previewTexto', () {
+      final a = CrossReferenciaConPreview(
+        id: 1, versionId: 1,
+        fromLibroId: 1, fromCapitulo: 1, fromVersiculo: 1,
+        toLibroId: 1, toCapitulo: 1,
+        toVersiculoInicio: 2, toVersiculoFin: 2,
+        votos: 1,
+        previewTexto: 'Preview A',
+      );
+      final b = CrossReferenciaConPreview(
+        id: 1, versionId: 1,
+        fromLibroId: 1, fromCapitulo: 1, fromVersiculo: 1,
+        toLibroId: 1, toCapitulo: 1,
+        toVersiculoInicio: 2, toVersiculoFin: 2,
+        votos: 1,
+        previewTexto: 'Preview A',
+      );
+      expect(a, equals(b));
+
+      final c = CrossReferenciaConPreview(
+        id: 1, versionId: 1,
+        fromLibroId: 1, fromCapitulo: 1, fromVersiculo: 1,
+        toLibroId: 1, toCapitulo: 1,
+        toVersiculoInicio: 2, toVersiculoFin: 2,
+        votos: 1,
+        previewTexto: 'Preview B',
+      );
+      expect(a, isNot(equals(c)));
+    });
+  });
 }

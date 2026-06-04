@@ -2,7 +2,8 @@ import 'package:logging/logging.dart';
 import 'package:sqflite_common/sqlite_api.dart';
 
 import '../../../../core/database/bible_database_helper.dart';
-import '../models/cross_referencia.dart';
+import '../models/cross_referencia.dart'
+    show CrossReferencia, CrossReferenciaConPreview;
 
 /// Repositorio de cross-references bíblicas (versículo X → versículo Y).
 ///
@@ -199,5 +200,36 @@ class CrossReferenciasRepository {
     if (raw is int) return raw;
     if (raw is num) return raw.toInt();
     return 0;
+  }
+
+  /// Feature #2: refs que SALEN de un versículo con preview del texto destino.
+  ///
+  /// Usa LEFT JOIN a `libro`, `capitulo` y `versiculo` para no filtrar
+  /// refs cuyo destino no existe materialmente en la BD. Si el versículo
+  /// no existe, `preview_texto` será null. Ordenadas por `votos DESC`.
+  Future<List<CrossReferenciaConPreview>> getByFromVerseWithPreview({
+    required int versionId,
+    required int libroId,
+    required int capitulo,
+    required int versiculo,
+  }) async {
+    final db = await _database;
+    final rows = await db.rawQuery(
+      '''
+      SELECT cr.*, v.texto AS preview_texto
+      FROM cross_referencia cr
+      LEFT JOIN libro tl ON tl.id = cr.to_libro_id
+      LEFT JOIN capitulo tc ON tc.libro_id = tl.id AND tc.numero = cr.to_capitulo
+      LEFT JOIN versiculo v ON v.capitulo_id = tc.id AND v.numero = cr.to_versiculo_inicio
+      WHERE cr.version_id = ? AND cr.from_libro_id = ?
+        AND cr.from_capitulo = ? AND cr.from_versiculo = ?
+      ORDER BY cr.votos DESC
+      ''',
+      [versionId, libroId, capitulo, versiculo],
+    );
+    _log.fine(
+      'getByFromVerseWithPreview v=$versionId l=$libroId c=$capitulo v$versiculo → ${rows.length} refs',
+    );
+    return rows.map(CrossReferenciaConPreview.fromMap).toList(growable: false);
   }
 }

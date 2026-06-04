@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/models/cross_referencia.dart';
+import '../../data/models/cross_referencia.dart'
+    show CrossReferencia, CrossReferenciaConPreview;
 import '../../data/repositories/cross_referencias_repository.dart';
 import 'biblia_version_provider.dart';
 import 'current_libro_provider.dart';
@@ -117,5 +118,23 @@ final crossRefCountsProvider = FutureProvider.family
     versionId: versionId,
     libroId: query.libroId,
     capitulo: query.capitulo,
+  );
+});
+
+/// Feature #2: refs con preview del texto del versículo destino.
+///
+/// Misma query que [crossReferenciasProvider] pero con LEFT JOIN a
+/// `versiculo` para obtener los primeros ~50 chars del texto destino.
+/// Se re-emite automáticamente al cambiar versión o versículo.
+final crossReferenciasConPreviewProvider = FutureProvider.family
+    .autoDispose<List<CrossReferenciaConPreview>, CrossRefQuery>(
+        (ref, query) async {
+  final versionId = ref.watch(currentVersionIdProvider);
+  final repo = ref.read(crossReferenciasRepositoryProvider);
+  return repo.getByFromVerseWithPreview(
+    versionId: versionId,
+    libroId: query.libroId,
+    capitulo: query.capitulo,
+    versiculo: query.versiculo,
   );
 });

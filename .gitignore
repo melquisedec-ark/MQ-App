@@ -80,3 +80,10 @@ assets/db/*.db-wal
 assets/db/*.db-shm
 !assets/db/.gitkeep
 !assets/db/biblia.db
+
+# Cross-references (v1.0.3+) — archivos grandes generados en build-time
+# Dataset: 8.3 MB (openbible.info)
+# Seed SQL: ~27 MB (340k INSERTs)
+# Estos se regeneran con `dart run assets/db/tools/generate_cross_references_seed.dart`
+assets/db/tools/source/scrollmapper/cross_references.txt
+assets/db/seed_cross_referencias_rv1909.sql

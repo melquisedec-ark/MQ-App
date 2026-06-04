@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/cross_referencias_provider.dart';
+import '../../application/providers/current_libro_provider.dart';
+import '../../application/providers/current_versiculo_provider.dart';
+import '../../application/providers/reader_providers.dart';
 import '../../data/models/cross_referencia.dart';
 import '../../data/models/libro.dart';
 
@@ -19,11 +22,15 @@ class CrossReferenciaResuelta extends Equatable {
     required this.ref,
     required this.libroNombre,
     required this.libroAbreviatura,
+    this.previewTexto,
   });
 
   final CrossReferencia ref;
   final String libroNombre;
   final String libroAbreviatura;
+
+  /// Feature #2: preview del texto del versículo destino (~50 chars).
+  final String? previewTexto;
 
   /// Etiqueta corta para mostrar. "Génesis 22:12" o "1 Juan 4:9-10".
   String get etiquetaCorta {
@@ -46,23 +53,21 @@ class CrossReferenciaResuelta extends Equatable {
   }
 
   @override
-  List<Object?> get props => [ref, libroNombre, libroAbreviatura];
+  List<Object?> get props => [ref, libroNombre, libroAbreviatura, previewTexto];
 }
 
-/// Provider derivado que combina [crossReferenciasProvider] con el
+/// Provider derivado que combina [crossReferenciasConPreviewProvider] con el
 /// nombre del libro destino (resuelto por `BibliaRepository.getLibroById`).
 ///
-/// Esto evita N+1 queries en el widget (1 por cada ref) resolviendo
-/// todos los `to_libro_id` en una sola pasada. Si un `to_libro_id` no
-/// se encuentra en la versión actual (caso raro: apócrifo), se usa un
-/// placeholder "Libro N" en vez de crashear.
-///
-/// Reusa la query de [crossReferenciasProvider] vía `ref.watch` para
-/// que no se hagan 2 queries a la BD.
+/// Feature #2: usa la query con preview para obtener el texto del versículo
+/// destino. Esto evita N+1 queries en el widget resolviendo todos los
+/// `to_libro_id` en una sola pasada. Si un `to_libro_id` no se encuentra
+/// en la versión actual (caso raro: apócrifo), se usa un placeholder
+/// "Libro N" en vez de crashear.
 final crossReferenciasResueltasProvider = FutureProvider.family
     .autoDispose<List<CrossReferenciaResuelta>, CrossRefQuery>(
         (ref, query) async {
-  final refsAsync = ref.watch(crossReferenciasProvider(query));
+  final refsAsync = ref.watch(crossReferenciasConPreviewProvider(query));
   final refs = refsAsync.valueOrNull;
   if (refs == null || refs.isEmpty) {
     return refsAsync.when(
@@ -89,6 +94,7 @@ final crossReferenciasResueltasProvider = FutureProvider.family
       ref: r,
       libroNombre: libro?.nombre ?? 'Libro ${r.toLibroId}',
       libroAbreviatura: libro?.abreviatura ?? '?${r.toLibroId}',
+      previewTexto: r.previewTexto,
     );
   }).toList(growable: false);
 });
@@ -239,6 +245,10 @@ class _ReferenciasCruzadasSectionState
 
   /// C7+C8: navega al versículo destino con pushNamed + query param.
   ///
+  /// Bug #1 fix: salva y restaura el estado global de providers alrededor
+  /// de la navegación para que al volver (pop) el lector original conserve
+  /// su posición y modo de vista.
+  ///
   /// Si `to_libro_id` no existe en la versión actual, muestra SnackBar
   /// "Versículo no disponible en esta versión" y NO navega.
   Future<void> _navigateTo(
@@ -256,19 +266,37 @@ class _ReferenciasCruzadasSectionState
       );
       return;
     }
-    // pushNamed a la misma ruta con nuevos params. go_router apila
-    // una nueva entrada en el stack; context.pop() vuelve al lector
-    // anterior (verificado por el wireframe 02 del Bible module).
-    context.pushNamed(
-      'biblia_reader',
-      pathParameters: <String, String>{
-        'libroId': '${toLibro.id}',
-        'capitulo': '${resuelta.ref.toCapitulo}',
-      },
-      queryParameters: <String, String>{
-        'v': '${resuelta.ref.toVersiculoInicio}',
-      },
-    );
+    // Salvar estado actual de los providers globales antes de navegar.
+    final prevLibroId = ref.read(currentLibroIdProvider);
+    final prevCapitulo = ref.read(currentCapituloProvider);
+    final prevVersiculo = ref.read(currentVersiculoNumeroProvider);
+    final prevViewMode = ref.read(readerViewModeProvider);
+    final prevCurrentVerse = ref.read(currentVerseProvider);
+
+    try {
+      // pushNamed a la misma ruta con nuevos params. go_router apila
+      // una nueva entrada en el stack; context.pop() vuelve al lector
+      // anterior (verificado por el wireframe 02 del Bible module).
+      await context.pushNamed(
+        'biblia_reader',
+        pathParameters: <String, String>{
+          'libroId': '${toLibro.id}',
+          'capitulo': '${resuelta.ref.toCapitulo}',
+        },
+        queryParameters: <String, String>{
+          'v': '${resuelta.ref.toVersiculoInicio}',
+        },
+      );
+    } finally {
+      // Restaurar estado global al volver de la navegación.
+      if (context.mounted) {
+        ref.read(currentLibroIdProvider.notifier).state = prevLibroId;
+        ref.read(currentCapituloProvider.notifier).state = prevCapitulo;
+        ref.read(currentVersiculoNumeroProvider.notifier).state = prevVersiculo;
+        ref.read(readerViewModeProvider.notifier).setViewMode(prevViewMode);
+        ref.read(currentVerseProvider.notifier).state = prevCurrentVerse;
+      }
+    }
   }
 }
 
@@ -278,6 +306,8 @@ class _ReferenciasCruzadasSectionState
 /// en color primario, con un icono chevron a la derecha. Si la
 /// referencia tiene rango, el destino es el versículo INICIO del rango
 /// (el resto se muestra en el badge del rango "-14").
+///
+/// Feature #2: muestra preview del texto destino en itálica (~50 chars).
 class _ReferenciaTile extends StatelessWidget {
   const _ReferenciaTile({
     required this.resuelta,
@@ -299,44 +329,64 @@ class _ReferenciaTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  resuelta.etiquetaCorta,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (resuelta.ref.esRango) ...[
-                const SizedBox(width: 6),
-                // Badge de votos (indica fuerza de la ref en openbible)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${resuelta.ref.votos}★',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w600,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      resuelta.etiquetaCorta,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
+                  ),
+                  if (resuelta.ref.esRango) ...[
+                    const SizedBox(width: 6),
+                    // Badge de votos (indica fuerza de la ref en openbible)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${resuelta.ref.votos}★',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                ],
+              ),
+              // Feature #2: preview snippet del texto destino.
+              if (resuelta.previewTexto != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  resuelta.previewTexto!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                    height: 1.3,
                   ),
                 ),
               ],
-              const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: colorScheme.primary,
-              ),
             ],
           ),
         ),

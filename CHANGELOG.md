@@ -4,6 +4,35 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ---
 
+## [1.0.4] — 2026-06-04
+
+### Fixed
+- **🐛 Navegación de cross-references: botón atrás no volvía al versículo de origen** (P0)
+  - Causa: los StateProviders globales (`currentLibroIdProvider`, `currentCapituloProvider`, `currentVersiculoNumeroProvider`) se mutaban al navegar con `pushNamed`, corrompiendo el estado de la pantalla original en el stack
+  - Fix: save/restore de 5 providers en bloque `try/finally` alrededor de `pushNamed`
+  - Afecta: `referencias_cruzadas_section.dart`
+
+### Added
+- **📖 Preview de texto en cross-references** (P1)
+  - Nuevo modelo `CrossReferenciaConPreview` con campo `previewTexto` (truncado ~52 chars + ellipsis)
+  - Nuevo método `getByFromVerseWithPreview` en repositorio con LEFT JOIN a versículo para obtener texto
+  - Nuevo provider `crossReferenciasConPreviewProvider`
+  - UI: cada referencia muestra las primeras ~2 líneas del texto del versículo en itálica
+  - LEFT JOIN: refs a versículos inexistentes muestran sin preview (no crash)
+- **👆 Swipe-to-reveal en chapter mode** (P2)
+  - `Dismissible` envuelve cada `VerseCard` en chapter mode
+  - Swipe izquierda → flecha indicadora → al soltar cambia a verse mode para ese versículo
+  - Versículos sin refs: swipe snap-back (sin acción)
+  - Botón de modo en bottom bar se actualiza automáticamente
+
+### Tests
+- +15 tests nuevos (617 total, 0 fallos)
+- Tests de navegación (nav history, triple-navigate)
+- Tests de preview (modelo, repositorio, LEFT JOIN)
+- Tests de swipe (con refs, sin refs, dirección)
+
+---
+
 ## [1.0.3] — 2026-06-04
 
 ### Added
