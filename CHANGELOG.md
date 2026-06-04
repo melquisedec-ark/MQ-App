@@ -4,6 +4,38 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ---
 
+## [1.0.5] — 2026-06-04
+
+### Added
+- **🎨 5 temas predefinidos para lectura de Biblia** (reemplaza color picker)
+  - Papel (default): fondo cálido `#FAFAFA`, texto suave `#2D2D2D`
+  - Sepia: `#F5E6C8` / `#5C4033` — reduce fatiga visual
+  - Noche: `#1A1A1A` / `#E8E8E8` — OLED black
+  - Azul noche: `#1E293B` / `#CBD5E1` — oscuridad suave
+  - Alto contraste: `#FFFFFF` / `#000000` — accesibilidad
+  - Enum `ReadingTheme` con `backgroundColor` + `textColor`
+  - Persistencia en config table (`biblia.reading_theme`)
+  - Migración automática desde `biblia.text_color` antiguo
+- **👆👆 Double-tap → toggle favorito** en versículo
+  - Verse mode: ya existía `onDoubleTap`, agregado haptic feedback
+  - Chapter mode: `GestureDetector` wrapper en `_SwipeableVerseCard`
+  - `HapticFeedback.mediumImpact()` al togglear
+  - Botón ⭐ eliminado del bottom bar
+- **👆 Long-press → NoteEditorModal** directo
+  - Verse mode: abre editor de nota sin menú intermedio
+  - Chapter mode: `onLongPress` pasado a través de `_SwipeableVerseCard` → `VerseCard`
+  - ~500ms threshold (default Flutter)
+- **📱 Bottom bar en 2 filas**
+  - Fila 1 (navegación): Anterior | Verso | Número | Siguiente | Capítulo | Tabla
+  - Divider
+  - Fila 2 (acción): Nota (accesibilidad) | Configuración
+
+### Tests
+- +11 tests nuevos (628 total, 0 fallos)
+- Tests de temas (enum, state, persistencia, migración)
+
+---
+
 ## [1.0.4] — 2026-06-04
 
 ### Fixed

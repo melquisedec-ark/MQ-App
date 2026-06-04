@@ -8,7 +8,7 @@ import '../../application/providers/bible_appearance_provider.dart';
 /// Controles:
 /// - Slider de tamaño de letra (0.8 – 1.5)
 /// - Selector de fuente (system / serif / monospace)
-/// - Ajuste de color de texto (blanco / negro / sepia / azul)
+/// - Selector de tema de lectura (5 temas predefinidos)
 /// - Slider de interlineado (1.4 – 2.0)
 ///
 /// El modo de lectura (verse/chapter) se controla desde el bottom bar
@@ -115,13 +115,13 @@ class _ReadingSettingsSheetState extends ConsumerState<ReadingSettingsSheet> {
             ),
             const SizedBox(height: 16),
 
-            // ── Color de texto ──
-            const _SectionLabel(label: 'Color de texto'),
+            // ── Tema de lectura ──
+            const _SectionLabel(label: 'Tema de lectura'),
             const SizedBox(height: 8),
-            _TextColorSelector(
-              current: appearance.textColor,
-              onChanged: (v) =>
-                  ref.read(bibleAppearanceProvider.notifier).setTextColor(v),
+            _ThemeSelector(
+              current: appearance.themeId,
+              onChanged: (theme) =>
+                  ref.read(bibleAppearanceProvider.notifier).setTheme(theme),
             ),
             const SizedBox(height: 16),
 
@@ -219,69 +219,55 @@ class _FontFamilySelector extends StatelessWidget {
   }
 }
 
-/// Selector de color de texto con 4 opciones predefinidas.
-class _TextColorSelector extends StatelessWidget {
-  const _TextColorSelector({
+/// Selector de tema de lectura con 5 opciones predefinidas.
+class _ThemeSelector extends StatelessWidget {
+  const _ThemeSelector({
     required this.current,
     required this.onChanged,
   });
 
-  final Color current;
-  final ValueChanged<Color> onChanged;
-
-  static const _colors = [
-    (_ColorOptionData(Colors.white, 'Blanco')),
-    (_ColorOptionData(Colors.black, 'Negro')),
-    (_ColorOptionData(Color(0xFF3E2723), 'Sepia')),
-    (_ColorOptionData(Color(0xFF1565C0), 'Azul')),
-  ];
+  final String current;
+  final ValueChanged<ReadingTheme> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 12,
-      children: _colors.map((data) {
-        final isSelected = current.toARGB32() == data.color.toARGB32();
+      spacing: 8,
+      runSpacing: 8,
+      children: ReadingTheme.values.map((theme) {
+        final isSelected = current == theme.id;
         return GestureDetector(
-          onTap: () => onChanged(data.color),
+          onTap: () => onChanged(theme),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: data.color,
-                  shape: BoxShape.circle,
+                  color: theme.backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.outlineVariant,
                     width: isSelected ? 3 : 1,
                   ),
-                  boxShadow: data.color == Colors.white
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 2,
-                            offset: const Offset(0, 1),
-                          ),
-                        ]
-                      : null,
                 ),
-                child: isSelected
-                    ? Icon(
-                        Icons.check_rounded,
-                        size: 18,
-                        color: data.color.computeLuminance() > 0.5
-                            ? Colors.black
-                            : Colors.white,
-                      )
-                    : null,
+                child: Center(
+                  child: Text(
+                    'Aa',
+                    style: TextStyle(
+                      color: theme.textColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 4),
               Text(
-                data.label,
+                theme.label,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -292,12 +278,4 @@ class _TextColorSelector extends StatelessWidget {
       }).toList(),
     );
   }
-}
-
-/// Data class para opciones de color.
-class _ColorOptionData {
-  final Color color;
-  final String label;
-
-  const _ColorOptionData(this.color, this.label);
 }

@@ -238,7 +238,6 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
     final libroId = widget.libroId;
     final capitulo = widget.capitulo;
     final bibliaRepo = ref.read(bibliaRepositoryProvider);
-    final versionId = ref.watch(currentVersionIdProvider);
     final currentVerse = ref.watch(currentVerseProvider);
     final appearance = ref.watch(bibleAppearanceProvider);
 
@@ -257,19 +256,19 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
       orElse: () => <int>{},
     );
 
-    // O7b: mapa de número de versículo → color de nota para el capítulo actual.
+    // O7b: mapa de número de versículo → nota completa para el capítulo actual.
     final notasAsync = ref.watch(notasStreamProvider);
     final notasEnCapitulo = notasAsync.maybeWhen(
       data: (notas) {
-        final map = <int, Color>{};
+        final map = <int, Nota>{};
         for (final n in notas) {
           if (n.libroId == libroId && n.capitulo == capitulo) {
-            map[n.numero] = _colorForNota(n.color);
+            map[n.numero] = n;
           }
         }
         return map;
       },
-      orElse: () => <int, Color>{},
+      orElse: () => <int, Nota>{},
     );
 
     // C5+C6: batch de conteos de cross-refs para el capítulo actual.
@@ -333,16 +332,20 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
                     texto: texto,
                     esFoco: numero == currentVerse,
                     esFavorito: favoritosEnCapitulo.contains(numero),
-                    notaIndicatorColor: notasEnCapitulo[numero],
+                    nota: notasEnCapitulo[numero],
                     crossRefCount: refCountsEnCapitulo[numero],
                     fontFamily: appearance.fontFamily,
                     textColor: appearance.textColor,
+                    backgroundColor: appearance.backgroundColor,
                     lineHeight: appearance.lineHeight,
                     onTap: () {
                       ref.read(currentVerseProvider.notifier).state = numero;
                       ref
                           .read(currentVersiculoNumeroProvider.notifier)
                           .state = numero;
+                    },
+                    onLongPress: () {
+                      _openNoteEditorForVerse(context, ref, numero, libroId, capitulo, notasEnCapitulo[numero]);
                     },
                   );
                 },
@@ -359,73 +362,127 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
 ///
 /// Swipe izquierda → cambia a verse mode en ese versículo (si tiene refs).
 /// Swipe en versículo sin refs → snap back (sin acción).
+/// Doble tap → toggle favorito. Long press → abrir NoteEditorModal.
 class _SwipeableVerseCard extends ConsumerWidget {
   const _SwipeableVerseCard({
     required this.numero,
     required this.texto,
     required this.esFoco,
     required this.esFavorito,
-    this.notaIndicatorColor,
+    this.nota,
     this.crossRefCount,
     this.fontFamily,
     this.textColor,
+    this.backgroundColor,
     this.lineHeight,
     this.onTap,
+    this.onLongPress,
   });
 
   final int numero;
   final String texto;
   final bool esFoco;
   final bool esFavorito;
-  final Color? notaIndicatorColor;
+  final Nota? nota;
   final int? crossRefCount;
   final String? fontFamily;
   final Color? textColor;
+  final Color? backgroundColor;
   final double? lineHeight;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Dismissible(
-      key: ValueKey('verse_$numero'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        color: colorScheme.primaryContainer,
-        child: Icon(
-          Icons.arrow_forward_ios,
-          color: colorScheme.onPrimaryContainer,
+    return GestureDetector(
+      onDoubleTap: () => _toggleFavorito(context, ref),
+      child: Dismissible(
+        key: ValueKey('verse_$numero'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 16),
+          color: colorScheme.primaryContainer,
+          child: Icon(
+            Icons.arrow_forward_ios,
+            color: colorScheme.onPrimaryContainer,
+          ),
         ),
-      ),
-      confirmDismiss: (direction) async {
-        // Solo cambiar a verse mode si el versículo tiene cross-refs.
-        if (crossRefCount == null || crossRefCount == 0) return false;
-        // Actualizar providers y cambiar a verse mode.
-        ref.read(currentVersiculoNumeroProvider.notifier).state = numero;
-        ref.read(currentVerseProvider.notifier).state = numero;
-        ref.read(readerViewModeProvider.notifier).setViewMode(
-              BibleReaderViewMode.verse,
-            );
-        // Retornar false para que NO se elimine (solo cambia de modo).
-        return false;
-      },
-      child: VerseCard(
-        numero: numero,
-        texto: texto,
-        esFoco: esFoco,
-        esFavorito: esFavorito,
-        notaIndicatorColor: notaIndicatorColor,
-        crossRefCount: crossRefCount,
-        fontFamily: fontFamily,
-        textColor: textColor,
-        lineHeight: lineHeight,
-        onTap: onTap,
+        confirmDismiss: (direction) async {
+          // Solo cambiar a verse mode si el versículo tiene cross-refs.
+          if (crossRefCount == null || crossRefCount == 0) return false;
+          // Actualizar providers y cambiar a verse mode.
+          ref.read(currentVersiculoNumeroProvider.notifier).state = numero;
+          ref.read(currentVerseProvider.notifier).state = numero;
+          ref.read(readerViewModeProvider.notifier).setViewMode(
+                BibleReaderViewMode.verse,
+              );
+          // Retornar false para que NO se elimine (solo cambia de modo).
+          return false;
+        },
+        child: VerseCard(
+          numero: numero,
+          texto: texto,
+          esFoco: esFoco,
+          esFavorito: esFavorito,
+          notaIndicatorColor: nota != null ? _colorForNota(nota!.color) : null,
+          crossRefCount: crossRefCount,
+          fontFamily: fontFamily,
+          textColor: textColor,
+          backgroundColor: backgroundColor,
+          lineHeight: lineHeight,
+          onTap: onTap,
+          onLongPress: onLongPress,
+        ),
       ),
     );
   }
+
+  /// Toggle favorito con feedback háptico.
+  Future<void> _toggleFavorito(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(favoritosRepositoryProvider);
+    final versionId = ref.read(currentVersionIdProvider);
+    final libroId = ref.read(currentLibroIdProvider)!;
+    final capitulo = ref.read(currentCapituloProvider)!;
+    final isFav = await repo.isFavorito(
+      versionId,
+      libroId,
+      capitulo,
+      numero,
+    );
+    if (isFav) {
+      await repo.remove(versionId, libroId, capitulo, numero);
+    } else {
+      await repo.add(versionId, libroId, capitulo, numero);
+    }
+    HapticFeedback.mediumImpact();
+  }
+}
+
+/// Abre el NoteEditorModal para un versículo en chapter mode.
+void _openNoteEditorForVerse(
+  BuildContext context,
+  WidgetRef ref,
+  int numero,
+  int libroId,
+  int capitulo,
+  Nota? existingNote,
+) {
+  final versionId = ref.read(currentVersionIdProvider);
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => NoteEditorModal(
+      versionId: versionId,
+      libroId: libroId,
+      capitulo: capitulo,
+      versiculoNumero: numero,
+      existingNote: existingNote,
+    ),
+  );
 }
 
 class _AppBarTitle extends ConsumerWidget {
@@ -575,6 +632,7 @@ class _VerseDisplay extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final versionId = ref.watch(currentVersionIdProvider);
+    final appearance = ref.watch(bibleAppearanceProvider);
     final bibliaRepo = ref.read(bibliaRepositoryProvider);
     final capsAsync = ref.watch(capitulosProvider(libroId));
     final totalVersiculos = capsAsync.maybeWhen(
@@ -628,39 +686,43 @@ class _VerseDisplay extends ConsumerWidget {
               },
               onLongPress: () => _showLongPressMenu(context, ref, current),
               onDoubleTap: () => _toggleFavorito(context, ref, current),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Capítulo $capitulo',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    GlassCard(
-                      padding: const EdgeInsets.all(20),
-                      child: _VerseCard(
-                        versionId: versionId,
-                        libroId: libroId,
-                        capitulo: capitulo,
-                        versiculo: current,
-                        totalVersiculos: totalVersiculos,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (versiculoNum == totalVersiculos)
-                      Center(
-                        child: OutlinedButton.icon(
-                          onPressed: () =>
-                              _goNextChapter(context, ref, libroId),
-                          icon: const Icon(Icons.skip_next_rounded),
-                          label: const Text('Siguiente capítulo'),
+              child: Container(
+                color: appearance.backgroundColor,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Capítulo $capitulo',
+                        style: textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
-                  ],
+                      const SizedBox(height: 12),
+                      GlassCard(
+                        padding: const EdgeInsets.all(20),
+                        backgroundColor: appearance.backgroundColor,
+                        child: _VerseCard(
+                          versionId: versionId,
+                          libroId: libroId,
+                          capitulo: capitulo,
+                          versiculo: current,
+                          totalVersiculos: totalVersiculos,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (versiculoNum == totalVersiculos)
+                        Center(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _goNextChapter(context, ref, libroId),
+                            icon: const Icon(Icons.skip_next_rounded),
+                            label: const Text('Siguiente capítulo'),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -725,6 +787,7 @@ class _VerseDisplay extends ConsumerWidget {
     WidgetRef ref,
     Versiculo current,
   ) {
+    // v1.0.4b: abrir NoteEditorModal directamente sin menú intermedio.
     final versionId = ref.read(currentVersionIdProvider);
     final notaAsync = ref.read(
       currentNotaProvider(
@@ -737,45 +800,7 @@ class _VerseDisplay extends ConsumerWidget {
       ),
     );
     final existingNote = notaAsync.valueOrNull;
-
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.copy_rounded),
-              title: const Text('Copiar'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Clipboard.setData(ClipboardData(text: current.texto));
-                showAppSnackBar(context, 'Copiado al portapapeles');
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                existingNote != null
-                    ? Icons.edit_rounded
-                    : Icons.edit_note_rounded,
-              ),
-              title: Text(
-                existingNote != null ? 'Editar nota' : 'Agregar nota',
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openNoteEditor(
-                  context,
-                  ref,
-                  current,
-                  existingNote: existingNote,
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+    _openNoteEditor(context, ref, current, existingNote: existingNote);
   }
 
   Future<void> _toggleFavorito(
@@ -796,6 +821,7 @@ class _VerseDisplay extends ConsumerWidget {
     } else {
       await repo.add(versionId, libroId, capitulo, current.numero);
     }
+    HapticFeedback.mediumImpact();
   }
 
   void _openNoteEditor(
@@ -1133,93 +1159,143 @@ class _ReaderBottomBar extends ConsumerWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          // D1: una sola fila densa. A4 eliminó los botones de
-          // favorito/nota de aquí (ahora son inline en cada verse).
-          // A1+A2: el toggle de modo lectura vive aquí, no en AppBar.
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+          // v1.0.4b: 2 filas — navegación arriba, acción abajo.
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // A1+A2: toggle verse/chapter.
-              const _ViewModeToggleButton(),
-              // Navegación entre versículos.
-              IconButton(
-                icon: const Icon(Icons.skip_previous_rounded),
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
-                onPressed: () => _goPrevChapter(context, ref),
-                tooltip: 'Capítulo anterior',
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded),
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
-                onPressed: () {
-                  if (versiculoNum > 1) {
-                    ref
-                        .read(currentVersiculoNumeroProvider.notifier)
-                        .state = versiculoNum - 1;
-                  }
-                },
-                tooltip: 'Versículo anterior',
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    '$versiculoNum',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
+              // Fila 1: navegación (Anterior | Capítulo | Siguiente | Tabla)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: () => _goPrevChapter(context, ref),
+                    tooltip: 'Capítulo anterior',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: () {
+                      if (versiculoNum > 1) {
+                        ref
+                            .read(currentVersiculoNumeroProvider.notifier)
+                            .state = versiculoNum - 1;
+                      }
+                    },
+                    tooltip: 'Versículo anterior',
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '$versiculoNum',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: () => _goNextVerse(ref),
+                    tooltip: 'Versículo siguiente',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: () => _goNextChapter(context, ref),
+                    tooltip: 'Capítulo siguiente',
+                  ),
+                  // Toggle verse/chapter mode.
+                  const _ViewModeToggleButton(),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right_rounded),
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
-                onPressed: () => _goNextVerse(ref),
-                tooltip: 'Versículo siguiente',
-              ),
-              IconButton(
-                icon: const Icon(Icons.skip_next_rounded),
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
-                onPressed: () => _goNextChapter(context, ref),
-                tooltip: 'Capítulo siguiente',
-              ),
-              // Settings.
-              IconButton(
-                icon: const Icon(Icons.tune_rounded),
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
-                onPressed: () => ReadingSettingsSheet.show(context),
-                tooltip: 'Ajustes de lectura',
+              const Divider(height: 4, thickness: 0.5),
+              // Fila 2: acción (Nota | Configuración)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Nota: acceso directo al NoteEditorModal.
+                  IconButton(
+                    icon: const Icon(Icons.edit_note_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: () => _openNoteFromBottomBar(context, ref),
+                    tooltip: 'Agregar nota',
+                  ),
+                  // Configuración.
+                  IconButton(
+                    icon: const Icon(Icons.tune_rounded),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    onPressed: () => ReadingSettingsSheet.show(context),
+                    tooltip: 'Ajustes de lectura',
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Abre NoteEditorModal desde el bottom bar (accesibilidad).
+  void _openNoteFromBottomBar(BuildContext context, WidgetRef ref) {
+    final versionId = ref.read(currentVersionIdProvider);
+    final notaAsync = ref.read(
+      currentNotaProvider(
+        NotaQuery(
+          versionId: versionId,
+          libroId: libroId,
+          capitulo: capitulo,
+          numero: versiculoNum,
+        ),
+      ),
+    );
+    final existingNote = notaAsync.valueOrNull;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => NoteEditorModal(
+        versionId: versionId,
+        libroId: libroId,
+        capitulo: capitulo,
+        versiculoNumero: versiculoNum,
+        existingNote: existingNote,
       ),
     );
   }

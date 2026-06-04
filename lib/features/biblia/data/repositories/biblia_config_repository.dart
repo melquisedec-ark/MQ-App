@@ -152,4 +152,8 @@ abstract class BibliaConfigKeys {
 
   /// Altura de línea del lector. Valores: "1.4" a "2.0" (step 0.1).
   static const String bibliaLineHeight = 'biblia.line_height';
+
+  /// Tema de lectura predefinido. Valores: "papel" | "sepia" | "noche"
+  /// | "azulNoche" | "altoContraste".
+  static const String bibliaReadingTheme = 'biblia.reading_theme';
 }

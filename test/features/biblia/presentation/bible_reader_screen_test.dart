@@ -433,7 +433,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Tu nota'), findsOneWidget);
-    expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+    // v1.0.4b: bottom bar también tiene edit_note_rounded → al menos 1.
+    expect(find.byIcon(Icons.edit_note_rounded), findsAtLeastNWidgets(1));
   });
 
   // ─────────────────────────────────────────────────────────────

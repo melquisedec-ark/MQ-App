@@ -15,8 +15,8 @@ enum BibleReaderViewMode {
 /// `bodyLarge` (18sp) y line-height 1.6 del sistema. Si [esFoco] es
 /// `true`, el fondo usa `surfaceContainerHigh` con elevación 1.
 ///
-/// Los parámetros [fontFamily], [textColor] y [lineHeight] permiten
-/// personalizar la apariencia desde [ReadingSettingsSheet].
+/// Los parámetros [fontFamily], [textColor], [backgroundColor] y [lineHeight]
+/// permiten personalizar la apariencia desde [ReadingSettingsSheet].
 class VerseCard extends StatelessWidget {
   const VerseCard({
     super.key,
@@ -30,6 +30,7 @@ class VerseCard extends StatelessWidget {
     this.crossRefCount,
     this.fontFamily,
     this.textColor,
+    this.backgroundColor,
     this.lineHeight,
   });
 
@@ -66,6 +67,9 @@ class VerseCard extends StatelessWidget {
   /// Color del texto opcional (null = default del tema).
   final Color? textColor;
 
+  /// Color de fondo opcional (null = usa lógica de esFoco).
+  final Color? backgroundColor;
+
   /// Altura de línea opcional (null = 1.6).
   final double? lineHeight;
 
@@ -78,7 +82,8 @@ class VerseCard extends StatelessWidget {
       duration: const Duration(milliseconds: 150),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: esFoco ? colorScheme.surfaceContainerHigh : Colors.transparent,
+        color: backgroundColor ??
+            (esFoco ? colorScheme.surfaceContainerHigh : Colors.transparent),
         borderRadius: BorderRadius.circular(esFoco ? 8 : 0),
         border: esFoco
             ? Border.all(color: colorScheme.primary.withValues(alpha: 0.3))
