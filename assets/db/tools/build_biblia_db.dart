@@ -23,6 +23,9 @@
 //   --schema <ruta>     Ruta al schema SQL (default: assets/db/schema/001_biblia_schema.sql)
 //   --rv1909 <ruta>     Ruta al data.sql de RV1909 (default: assets/db/tools/source/rv1909/data.sql)
 //   --out <ruta>        Ruta del DB de salida (default: assets/db/biblia.db)
+//   --cross-refs <ruta> Ruta al SQL de seed de cross_referencia
+//                        (default: assets/db/seed_cross_referencias_rv1909.sql)
+//                        Pasar --cross-refs='' para deshabilitar.
 //   --keep-temp         Conserva el DB temporal en /tmp para debugging
 //   --skip-validate     Omite las validaciones finales (NO recomendado)
 //
@@ -41,6 +44,7 @@ class CliOptions {
   String schemaPath;
   String rv1909SourcePath;
   String outPath;
+  String? crossRefsPath; // null = no aplicar; '' = deshabilitar; ruta = aplicar
   bool keepTemp;
   bool skipValidate;
 
@@ -48,6 +52,7 @@ class CliOptions {
     required this.schemaPath,
     required this.rv1909SourcePath,
     required this.outPath,
+    required this.crossRefsPath,
     required this.keepTemp,
     required this.skipValidate,
   });
@@ -57,6 +62,9 @@ CliOptions parseArgs(List<String> args, String projectRoot) {
   String schemaPath = pJoin(projectRoot, 'assets/db/schema/001_biblia_schema.sql');
   String rv1909Path = pJoin(projectRoot, 'assets/db/tools/source/rv1909/data.sql');
   String outPath    = pJoin(projectRoot, 'assets/db/biblia.db');
+  String? crossRefsPath = pJoin(
+      projectRoot, 'assets/db/seed_cross_referencias_rv1909.sql',
+  );
   bool keepTemp = false;
   bool skipValidate = false;
 
@@ -74,6 +82,11 @@ CliOptions parseArgs(List<String> args, String projectRoot) {
       case '--schema':        schemaPath = pAbs(next()!, projectRoot); break;
       case '--rv1909':        rv1909Path = pAbs(next()!, projectRoot); break;
       case '--out':           outPath    = pAbs(next()!, projectRoot); break;
+      case '--cross-refs':
+        final v = next()!;
+        // '' explícito deshabilita; cualquier otra ruta se usa
+        crossRefsPath = v.isEmpty ? null : pAbs(v, projectRoot);
+        break;
       case '--keep-temp':     keepTemp   = true; break;
       case '--skip-validate': skipValidate = true; break;
       case '-h':
@@ -91,6 +104,7 @@ CliOptions parseArgs(List<String> args, String projectRoot) {
     schemaPath: schemaPath,
     rv1909SourcePath: rv1909Path,
     outPath: outPath,
+    crossRefsPath: crossRefsPath,
     keepTemp: keepTemp,
     skipValidate: skipValidate,
   );
@@ -98,7 +112,14 @@ CliOptions parseArgs(List<String> args, String projectRoot) {
 
 void printUsage() {
   stdout.writeln('Uso: dart run assets/db/tools/build_biblia_db.dart [opciones]');
-  stdout.writeln('Opciones: --schema, --rv1909, --out, --keep-temp, --skip-validate');
+  stdout.writeln('Opciones:');
+  stdout.writeln('  --schema <ruta>     ruta al schema (default: 001_biblia_schema.sql)');
+  stdout.writeln('  --rv1909 <ruta>     ruta al data.sql RV1909');
+  stdout.writeln('  --out <ruta>        ruta del DB de salida (default: biblia.db)');
+  stdout.writeln('  --cross-refs <ruta> ruta al seed SQL de cross_referencia (default: assets/db/seed_cross_referencias_rv1909.sql)');
+  stdout.writeln('                      Pasar --cross-refs="" para deshabilitar el paso.');
+  stdout.writeln('  --keep-temp         conserva el DB temporal');
+  stdout.writeln('  --skip-validate     salta validaciones finales (no recomendado)');
 }
 
 // ----------------------- Helpers ---------------------------------------------
@@ -162,16 +183,18 @@ class Timings {
   final Stopwatch books = Stopwatch();
   final Stopwatch chapters = Stopwatch();
   final Stopwatch verses = Stopwatch();
+  final Stopwatch crossRefs = Stopwatch();
 
   void printSummary() {
     stdout.writeln('');
     stdout.writeln('⏱️  Tiempos (ms):');
-    stdout.writeln('   schema   : ${schema.elapsedMilliseconds}');
-    stdout.writeln('   versions : ${versions.elapsedMilliseconds}');
-    stdout.writeln('   books    : ${books.elapsedMilliseconds}');
-    stdout.writeln('   chapters : ${chapters.elapsedMilliseconds}');
-    stdout.writeln('   verses   : ${verses.elapsedMilliseconds}');
-    stdout.writeln('   TOTAL    : ${total.elapsedMilliseconds}');
+    stdout.writeln('   schema     : ${schema.elapsedMilliseconds}');
+    stdout.writeln('   versions   : ${versions.elapsedMilliseconds}');
+    stdout.writeln('   books      : ${books.elapsedMilliseconds}');
+    stdout.writeln('   chapters   : ${chapters.elapsedMilliseconds}');
+    stdout.writeln('   verses     : ${verses.elapsedMilliseconds}');
+    stdout.writeln('   cross-refs : ${crossRefs.elapsedMilliseconds}');
+    stdout.writeln('   TOTAL      : ${total.elapsedMilliseconds}');
   }
 }
 
@@ -180,21 +203,27 @@ class Stats {
   int bookCount = 0;
   int chapterCount = 0;
   int verseCount = 0;
+  int crossRefCount = 0;
   Map<int, int> versesByVersion = {};
   Map<int, int> booksByVersion = {};
+  Map<int, int> crossRefsByVersion = {};
 
   void printSummary(String dbPath) {
     final sizeBytes = File(dbPath).lengthSync();
     final sizeMb = sizeBytes / 1024 / 1024;
     stdout.writeln('');
     stdout.writeln('📊 Estadísticas finales:');
-    stdout.writeln('   Versiones  : $versionCount');
-    stdout.writeln('   Libros     : $bookCount (esperado 66)');
-    stdout.writeln('   Capítulos  : $chapterCount (esperado 1 189)');
-    stdout.writeln('   Versículos : $verseCount (esperado ~31 102)');
-    stdout.writeln('   Tamaño     : ${sizeMb.toStringAsFixed(2)} MB ($sizeBytes bytes)');
+    stdout.writeln('   Versiones        : $versionCount');
+    stdout.writeln('   Libros           : $bookCount (esperado 66)');
+    stdout.writeln('   Capítulos        : $chapterCount (esperado 1 189)');
+    stdout.writeln('   Versículos       : $verseCount (esperado ~31 102)');
+    stdout.writeln('   Cross-references : $crossRefCount (esperado ~340 000)');
+    stdout.writeln('   Tamaño           : ${sizeMb.toStringAsFixed(2)} MB ($sizeBytes bytes)');
     for (final entry in versesByVersion.entries) {
       stdout.writeln('     • version_id=${entry.key}: ${entry.value} versículos');
+    }
+    for (final entry in crossRefsByVersion.entries) {
+      stdout.writeln('     • version_id=${entry.key}: ${entry.value} cross-refs');
     }
   }
 }
@@ -297,11 +326,33 @@ Future<int> main(List<String> args) async {
     _insertConfig(db, versesByVersion);
     stdout.writeln('✅ Config insertada');
 
-    // ---------- 7) ANALYZE ----------
+    // ---------- 7) Cross-references (migración 004) ----------
+    if (opts.crossRefsPath != null) {
+      if (!File(opts.crossRefsPath!).existsSync()) {
+        stderr.writeln('');
+        stderr.writeln('❌ No existe seed de cross-references: ${opts.crossRefsPath}');
+        stderr.writeln('   Para generarlo:');
+        stderr.writeln('     curl -L -o assets/db/tools/source/scrollmapper/cross_references.txt \\');
+        stderr.writeln('       https://raw.githubusercontent.com/scrollmapper/bible_databases/master/sources/extras/cross_references.txt');
+        stderr.writeln('     dart run assets/db/tools/generate_cross_references_seed.dart');
+        stderr.writeln('   O re-corre este script con --cross-refs="" para omitir el paso.');
+        return 5;
+      }
+      timings.crossRefs.start();
+      final crossRefCounts = _applyCrossRefsSeed(db, opts.crossRefsPath!);
+      timings.crossRefs.stop();
+      stats.crossRefCount = crossRefCounts.values.fold(0, (a, b) => a + b);
+      stats.crossRefsByVersion = crossRefCounts;
+      stdout.writeln('✅ Cross-references insertadas: ${stats.crossRefCount}');
+    } else {
+      stdout.writeln('⚠️  Cross-references omitidas (--cross-refs="")');
+    }
+
+    // ---------- 8) ANALYZE ----------
     db.execute('ANALYZE;');
     stdout.writeln('✅ ANALYZE ejecutado');
 
-    // ---------- 8) Validations ----------
+    // ---------- 9) Validations ----------
     if (!opts.skipValidate) {
       final ok = runValidations(db);
       if (!ok) {
@@ -312,7 +363,7 @@ Future<int> main(List<String> args) async {
       stdout.writeln('⚠️  Validaciones omitidas (--skip-validate)');
     }
 
-    // ---------- 9) Copy to final destination ----------
+    // ---------- 10) Copy to final destination ----------
     db.dispose();
     final outDir = Directory(File(opts.outPath).parent.path);
     if (!outDir.existsSync()) outDir.createSync(recursive: true);
@@ -346,6 +397,49 @@ Future<int> main(List<String> args) async {
 void _applySchema(Database db, String schemaPath) {
   final schemaSql = File(schemaPath).readAsStringSync();
   db.execute(schemaSql);
+  // ── Migración 004 (cross_referencia) ──
+  // Se aplica DESPUÉS de 001_biblia_schema.sql (que crea las tablas base
+  // version/libro/capitulo que cross_referencia referencia por FK). Si el
+  // 001 ya incluye la tabla, el CREATE IF NOT EXISTS es no-op.
+  final migrationPath = schemaPath.replaceFirst(
+    RegExp(r'001_biblia_schema\.sql$'),
+    '004_cross_referencias.sql',
+  );
+  if (File(migrationPath).existsSync()) {
+    final migrationSql = File(migrationPath).readAsStringSync();
+    db.execute(migrationSql);
+  } else {
+    stderr.writeln('⚠️  No se encontró $migrationPath; la tabla cross_referencia NO se creará.');
+  }
+}
+
+/// Aplica el SQL de seed de cross-references a la BD.
+///
+/// Lee el archivo completo y lo ejecuta con `db.execute()`. Las
+/// migraciones usan BEGIN/COMMIT por lote (--batch-size), así que la
+/// performance es comparable a un script generado dinámicamente.
+///
+/// Devuelve un mapa `version_id → cantidad_insertada`.
+Map<int, int> _applyCrossRefsSeed(Database db, String seedPath) {
+  final sql = File(seedPath).readAsStringSync();
+  // El seed incluye `DELETE FROM cross_referencia WHERE version_id = N;`
+  // como primer paso (idempotente). Después INSERTs en transacciones.
+  db.execute(sql);
+  // Conteo por versión
+  final rs = db.select('''
+    SELECT version_id, COUNT(*) AS c
+    FROM cross_referencia
+    GROUP BY version_id
+  ''');
+  final result = <int, int>{};
+  for (final row in rs) {
+    final v = row['version_id'];
+    final c = row['c'];
+    if (v is int && c is int) {
+      result[v] = c;
+    }
+  }
+  return result;
 }
 
 Map<String, int> _insertVersions(Database db) {
@@ -711,6 +805,34 @@ bool runValidations(Database db) {
     WHERE ver.abreviatura = 'RVR1909'
   ''');
   check('RVR1909 = 31 102 versículos', rv1909Count == 31102, 'actual=$rv1909Count');
+
+  // ── Validaciones de cross_referencia (migración 004) ──────────────
+  // Si el paso de cross-refs fue deshabilitado, no chequeamos nada.
+  final crossRefCount = scalarQuery(db, 'SELECT COUNT(*) FROM cross_referencia');
+  if (crossRefCount > 0) {
+    check(
+      'cross_referencia: ~340k refs (±15%)',
+      crossRefCount >= 280000 && crossRefCount <= 360000,
+      'actual=$crossRefCount',
+    );
+
+    // Top-5 versículos con más refs SALIENTES (sanity check)
+    final topFromRs = db.select('''
+      SELECT from_libro_id, from_capitulo, from_versiculo, COUNT(*) AS c
+      FROM cross_referencia
+      GROUP BY from_libro_id, from_capitulo, from_versiculo
+      ORDER BY c DESC
+      LIMIT 5
+    ''');
+    stdout.writeln('   📊 Top-5 versículos con más refs salientes:');
+    for (final row in topFromRs) {
+      stdout.writeln(
+        '     • ${row['from_libro_id']}:${row['from_capitulo']}:${row['from_versiculo']} (${row['c']} refs)',
+      );
+    }
+  } else {
+    stdout.writeln('   ⚠️  cross_referencia vacía — omitiendo validaciones de cross-refs');
+  }
 
   stdout.writeln('');
   stdout.writeln('🧪 Validaciones: $passed pasaron, $failed fallaron');
