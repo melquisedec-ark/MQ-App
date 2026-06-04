@@ -96,11 +96,11 @@ void main() {
         final bundle = await createBibleReposWithSeed();
         try {
           final libros = await bundle.biblia.getLibrosByVersion(1);
-          // Génesis=1, Éxodo=2, Salmos=19, Juan=43 (4 libros en v1)
-          expect(libros, hasLength(4));
+          // Génesis=1, Éxodo=2, Salmos=19, Juan=43, 1 Juan=62 (5 libros en v1)
+          expect(libros, hasLength(5));
           expect(
             libros.map((l) => l.numero).toList(),
-            [1, 2, 19, 43],
+            [1, 2, 19, 43, 62],
           );
         } finally {
           await closeBibleRepos(
@@ -127,9 +127,10 @@ void main() {
             1,
             testamento: Testamento.nt,
           );
-          // Juan (1 NT)
-          expect(nt, hasLength(1));
-          expect(nt.first.nombre, 'Juan');
+          // Juan + 1 Juan (2 NT) — agregado en C1 para tests de
+          // cross_referencia (1 Juan canónico = libro_id 62).
+          expect(nt, hasLength(2));
+          expect(nt.map((l) => l.nombre).toList(), ['Juan', '1 Juan']);
         } finally {
           await closeBibleRepos(
             db: bundle.db,

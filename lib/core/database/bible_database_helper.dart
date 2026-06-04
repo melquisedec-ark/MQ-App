@@ -50,7 +50,13 @@ class BibleDatabaseHelper {
 
   /// Versión del esquema (migraciones estructurales de tabla/columna).
   /// Incrementar solo cuando se cambie DDL en `assets/db/schema/`.
-  static const int SCHEMA_VERSION = 1;
+  ///
+  /// Historial:
+  /// * v1: esquema inicial (6 tablas + FTS5 + config + schema_version).
+  /// * v2: añade tabla `cross_referencia` (migración 004). Triggers de
+  ///       validación version_id↔libro_id en ambas FKs. Índices FROM, TO,
+  ///       y por votos. ~340k refs precargadas del dataset openbible.
+  static const int SCHEMA_VERSION = 2;
 
   Database? _database;
 
@@ -480,15 +486,215 @@ class BibleDatabaseHelper {
       INSERT OR IGNORE INTO schema_version (version, descripcion, fecha_aplicacion)
       VALUES (1, 'Esquema inicial: 9 tablas + FTS5 + 7 triggers', strftime('%s', 'now'));
     ''');
+
+    // ── cross_referencia (migración 004) ──────────────────────
+    // Tabla para refs bíblicas FROM→TO con soporte de rangos en destino.
+    // ~340k filas precargadas desde el dataset openbible (CC-BY 4.0).
+    // Doc: assets/db/schema/004_cross_referencias.sql
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS cross_referencia (
+        id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+        version_id          INTEGER NOT NULL,
+        from_libro_id       INTEGER NOT NULL,
+        from_capitulo       INTEGER NOT NULL CHECK(from_capitulo > 0),
+        from_versiculo      INTEGER NOT NULL CHECK(from_versiculo > 0),
+        to_libro_id         INTEGER NOT NULL,
+        to_capitulo         INTEGER NOT NULL CHECK(to_capitulo > 0),
+        to_versiculo_inicio INTEGER NOT NULL CHECK(to_versiculo_inicio > 0),
+        to_versiculo_fin    INTEGER NOT NULL CHECK(to_versiculo_fin >= to_versiculo_inicio),
+        votos               INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (version_id)    REFERENCES version(id) ON DELETE CASCADE,
+        FOREIGN KEY (from_libro_id) REFERENCES libro(id)   ON DELETE CASCADE,
+        FOREIGN KEY (to_libro_id)   REFERENCES libro(id)   ON DELETE CASCADE
+      );
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_cross_ref_from '
+      'ON cross_referencia(version_id, from_libro_id, from_capitulo, from_versiculo);',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_cross_ref_to '
+      'ON cross_referencia(version_id, to_libro_id, to_capitulo, to_versiculo_inicio);',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_cross_ref_votos '
+      'ON cross_referencia(version_id, votos DESC);',
+    );
+
+    // Triggers de validación: coherencia version_id ↔ libro_id
+    await db.execute('''
+      CREATE TRIGGER IF NOT EXISTS cross_referencia_bi
+      BEFORE INSERT ON cross_referencia
+      FOR EACH ROW
+      WHEN NOT EXISTS (
+        SELECT 1 FROM libro
+        WHERE libro.id = NEW.from_libro_id
+          AND libro.version_id = NEW.version_id
+      )
+      BEGIN
+        SELECT RAISE(ABORT, 'cross_referencia: from_libro_id no pertenece a version_id');
+      END;
+    ''');
+    await db.execute('''
+      CREATE TRIGGER IF NOT EXISTS cross_referencia_bi_to
+      BEFORE INSERT ON cross_referencia
+      FOR EACH ROW
+      WHEN NOT EXISTS (
+        SELECT 1 FROM libro
+        WHERE libro.id = NEW.to_libro_id
+          AND libro.version_id = NEW.version_id
+      )
+      BEGIN
+        SELECT RAISE(ABORT, 'cross_referencia: to_libro_id no pertenece a version_id');
+      END;
+    ''');
+    await db.execute('''
+      CREATE TRIGGER IF NOT EXISTS cross_referencia_bu
+      BEFORE UPDATE ON cross_referencia
+      FOR EACH ROW
+      WHEN NOT EXISTS (
+        SELECT 1 FROM libro
+        WHERE libro.id = NEW.from_libro_id
+          AND libro.version_id = NEW.version_id
+      )
+      BEGIN
+        SELECT RAISE(ABORT, 'cross_referencia: from_libro_id no pertenece a version_id');
+      END;
+    ''');
+    await db.execute('''
+      CREATE TRIGGER IF NOT EXISTS cross_referencia_bu_to
+      BEFORE UPDATE ON cross_referencia
+      FOR EACH ROW
+      WHEN NOT EXISTS (
+        SELECT 1 FROM libro
+        WHERE libro.id = NEW.to_libro_id
+          AND libro.version_id = NEW.version_id
+      )
+      BEGIN
+        SELECT RAISE(ABORT, 'cross_referencia: to_libro_id no pertenece a version_id');
+      END;
+    ''');
+
+    await db.execute('''
+      INSERT OR IGNORE INTO schema_version (version, descripcion, fecha_aplicacion)
+      VALUES (
+        4,
+        'Cross-references bíblicas: tabla cross_referencia con 2 FKs a libro, '
+        || '2 índices (FROM, TO) + 1 índice por votos, 4 triggers de validación '
+        || 'version_id ↔ libro_id. Seed: ~340k refs de openbible.info (CC-BY 4.0).',
+        strftime('%s', 'now')
+      );
+    ''');
   }
 
   /// Aplica migraciones incrementales en base a `oldVersion`.
-  /// Por ahora solo existe v1; esta función se extiende en Fases futuras.
+  ///
+  /// Las migraciones se numeran consecutivamente y se ejecutan en orden:
+  /// - v1 → v2: crea la tabla `cross_referencia` con sus índices, triggers
+  ///   y registra la migración 004 en `schema_version` (cuerpo copiado
+  ///   desde `assets/db/schema/004_cross_referencias.sql` para mantener
+  ///   la fuente de verdad unificada con `_onCreate`).
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     _log.info('onUpgrade biblia.db: v$oldVersion -> v$newVersion');
-    // v1 es la versión inicial; no hay migraciones que aplicar todavía.
-    // Las migraciones futuras se numeran en `assets/db/schema/00X_*.sql` y
-    // se aplican aquí en orden.
+
+    // ── v1 → v2: cross_referencia (migración 004) ─────────────
+    if (oldVersion < 2) {
+      _log.info('Aplicando migración 004 (cross_referencia)...');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS cross_referencia (
+          id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+          version_id          INTEGER NOT NULL,
+          from_libro_id       INTEGER NOT NULL,
+          from_capitulo       INTEGER NOT NULL CHECK(from_capitulo > 0),
+          from_versiculo      INTEGER NOT NULL CHECK(from_versiculo > 0),
+          to_libro_id         INTEGER NOT NULL,
+          to_capitulo         INTEGER NOT NULL CHECK(to_capitulo > 0),
+          to_versiculo_inicio INTEGER NOT NULL CHECK(to_versiculo_inicio > 0),
+          to_versiculo_fin    INTEGER NOT NULL CHECK(to_versiculo_fin >= to_versiculo_inicio),
+          votos               INTEGER NOT NULL DEFAULT 1,
+          FOREIGN KEY (version_id)    REFERENCES version(id) ON DELETE CASCADE,
+          FOREIGN KEY (from_libro_id) REFERENCES libro(id)   ON DELETE CASCADE,
+          FOREIGN KEY (to_libro_id)   REFERENCES libro(id)   ON DELETE CASCADE
+        );
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_cross_ref_from '
+        'ON cross_referencia(version_id, from_libro_id, from_capitulo, from_versiculo);',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_cross_ref_to '
+        'ON cross_referencia(version_id, to_libro_id, to_capitulo, to_versiculo_inicio);',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_cross_ref_votos '
+        'ON cross_referencia(version_id, votos DESC);',
+      );
+      await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS cross_referencia_bi
+        BEFORE INSERT ON cross_referencia
+        FOR EACH ROW
+        WHEN NOT EXISTS (
+          SELECT 1 FROM libro
+          WHERE libro.id = NEW.from_libro_id
+            AND libro.version_id = NEW.version_id
+        )
+        BEGIN
+          SELECT RAISE(ABORT, 'cross_referencia: from_libro_id no pertenece a version_id');
+        END;
+      ''');
+      await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS cross_referencia_bi_to
+        BEFORE INSERT ON cross_referencia
+        FOR EACH ROW
+        WHEN NOT EXISTS (
+          SELECT 1 FROM libro
+          WHERE libro.id = NEW.to_libro_id
+            AND libro.version_id = NEW.version_id
+        )
+        BEGIN
+          SELECT RAISE(ABORT, 'cross_referencia: to_libro_id no pertenece a version_id');
+        END;
+      ''');
+      await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS cross_referencia_bu
+        BEFORE UPDATE ON cross_referencia
+        FOR EACH ROW
+        WHEN NOT EXISTS (
+          SELECT 1 FROM libro
+          WHERE libro.id = NEW.from_libro_id
+            AND libro.version_id = NEW.version_id
+        )
+        BEGIN
+          SELECT RAISE(ABORT, 'cross_referencia: from_libro_id no pertenece a version_id');
+        END;
+      ''');
+      await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS cross_referencia_bu_to
+        BEFORE UPDATE ON cross_referencia
+        FOR EACH ROW
+        WHEN NOT EXISTS (
+          SELECT 1 FROM libro
+          WHERE libro.id = NEW.to_libro_id
+            AND libro.version_id = NEW.version_id
+        )
+        BEGIN
+          SELECT RAISE(ABORT, 'cross_referencia: to_libro_id no pertenece a version_id');
+        END;
+      ''');
+      await db.execute('''
+        INSERT OR IGNORE INTO schema_version (version, descripcion, fecha_aplicacion)
+        VALUES (
+          4,
+          'Cross-references bíblicas: tabla cross_referencia con 2 FKs a libro, '
+          || '2 índices (FROM, TO) + 1 índice por votos, 4 triggers de validación '
+          || 'version_id ↔ libro_id. Seed: ~340k refs de openbible.info (CC-BY 4.0).',
+          strftime('%s', 'now')
+        );
+      ''');
+    }
+
+    // Futuras migraciones (v2 → v3, v3 → v4, ...) se agregan aquí
+    // siguiendo el mismo patrón.
   }
 
   /// Cierra la conexión (usado en tests y al apagar la app).

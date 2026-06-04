@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:mqapp/core/database/bible_database_helper.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_search_repository.dart';
+import 'package:mqapp/features/biblia/data/repositories/cross_referencias_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/notas_repository.dart';
@@ -288,6 +289,91 @@ Future<void> _applyBibleSchema(Database db) async {
       fecha_aplicacion INTEGER NOT NULL
     );
   ''');
+
+  // cross_referencia (migración 004) — copia del DDL de
+  // BibleDatabaseHelper._onCreate. Mantener sincronizado manualmente.
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS cross_referencia (
+      id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+      version_id          INTEGER NOT NULL,
+      from_libro_id       INTEGER NOT NULL,
+      from_capitulo       INTEGER NOT NULL CHECK(from_capitulo > 0),
+      from_versiculo      INTEGER NOT NULL CHECK(from_versiculo > 0),
+      to_libro_id         INTEGER NOT NULL,
+      to_capitulo         INTEGER NOT NULL CHECK(to_capitulo > 0),
+      to_versiculo_inicio INTEGER NOT NULL CHECK(to_versiculo_inicio > 0),
+      to_versiculo_fin    INTEGER NOT NULL CHECK(to_versiculo_fin >= to_versiculo_inicio),
+      votos               INTEGER NOT NULL DEFAULT 1,
+      FOREIGN KEY (version_id)    REFERENCES version(id) ON DELETE CASCADE,
+      FOREIGN KEY (from_libro_id) REFERENCES libro(id)   ON DELETE CASCADE,
+      FOREIGN KEY (to_libro_id)   REFERENCES libro(id)   ON DELETE CASCADE
+    );
+  ''');
+  await db.execute(
+    'CREATE INDEX IF NOT EXISTS idx_cross_ref_from '
+    'ON cross_referencia(version_id, from_libro_id, from_capitulo, from_versiculo);',
+  );
+  await db.execute(
+    'CREATE INDEX IF NOT EXISTS idx_cross_ref_to '
+    'ON cross_referencia(version_id, to_libro_id, to_capitulo, to_versiculo_inicio);',
+  );
+  await db.execute(
+    'CREATE INDEX IF NOT EXISTS idx_cross_ref_votos '
+    'ON cross_referencia(version_id, votos DESC);',
+  );
+
+  await db.execute('''
+    CREATE TRIGGER IF NOT EXISTS cross_referencia_bi
+    BEFORE INSERT ON cross_referencia
+    FOR EACH ROW
+    WHEN NOT EXISTS (
+      SELECT 1 FROM libro
+      WHERE libro.id = NEW.from_libro_id
+        AND libro.version_id = NEW.version_id
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'cross_referencia: from_libro_id no pertenece a version_id');
+    END;
+  ''');
+  await db.execute('''
+    CREATE TRIGGER IF NOT EXISTS cross_referencia_bi_to
+    BEFORE INSERT ON cross_referencia
+    FOR EACH ROW
+    WHEN NOT EXISTS (
+      SELECT 1 FROM libro
+      WHERE libro.id = NEW.to_libro_id
+        AND libro.version_id = NEW.version_id
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'cross_referencia: to_libro_id no pertenece a version_id');
+    END;
+  ''');
+  await db.execute('''
+    CREATE TRIGGER IF NOT EXISTS cross_referencia_bu
+    BEFORE UPDATE ON cross_referencia
+    FOR EACH ROW
+    WHEN NOT EXISTS (
+      SELECT 1 FROM libro
+      WHERE libro.id = NEW.from_libro_id
+        AND libro.version_id = NEW.version_id
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'cross_referencia: from_libro_id no pertenece a version_id');
+    END;
+  ''');
+  await db.execute('''
+    CREATE TRIGGER IF NOT EXISTS cross_referencia_bu_to
+    BEFORE UPDATE ON cross_referencia
+    FOR EACH ROW
+    WHEN NOT EXISTS (
+      SELECT 1 FROM libro
+      WHERE libro.id = NEW.to_libro_id
+        AND libro.version_id = NEW.version_id
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'cross_referencia: to_libro_id no pertenece a version_id');
+    END;
+  ''');
 }
 
 /// Datos de prueba mínimos: 2 versiones, 4 libros, 6 capítulos,
@@ -315,7 +401,7 @@ Future<void> seedBibleTestDb(Database db) async {
     'activa': 1,
   });
 
-  // Libros (Génesis=1, Salmos=19, Mateo=40, Juan=43)
+  // Libros (Génesis=1, Salmos=19, Mateo=40, Juan=43, 1 Juan=62)
   await db.insert('libro', {
     'id': 1, 'version_id': 1, 'nombre': 'Génesis', 'abreviatura': 'Gn',
     'testamento': 'AT', 'numero': 1, 'total_capitulos': 50,
@@ -331,6 +417,13 @@ Future<void> seedBibleTestDb(Database db) async {
   await db.insert('libro', {
     'id': 4, 'version_id': 1, 'nombre': 'Juan', 'abreviatura': 'Jn',
     'testamento': 'NT', 'numero': 43, 'total_capitulos': 21,
+  });
+  // 1 Juan canónico (libro_id=62 en orden canónico, pero como solo es
+  // para tests, lo creamos con id=6 — el orden canónico no se usa en
+  // los cross-refs, solo libro.id).
+  await db.insert('libro', {
+    'id': 6, 'version_id': 1, 'nombre': '1 Juan', 'abreviatura': '1Jn',
+    'testamento': 'NT', 'numero': 62, 'total_capitulos': 5,
   });
   // Libro "fantasma" de la versión 2 para test cross-version
   await db.insert('libro', {
@@ -353,6 +446,10 @@ Future<void> seedBibleTestDb(Database db) async {
   });
   await db.insert('capitulo', {
     'id': 5, 'libro_id': 5, 'numero': 3, 'total_versiculos': 36,
+  });
+  // 1 Juan cap 4 (libro_id=6) — necesario para el rango destino
+  await db.insert('capitulo', {
+    'id': 6, 'libro_id': 6, 'numero': 4, 'total_versiculos': 21,
   });
 
   // Versículos (Génesis 1:1, 1:2; Juan 3:16, 3:17, 3:18; Salmos 23:1-6)
@@ -394,8 +491,101 @@ Future<void> seedBibleTestDb(Database db) async {
   });
 }
 
+/// Inserta un set mínimo de cross-references de prueba.
+///
+/// 6 referencias usando los libros/capítulos/versículos del seed:
+///   Génesis 1:1 → Génesis 1:2 (1 voto)             [versículo único]
+///   Génesis 1:1 → Génesis 2:4 (1 voto)             [versículo único]
+///   Juan 3:16   → Génesis 22:12 (5 votos)          [rango destino: 12-14]
+///   Juan 3:16   → 1 Juan 4:9 (3 votos)             [rango destino: 9-10]
+///   Juan 3:16   → Juan 3:17 (2 votos)              [versículo único]
+///   Salmos 23:1 → Juan 10:11 (4 votos)             [versículo único]
+///
+/// Diseñado para ejercitar:
+///   * FROM lookup (3 refs desde Juan 3:16, 1 desde Génesis 1:1, etc.)
+///   * TO lookup por coincidencia exacta de versículo único
+///   * TO lookup por coincidencia de rango (Génesis 22:12 cae en 22:12-14)
+///   * Orden por votos DESC (Génesis 22:12-14 con 5 votos debe ir primero)
+///   * esRango = true vs false
+///   * version 2 (libro fantasma de RV1569) sin refs (las 6 son de v1)
+Future<void> seedCrossReferenciasTestDb(Database db) async {
+  // version 1 (RV1909) refs
+  // Génesis 1:1 → Génesis 1:2 (1 voto)
+  await db.insert('cross_referencia', {
+    'version_id': 1,
+    'from_libro_id': 1,
+    'from_capitulo': 1,
+    'from_versiculo': 1,
+    'to_libro_id': 1,
+    'to_capitulo': 1,
+    'to_versiculo_inicio': 2,
+    'to_versiculo_fin': 2,
+    'votos': 1,
+  });
+  // Génesis 1:1 → Génesis 2:4 (1 voto)
+  await db.insert('cross_referencia', {
+    'version_id': 1,
+    'from_libro_id': 1,
+    'from_capitulo': 1,
+    'from_versiculo': 1,
+    'to_libro_id': 1,
+    'to_capitulo': 2,
+    'to_versiculo_inicio': 4,
+    'to_versiculo_fin': 4,
+    'votos': 1,
+  });
+  // Juan 3:16 → Génesis 22:12-14 (5 votos) — TOP ref por votos
+  await db.insert('cross_referencia', {
+    'version_id': 1,
+    'from_libro_id': 4,
+    'from_capitulo': 3,
+    'from_versiculo': 16,
+    'to_libro_id': 1,
+    'to_capitulo': 22,
+    'to_versiculo_inicio': 12,
+    'to_versiculo_fin': 14,
+    'votos': 5,
+  });
+  // Juan 3:16 → 1 Juan 4:9-10 (3 votos)
+  await db.insert('cross_referencia', {
+    'version_id': 1,
+    'from_libro_id': 4,
+    'from_capitulo': 3,
+    'from_versiculo': 16,
+    'to_libro_id': 6, // 1 Juan (id=6 en el seed de tests)
+    'to_capitulo': 4,
+    'to_versiculo_inicio': 9,
+    'to_versiculo_fin': 10,
+    'votos': 3,
+  });
+  // Juan 3:16 → Juan 3:17 (2 votos)
+  await db.insert('cross_referencia', {
+    'version_id': 1,
+    'from_libro_id': 4,
+    'from_capitulo': 3,
+    'from_versiculo': 16,
+    'to_libro_id': 4,
+    'to_capitulo': 3,
+    'to_versiculo_inicio': 17,
+    'to_versiculo_fin': 17,
+    'votos': 2,
+  });
+  // Salmos 23:1 → Juan 10:11 (4 votos)
+  await db.insert('cross_referencia', {
+    'version_id': 1,
+    'from_libro_id': 3,
+    'from_capitulo': 23,
+    'from_versiculo': 1,
+    'to_libro_id': 4,
+    'to_capitulo': 10,
+    'to_versiculo_inicio': 11,
+    'to_versiculo_fin': 11,
+    'votos': 4,
+  });
+}
+
 /// Crea un bundle de repositorios con BD sembrada. Devuelve un record
-/// con la BD y los 5 repos.
+/// con la BD y los repos.
 Future<({
   Database db,
   BibliaRepository biblia,
@@ -403,9 +593,15 @@ Future<({
   FavoritosRepository favoritos,
   NotasRepository notas,
   HistorialRepository historial,
-})> createBibleReposWithSeed() async {
+  CrossReferenciasRepository crossRefs,
+})> createBibleReposWithSeed({
+  bool includeCrossRefs = false,
+}) async {
   final db = await createBibleTestDb();
   await seedBibleTestDb(db);
+  if (includeCrossRefs) {
+    await seedCrossReferenciasTestDb(db);
+  }
 
   final helper = BibleDatabaseHelper.forTesting(db);
   return (
@@ -415,6 +611,7 @@ Future<({
     favoritos: FavoritosRepository(helper),
     notas: NotasRepository(helper),
     historial: HistorialRepository(helper),
+    crossRefs: CrossReferenciasRepository(helper),
   );
 }
 
@@ -426,6 +623,7 @@ Future<({
   FavoritosRepository favoritos,
   NotasRepository notas,
   HistorialRepository historial,
+  CrossReferenciasRepository crossRefs,
 })> createBibleReposEmpty() async {
   final db = await createBibleTestDb();
 
@@ -437,6 +635,7 @@ Future<({
     favoritos: FavoritosRepository(helper),
     notas: NotasRepository(helper),
     historial: HistorialRepository(helper),
+    crossRefs: CrossReferenciasRepository(helper),
   );
 }
 

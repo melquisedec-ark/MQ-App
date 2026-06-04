@@ -1,8 +1,9 @@
 {
-  "version": 2,
-  "schema_version": 1,
-  "created_at": "2026-06-02",
+  "version": 3,
+  "schema_version": 2,
+  "created_at": "2026-06-04",
   "migrations_applied": [
-    {"from": 1, "to": 2, "description": "Removed RV1569 placeholder (D1): deleted version_id=2, CASCADE removed 31,102 verses, 66 books, 1189 chapters. Schema remains multi-version ready. Reduces DB from 15.19MB to 7.45MB."}
+    {"from": 1, "to": 2, "description": "Removed RV1569 placeholder (D1): deleted version_id=2, CASCADE removed 31,102 verses, 66 books, 1189 chapters. Schema remains multi-version ready. Reduces DB from 15.19MB to 7.45MB."},
+    {"from": 2, "to": 3, "description": "Cross-references bíblicas (C1+C2+C3): added cross_referencia table with ~340k refs from openbible.info (CC-BY 4.0, via scrollmapper/bible_databases MIT). 4 triggers + 3 índices. DB grows from 7.45MB to ~34-35MB."}
   ]
 }

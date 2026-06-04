@@ -12,8 +12,8 @@ void main() {
   });
 
   group('BibleDatabaseHelper (constantes)', () {
-    test('SCHEMA_VERSION es 1', () {
-      expect(BibleDatabaseHelper.SCHEMA_VERSION, 1);
+    test('SCHEMA_VERSION es 2 (migración 004 cross_referencia)', () {
+      expect(BibleDatabaseHelper.SCHEMA_VERSION, 2);
     });
 
     test('dbFileName es biblia.db', () {
