@@ -898,10 +898,10 @@ class _VerseCard extends ConsumerWidget {
 
 /// Preview inline de una nota en verse mode.
 ///
-/// Renderiza un mini-card con borde izquierdo 3dp del color de la nota,
-/// el texto truncado a 3 líneas, y un `GestureDetector` que abre el
-/// editor al tap. Usa `GestureDetector` (no `InkWell`) para no robar
-/// el `onLongPress` del wrapper de la card.
+/// A5: Card con tinted background del color de la nota (alpha 0.12),
+/// borde lateral 2dp, botón 'Editar' visible, y max 5 líneas con
+/// ellipsis. Usa `GestureDetector` (no `InkWell`) para no robar el
+/// `onLongPress` del wrapper de la card.
 class _NotaPreview extends StatelessWidget {
   const _NotaPreview({
     super.key,
@@ -916,26 +916,66 @@ class _NotaPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _colorForNota(nota.color);
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
       label: 'Editar nota',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(color: color, width: 3),
-            ),
+        child: Card(
+          // A5: tinted background en vez de borde-only.
+          color: color.withValues(alpha: 0.12),
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: color, width: 2),
           ),
-          child: Text(
-            nota.contenido,
-            style: textTheme.bodyMedium?.copyWith(
-              fontStyle: FontStyle.italic,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.edit_note_rounded,
+                      size: 16,
+                      color: color,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Tu nota',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: onTap,
+                      style: TextButton.styleFrom(
+                        foregroundColor: color,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: const Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Editar'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  nota.contenido,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    height: 1.4,
+                  ),
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),

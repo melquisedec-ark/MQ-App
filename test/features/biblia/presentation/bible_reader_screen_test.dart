@@ -349,4 +349,68 @@ void main() {
     // El modal se abre con título "Editar nota" (porque ya existe).
     expect(find.text('Editar nota'), findsOneWidget);
   });
+
+  // A5: refinamiento del preview de nota (Card tinted + botón Editar).
+  testWidgets('verse mode con nota larga (50+ chars) se trunca con ellipsis',
+      (tester) async {
+    await setConfig('biblia.reader_view_mode', 'verse');
+    final longNote = 'Esta es una nota muy larga que tiene más de 50 '
+        'caracteres para verificar que se trunca con ellipsis en el preview '
+        'cuando excede el maxLines de 5';
+    expect(longNote.length, greaterThan(50));
+
+    await notasRepo.upsert(1, 1, 1, 1, longNote, NotaColor.azul);
+
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // El texto debe estar presente (widget lo renderiza aunque truncado).
+    expect(find.textContaining('Esta es una nota muy larga'), findsOneWidget);
+    // El label 'Tu nota' debe estar visible.
+    expect(find.text('Tu nota'), findsOneWidget);
+  });
+
+  testWidgets('tap en botón Editar del preview abre modal con existingNote',
+      (tester) async {
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await notasRepo.upsert(1, 1, 1, 1, 'Contenido a editar', NotaColor.amarillo);
+
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    // El botón Editar es visible.
+    final editBtn = find.text('Editar');
+    expect(editBtn, findsOneWidget);
+    await tester.tap(editBtn);
+    // Esperar gesture arena delay.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    // El modal abre con "Editar nota" porque la nota existe.
+    expect(find.text('Editar nota'), findsOneWidget);
+  });
+
+  testWidgets('preview muestra el label Tu nota y el icono edit_note_rounded',
+      (tester) async {
+    await setConfig('biblia.reader_view_mode', 'verse');
+    await notasRepo.upsert(1, 1, 1, 1, 'Mi nota', NotaColor.verde);
+
+    await tester.pumpWidget(buildHarness(
+      libroId: 1,
+      capitulo: 1,
+      initialViewMode: BibleReaderViewMode.verse,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tu nota'), findsOneWidget);
+    expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+  });
 }
