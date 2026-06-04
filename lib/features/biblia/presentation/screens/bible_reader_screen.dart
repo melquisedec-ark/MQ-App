@@ -8,6 +8,7 @@ import '../../../../core/ui/app_snackbar.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../proto/generated/hymn_control.pbgrpc.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
+import '../../../../presentation/providers/fullscreen_mode_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/bible_appearance_provider.dart';
@@ -99,6 +100,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isFullscreen = ref.watch(fullscreenModeProvider);
     final versionId = ref.watch(currentVersionIdProvider);
     final libroId = ref.watch(currentLibroIdProvider) ?? widget.libroId;
     final capitulo = ref.watch(currentCapituloProvider) ?? widget.capitulo;
@@ -125,7 +127,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: isFullscreen ? null : AppBar(
         title: _AppBarTitle(libroId: libroId, capitulo: capitulo),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -147,13 +149,15 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
         ],
       ),
       body: SafeArea(
+        top: !isFullscreen,
         child: Column(
           children: [
-            _ChapterProgress(
-              libroId: libroId,
-              capitulo: capitulo,
-              versiculoNum: versiculoNum,
-            ),
+            if (!isFullscreen)
+              _ChapterProgress(
+                libroId: libroId,
+                capitulo: capitulo,
+                versiculoNum: versiculoNum,
+              ),
             Expanded(
               // D6: alternar entre vista por versículo y vista de capítulo.
               child: Consumer(
@@ -173,11 +177,12 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 },
               ),
             ),
-            _ReaderBottomBar(
-              libroId: libroId,
-              capitulo: capitulo,
-              versiculoNum: versiculoNum,
-            ),
+            if (!isFullscreen)
+              _ReaderBottomBar(
+                libroId: libroId,
+                capitulo: capitulo,
+                versiculoNum: versiculoNum,
+              ),
           ],
         ),
       ),
@@ -1256,7 +1261,7 @@ class _ReaderBottomBar extends ConsumerWidget {
                 ],
               ),
               const Divider(height: 4, thickness: 0.5),
-              // Fila 2: acción (Nota | Configuración)
+              // Fila 2: acción (Nota | Configuración | Pantalla completa)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -1283,6 +1288,40 @@ class _ReaderBottomBar extends ConsumerWidget {
                     ),
                     onPressed: () => ReadingSettingsSheet.show(context),
                     tooltip: 'Ajustes de lectura',
+                  ),
+                  // Fullscreen toggle.
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final isFullscreen = ref.watch(fullscreenModeProvider);
+                      return IconButton(
+                        icon: Icon(
+                          isFullscreen
+                              ? Icons.fullscreen_exit_rounded
+                              : Icons.fullscreen_rounded,
+                          size: 20,
+                        ),
+                        iconSize: 20,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                        tooltip: isFullscreen
+                            ? 'Salir de pantalla completa'
+                            : 'Pantalla completa',
+                        onPressed: () {
+                          if (isFullscreen) {
+                            ref
+                                .read(fullscreenModeProvider.notifier)
+                                .exitFullscreen();
+                          } else {
+                            ref
+                                .read(fullscreenModeProvider.notifier)
+                                .enterFullscreen();
+                          }
+                        },
+                      );
+                    },
                   ),
                 ],
               ),

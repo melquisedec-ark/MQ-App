@@ -272,6 +272,17 @@ class _ResultsList extends ConsumerWidget {
                 ),
               ),
             ),
+            if (results.length >= 500)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                child: Text(
+                  '${results.length} resultados — considera una búsqueda más específica',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ),
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

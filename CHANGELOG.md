@@ -4,6 +4,24 @@ Todas las versiones notables de MQ-App. Formato basado en [Keep a Changelog](htt
 
 ---
 
+## [1.0.8] — 2026-06-04
+
+### Added
+- **📺 Modo pantalla completa para lectura de Biblia**
+  - Nuevo botón en bottom bar (fila de acción, junto a Config): `Icons.fullscreen_rounded`
+  - Oculta AppBar, barra de progreso y bottom bar
+  - Usa `SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky)` para ocultar status/nav bars
+  - Reutiliza `fullscreenModeProvider` del himnario (mismo patrón)
+  - Salir: botón `fullscreen_exit_rounded`, botón atrás del sistema, o swipe desde el borde
+
+### Changed
+- **🔍 Búsqueda sin límite (50 → 5,000 resultados)**
+  - `biblia_search_repository.dart`: `limit = 50` → `maxResults = 5000`
+  - Ahora muestra TODAS las coincidencias (antes solo 50)
+  - Warning UI cuando hay ≥500 resultados: "considera una búsqueda más específica"
+
+---
+
 ## [1.0.7] — 2026-06-04
 
 ### Fixed

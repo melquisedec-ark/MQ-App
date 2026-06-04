@@ -34,7 +34,7 @@ class BibliaSearchRepository {
 
   /// Búsqueda FTS5 con ranking por relevancia.
   ///
-  /// Devuelve hasta [limit] versículos (default 50) que matchean [query],
+  /// Devuelve hasta [maxResults] versículos (default 5000) que matchean [query],
   /// opcionalmente filtrados por [versionId]. Cada hit incluye el texto
   /// del versículo + metadata del libro/capítulo para que la UI no tenga
   /// que hacer JOINs adicionales.
@@ -44,7 +44,7 @@ class BibliaSearchRepository {
   Future<List<VersiculoContexto>> search(
     String query, {
     int? versionId,
-    int limit = 50,
+    int maxResults = 5000,
   }) async {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) return const <VersiculoContexto>[];
@@ -78,7 +78,7 @@ class BibliaSearchRepository {
 
     final args = <Object?>[ftsQuery];
     if (versionId != null) args.add(versionId);
-    args.add(limit);
+    args.add(maxResults);
 
     try {
       final rows = await db.rawQuery(sql, args);

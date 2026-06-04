@@ -149,17 +149,17 @@ void main() {
       }
     });
 
-    test('search respeta el limit', () async {
+    test('search respeta el maxResults', () async {
       final bundle = await createBibleReposWithSeed();
       try {
         // "Dios" aparece en 4 versículos del seed (Gn 1:1, Jn 3:16, 17, 18)
-        final r1 = await bundle.search.search('Dios', limit: 1);
+        final r1 = await bundle.search.search('Dios', maxResults: 1);
         expect(r1, hasLength(1));
 
-        final r2 = await bundle.search.search('Dios', limit: 2);
+        final r2 = await bundle.search.search('Dios', maxResults: 2);
         expect(r2.length, lessThanOrEqualTo(2));
 
-        final r100 = await bundle.search.search('Dios', limit: 100);
+        final r100 = await bundle.search.search('Dios', maxResults: 100);
         // El seed tiene 5 versículos con "Dios":
         // Gn 1:1, Gn 1:2 (Espíritu de Dios), Jn 3:16, Jn 3:17, Jn 3:18
         expect(r100, hasLength(5));
