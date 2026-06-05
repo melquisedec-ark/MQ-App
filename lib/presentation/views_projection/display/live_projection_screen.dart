@@ -13,9 +13,23 @@ import '../../shared_widgets/responsive_chord_widget.dart';
 import '../../shared_widgets/adaptive_stanza_text.dart';
 import '../../shared_widgets/glass_container.dart';
 import '../../shared_widgets/providers/appearance_provider.dart';
+import '../providers/bible_appearance_provider.dart';
 import '../providers/live_control_providers.dart';
 import '../providers/projection_providers.dart';
 import 'receptor_binding.dart';
+
+/// Colores predefinidos para temas de proyección bíblica.
+///
+/// Cada tema define un fondo oscuro optimizado para proyección
+/// y un texto claro con buen contraste.
+const Map<String, ({Color bg, Color text})> kBibleProjectionThemes = {
+  'papel': (bg: Color(0xFF1A1A1A), text: Color(0xFFFAFAFA)),
+  'sepia': (bg: Color(0xFF2D2418), text: Color(0xFFF5E6C8)),
+  'noche': (bg: Color(0xFF0A0A0A), text: Color(0xFFE8E8E8)),
+  'dark': (bg: Color(0xFF000000), text: Color(0xFFE8E8E8)),
+  'azulNoche': (bg: Color(0xFF0F172A), text: Color(0xFFCBD5E1)),
+  'altoContraste': (bg: Color(0xFF000000), text: Color(0xFFFFFFFF)),
+};
 
 /// Pantalla de Proyección en Vivo (Live Projection).
 ///
@@ -141,6 +155,9 @@ class LiveProjectionScreen extends ConsumerWidget {
     final slide = liveState.currentSlide;
     if (slide == null) return const SizedBox.shrink();
 
+    // Leer apariencia bíblica del receptor para slides de biblia
+    final bibleAppearance = ref.watch(bibleAppearanceProvider);
+
     return switch (slide) {
       TitleSlide(:final himno) => _TitleSlide(
           titulo: himno.titulo,
@@ -169,7 +186,7 @@ class LiveProjectionScreen extends ConsumerWidget {
           libroNombre: libroNombre,
           capitulo: capitulo,
           baseFontSize: baseFontSize,
-          appearance: appearance,
+          bibleAppearance: bibleAppearance,
           textTheme: textTheme,
         ),
       VerseSlide(:final texto, :final referencia, :final numero, :final totalVersiculos) =>
@@ -180,8 +197,7 @@ class LiveProjectionScreen extends ConsumerWidget {
           numero: numero,
           totalVersiculos: totalVersiculos,
           baseFontSize: baseFontSize,
-          theme: liveState.bibleTheme,
-          fontScale: liveState.bibleFontScale,
+          bibleAppearance: bibleAppearance,
           transitionDuration: config.transitionDurationMs,
           appearance: appearance,
           textTheme: textTheme,
@@ -190,7 +206,7 @@ class LiveProjectionScreen extends ConsumerWidget {
           libroNombre: libroNombre,
           capitulo: capitulo,
           baseFontSize: baseFontSize,
-          appearance: appearance,
+          bibleAppearance: bibleAppearance,
           textTheme: textTheme,
         ),
     };
@@ -658,63 +674,72 @@ class _AmenSlide extends StatelessWidget {
 }
 
 /// Slide de título bíblico: libro + capítulo centrado, full screen.
+///
+/// Usa [kBibleProjectionThemes] para aplicar colores según el tema activo
+/// en el receptor ([bibleAppearanceProvider]).
 class _BibleTitleSlide extends StatelessWidget {
   final String libroNombre;
   final int capitulo;
   final double baseFontSize;
-  final HymnAppearanceState appearance;
+  final BibleAppearanceState bibleAppearance;
   final TextTheme textTheme;
 
   const _BibleTitleSlide({
     required this.libroNombre,
     required this.capitulo,
     required this.baseFontSize,
-    required this.appearance,
+    required this.bibleAppearance,
     required this.textTheme,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            libroNombre,
-            style: TextStyle(
-              fontFamily: appearance.fontFamily,
-              color: appearance.textColor,
-              fontSize: baseFontSize * 1.8,
-              fontWeight: FontWeight.bold,
+    final theme = kBibleProjectionThemes[bibleAppearance.theme]
+        ?? kBibleProjectionThemes['papel']!;
+
+    return Container(
+      color: theme.bg,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              libroNombre,
+              style: TextStyle(
+                color: theme.text,
+                fontSize: baseFontSize * 1.8,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Capítulo $capitulo',
-            style: TextStyle(
-              fontFamily: appearance.fontFamily,
-              color: appearance.textColor.withValues(alpha: 0.7),
-              fontSize: baseFontSize * 1.2,
-              fontWeight: FontWeight.w500,
+            const SizedBox(height: 16),
+            Text(
+              'Capítulo $capitulo',
+              style: TextStyle(
+                color: theme.text.withValues(alpha: 0.7),
+                fontSize: baseFontSize * 1.2,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 /// Slide de versículo individual con texto y referencia.
+///
+/// Usa [kBibleProjectionThemes] para aplicar colores según el tema activo
+/// y [BibleAppearanceState.fontScale] para escalar la tipografía.
 class _VerseSlide extends StatefulWidget {
   final String texto;
   final String referencia;
   final int numero;
   final int totalVersiculos;
   final double baseFontSize;
-  final String theme;
-  final double fontScale;
+  final BibleAppearanceState bibleAppearance;
   final int transitionDuration;
   final HymnAppearanceState appearance;
   final TextTheme textTheme;
@@ -726,8 +751,7 @@ class _VerseSlide extends StatefulWidget {
     required this.numero,
     required this.totalVersiculos,
     required this.baseFontSize,
-    required this.theme,
-    required this.fontScale,
+    required this.bibleAppearance,
     required this.transitionDuration,
     required this.appearance,
     required this.textTheme,
@@ -764,54 +788,56 @@ class _VerseSlideState extends State<_VerseSlide>
 
   @override
   Widget build(BuildContext context) {
-    final fontSize = widget.baseFontSize * widget.fontScale;
+    final theme = kBibleProjectionThemes[widget.bibleAppearance.theme]
+        ?? kBibleProjectionThemes['papel']!;
+    final fontSize = widget.baseFontSize * widget.bibleAppearance.fontScale;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
-      child: FadeTransition(
-        opacity: _animation,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Referencia arriba
-            Text(
-              widget.referencia,
-              style: TextStyle(
-                fontFamily: widget.appearance.fontFamily,
-                color: widget.appearance.textColor.withValues(alpha: 0.6),
-                fontSize: fontSize * 0.7,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.5,
+    return Container(
+      color: theme.bg,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
+        child: FadeTransition(
+          opacity: _animation,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Referencia arriba
+              Text(
+                widget.referencia,
+                style: TextStyle(
+                  color: theme.text.withValues(alpha: 0.6),
+                  fontSize: fontSize * 0.7,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            // Texto del versículo
-            Text(
-              widget.texto,
-              style: TextStyle(
-                fontFamily: widget.appearance.fontFamily,
-                color: widget.appearance.textColor,
-                fontSize: fontSize,
-                height: 1.4,
-                fontWeight: FontWeight.w400,
+              const SizedBox(height: 24),
+              // Texto del versículo
+              Text(
+                widget.texto,
+                style: TextStyle(
+                  color: theme.text,
+                  fontSize: fontSize,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            // Número de versículo / total
-            Text(
-              '${widget.numero} / ${widget.totalVersiculos}',
-              style: TextStyle(
-                fontFamily: widget.appearance.fontFamily,
-                color: widget.appearance.textColor.withValues(alpha: 0.4),
-                fontSize: fontSize * 0.5,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 24),
+              // Número de versículo / total
+              Text(
+                '${widget.numero} / ${widget.totalVersiculos}',
+                style: TextStyle(
+                  color: theme.text.withValues(alpha: 0.4),
+                  fontSize: fontSize * 0.5,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -819,49 +845,55 @@ class _VerseSlideState extends State<_VerseSlide>
 }
 
 /// Slide de fin de capítulo bíblico.
+///
+/// Usa [kBibleProjectionThemes] para aplicar colores según el tema activo.
 class _BibleEndSlide extends StatelessWidget {
   final String libroNombre;
   final int capitulo;
   final double baseFontSize;
-  final HymnAppearanceState appearance;
+  final BibleAppearanceState bibleAppearance;
   final TextTheme textTheme;
 
   const _BibleEndSlide({
     required this.libroNombre,
     required this.capitulo,
     required this.baseFontSize,
-    required this.appearance,
+    required this.bibleAppearance,
     required this.textTheme,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Fin del capítulo',
-            style: TextStyle(
-              fontFamily: appearance.fontFamily,
-              color: appearance.textColor,
-              fontSize: baseFontSize * 1.5,
-              fontWeight: FontWeight.bold,
+    final theme = kBibleProjectionThemes[bibleAppearance.theme]
+        ?? kBibleProjectionThemes['papel']!;
+
+    return Container(
+      color: theme.bg,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Fin del capítulo',
+              style: TextStyle(
+                color: theme.text,
+                fontSize: baseFontSize * 1.5,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '$libroNombre $capitulo',
-            style: TextStyle(
-              fontFamily: appearance.fontFamily,
-              color: appearance.textColor.withValues(alpha: 0.6),
-              fontSize: baseFontSize * 1.0,
-              fontWeight: FontWeight.w500,
+            const SizedBox(height: 16),
+            Text(
+              '$libroNombre $capitulo',
+              style: TextStyle(
+                color: theme.text.withValues(alpha: 0.6),
+                fontSize: baseFontSize * 1.0,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

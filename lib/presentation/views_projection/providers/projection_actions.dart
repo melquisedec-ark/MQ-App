@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/estrofa.dart';
 import '../../../domain/entities/himno.dart';
+import '../../../features/biblia/application/providers/biblia_version_provider.dart';
 import '../../shared_widgets/providers/appearance_provider.dart';
 import '../../views_personal/providers/hymn_providers.dart';
+import '../providers/bible_appearance_provider.dart';
 import '../providers/live_control_providers.dart';
 import '../../../core/window_manager/window_providers.dart';
 
@@ -121,6 +123,68 @@ Map<String, dynamic> _buildSetConfigMessage(HymnAppearanceState appearance) {
     // 'color' en caso contrario (ver BUG_FONDO_RESET.md).
     'background': bgColor == Colors.transparent ? 'black' : 'color',
   };
+}
+
+/// Proyecta un capítulo bíblico completo en la ventana receptora.
+///
+/// Construye la lista de versículos, actualiza el estado local y
+/// envía el mensaje LOAD_VERSE al subprocess.
+///
+/// Retorna `null` en éxito, o un mensaje de error en fallo.
+Future<String?> projectBibleChapter(
+  WidgetRef ref, {
+  required int versionId,
+  required int libroId,
+  required int capitulo,
+}) async {
+  try {
+    final bibliaRepo = ref.read(bibliaRepositoryProvider);
+
+    // Obtener nombre del libro
+    final libro = await bibliaRepo.getLibroById(libroId);
+    if (libro == null) return 'Libro no encontrado';
+
+    // Obtener versículos del capítulo
+    final cap = await bibliaRepo.getCapitulo(libroId, capitulo);
+    if (cap == null) return 'Capítulo no encontrado';
+
+    final versiculos = await bibliaRepo.getVersiculosByCapitulo(cap.id);
+    if (versiculos.isEmpty) return 'Sin versículos';
+
+    final textos = versiculos.map((v) => v.texto).toList();
+
+    // Actualizar estado local del emisor
+    final notifier = ref.read(liveControlProvider.notifier);
+    notifier.loadBibleChapter(
+      libroNombre: libro.nombre,
+      capitulo: capitulo,
+      versiculos: textos,
+    );
+
+    // Enviar al receptor
+    final windowService = ref.read(windowServiceProvider);
+    await windowService.sendMessage({
+      'type': 'LOAD_VERSE',
+      'libroNombre': libro.nombre,
+      'capitulo': capitulo,
+      'versiculos': textos,
+    });
+
+    // Sincronizar apariencia bíblica con el receptor
+    final bibleAppearance = ref.read(bibleAppearanceProvider);
+    await windowService.sendMessage({
+      'type': 'SET_BIBLE_THEME',
+      'theme': bibleAppearance.theme,
+    });
+    await windowService.sendMessage({
+      'type': 'SET_BIBLE_FONT_SIZE',
+      'scale': bibleAppearance.fontScale,
+    });
+
+    return null; // Éxito
+  } catch (e) {
+    return e.toString();
+  }
 }
 
 

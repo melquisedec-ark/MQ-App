@@ -7,11 +7,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:mqapp/domain/repositories/control_repository.dart';
+import 'package:mqapp/domain/entities/projection_slide.dart';
 import 'package:mqapp/presentation/shared_widgets/providers/appearance_provider.dart';
 import 'package:mqapp/presentation/views_projection/display/projection_app.dart';
 import 'package:mqapp/presentation/views_projection/display/receptor_binding.dart';
 import 'package:mqapp/presentation/views_projection/providers/connection_providers.dart';
 import 'package:mqapp/presentation/views_projection/providers/projection_providers.dart';
+import 'package:mqapp/presentation/views_projection/providers/bible_appearance_provider.dart';
+import 'package:mqapp/presentation/views_projection/providers/presentation_providers.dart';
+import 'package:mqapp/presentation/views_projection/providers/live_control_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Mocks
@@ -471,6 +475,207 @@ void main() {
         // Valores por defecto
         expect(appearance.textColor, const Color(0xFF1C1B1F));
         expect(appearance.bgColor, Colors.transparent);
+
+        await stdinCtrl.close();
+      });
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // Tests de handlers bíblicos
+    // ═══════════════════════════════════════════════════════════════
+
+    group('Handlers bíblicos', () {
+      testWidgets('LOAD_VERSE — carga capítulo bíblico', (tester) async {
+        final stdinCtrl = StreamController<String>.broadcast();
+        await tester.pumpWidget(
+          _buildTestApp(stdinOverride: stdinCtrl.stream),
+        );
+        await tester.pumpAndSettle();
+
+        // Enviar mensaje LOAD_VERSE
+        stdinCtrl.add(jsonEncode({
+          'type': 'LOAD_VERSE',
+          'libroNombre': 'Génesis',
+          'capitulo': 1,
+          'versiculos': [
+            'En el principio creó Dios los cielos y la tierra.',
+            'Y la tierra estaba desordenada y vacía.',
+          ],
+        }));
+        await tester.pumpAndSettle();
+
+        // Verificar que el estado tiene el módulo bíblico activo
+        final container =
+            ProviderScope.containerOf(tester.element(find.byType(ProjectionApp)));
+        final liveState = container.read(liveControlProvider);
+
+        expect(liveState.module, ProjectionModule.bible);
+        expect(liveState.libroNombre, 'Génesis');
+        expect(liveState.capitulo, 1);
+        expect(liveState.slides.length, 4); // Título + 2 versículos + Fin
+        expect(liveState.slides[0], isA<BibleTitleSlide>());
+        expect(liveState.slides[1], isA<VerseSlide>());
+        expect(liveState.slides[2], isA<VerseSlide>());
+        expect(liveState.slides[3], isA<BibleEndSlide>());
+
+        await stdinCtrl.close();
+      });
+
+      testWidgets('NEXT_VERSE — avanza al siguiente slide', (tester) async {
+        final stdinCtrl = StreamController<String>.broadcast();
+        await tester.pumpWidget(
+          _buildTestApp(stdinOverride: stdinCtrl.stream),
+        );
+        await tester.pumpAndSettle();
+
+        // Cargar capítulo bíblico
+        stdinCtrl.add(jsonEncode({
+          'type': 'LOAD_VERSE',
+          'libroNombre': 'Juan',
+          'capitulo': 3,
+          'versiculos': ['Verso 1', 'Verso 2', 'Verso 3'],
+        }));
+        await tester.pumpAndSettle();
+
+        // Avanzar al primer versículo
+        stdinCtrl.add(jsonEncode({'type': 'NEXT_VERSE'}));
+        await tester.pumpAndSettle();
+
+        final container =
+            ProviderScope.containerOf(tester.element(find.byType(ProjectionApp)));
+        final liveState = container.read(liveControlProvider);
+
+        expect(liveState.currentSlideIndex, 1);
+        expect(liveState.currentSlide, isA<VerseSlide>());
+
+        await stdinCtrl.close();
+      });
+
+      testWidgets('PREV_VERSE — retrocede al slide anterior', (tester) async {
+        final stdinCtrl = StreamController<String>.broadcast();
+        await tester.pumpWidget(
+          _buildTestApp(stdinOverride: stdinCtrl.stream),
+        );
+        await tester.pumpAndSettle();
+
+        stdinCtrl.add(jsonEncode({
+          'type': 'LOAD_VERSE',
+          'libroNombre': 'Juan',
+          'capitulo': 3,
+          'versiculos': ['Verso 1', 'Verso 2'],
+        }));
+        await tester.pumpAndSettle();
+
+        // Avanzar 2 veces
+        stdinCtrl.add(jsonEncode({'type': 'NEXT_VERSE'}));
+        await tester.pumpAndSettle();
+        stdinCtrl.add(jsonEncode({'type': 'NEXT_VERSE'}));
+        await tester.pumpAndSettle();
+
+        // Retroceder
+        stdinCtrl.add(jsonEncode({'type': 'PREV_VERSE'}));
+        await tester.pumpAndSettle();
+
+        final container =
+            ProviderScope.containerOf(tester.element(find.byType(ProjectionApp)));
+        final liveState = container.read(liveControlProvider);
+
+        expect(liveState.currentSlideIndex, 1);
+
+        await stdinCtrl.close();
+      });
+
+      testWidgets('SET_BIBLE_THEME — cambia tema en receptor', (tester) async {
+        final stdinCtrl = StreamController<String>.broadcast();
+        await tester.pumpWidget(
+          _buildTestApp(stdinOverride: stdinCtrl.stream),
+        );
+        await tester.pumpAndSettle();
+
+        stdinCtrl.add(jsonEncode({
+          'type': 'SET_BIBLE_THEME',
+          'theme': 'noche',
+        }));
+        await tester.pumpAndSettle();
+
+        final container =
+            ProviderScope.containerOf(tester.element(find.byType(ProjectionApp)));
+        final bibleAppearance = container.read(bibleAppearanceProvider);
+
+        expect(bibleAppearance.theme, 'noche');
+
+        await stdinCtrl.close();
+      });
+
+      testWidgets('SET_BIBLE_FONT_SIZE — cambia escala de fuente',
+          (tester) async {
+        final stdinCtrl = StreamController<String>.broadcast();
+        await tester.pumpWidget(
+          _buildTestApp(stdinOverride: stdinCtrl.stream),
+        );
+        await tester.pumpAndSettle();
+
+        stdinCtrl.add(jsonEncode({
+          'type': 'SET_BIBLE_FONT_SIZE',
+          'scale': 2.5,
+        }));
+        await tester.pumpAndSettle();
+
+        final container =
+            ProviderScope.containerOf(tester.element(find.byType(ProjectionApp)));
+        final bibleAppearance = container.read(bibleAppearanceProvider);
+
+        expect(bibleAppearance.fontScale, 2.5);
+
+        await stdinCtrl.close();
+      });
+
+      testWidgets('SET_BIBLE_FONT_SIZE — clamp a rango válido',
+          (tester) async {
+        final stdinCtrl = StreamController<String>.broadcast();
+        await tester.pumpWidget(
+          _buildTestApp(stdinOverride: stdinCtrl.stream),
+        );
+        await tester.pumpAndSettle();
+
+        // Valor por debajo del mínimo
+        stdinCtrl.add(jsonEncode({
+          'type': 'SET_BIBLE_FONT_SIZE',
+          'scale': 0.1,
+        }));
+        await tester.pumpAndSettle();
+
+        final container =
+            ProviderScope.containerOf(tester.element(find.byType(ProjectionApp)));
+        expect(container.read(bibleAppearanceProvider).fontScale, 0.8);
+
+        // Valor por encima del máximo
+        stdinCtrl.add(jsonEncode({
+          'type': 'SET_BIBLE_FONT_SIZE',
+          'scale': 10.0,
+        }));
+        await tester.pumpAndSettle();
+
+        expect(container.read(bibleAppearanceProvider).fontScale, 4.0);
+
+        await stdinCtrl.close();
+      });
+
+      testWidgets('SWITCH_MODULE — no crashea', (tester) async {
+        final stdinCtrl = StreamController<String>.broadcast();
+        await tester.pumpWidget(
+          _buildTestApp(stdinOverride: stdinCtrl.stream),
+        );
+        await tester.pumpAndSettle();
+
+        stdinCtrl.add(jsonEncode({
+          'type': 'SWITCH_MODULE',
+          'module': 'bible',
+        }));
+        await tester.pumpAndSettle();
+
+        // La app no debe crashear
+        expect(find.text('Esperando proyección...'), findsOneWidget);
 
         await stdinCtrl.close();
       });

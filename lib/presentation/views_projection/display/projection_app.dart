@@ -13,10 +13,25 @@ import '../../../domain/entities/himno.dart';
 import '../../../domain/entities/fondo_pantalla.dart';
 import '../../shared_widgets/fullscreen_handler.dart';
 import '../../shared_widgets/providers/appearance_provider.dart';
+import '../providers/bible_appearance_provider.dart';
 import '../providers/live_control_providers.dart';
+import '../providers/presentation_providers.dart';
 import '../providers/projection_providers.dart';
 import 'live_projection_screen.dart';
 
+/// Protocolo JSON para comunicación emisor → receptor (stdin/stdout).
+///
+/// Mensajes soportados:
+/// - `LOAD_HYMN`: {type, himno_id, titulo, numero?, tipo, estrofas: [{id, version_pais_id, tipo, orden, contenido}]}
+/// - `LOAD_VERSE`: {type, libroNombre, capitulo, versiculos: [string]}
+/// - `NEXT_SLIDE` / `PREV_SLIDE` / `GO_TO_SLIDE`: {type, index?}
+/// - `SET_CONFIG`: {type, textColor, chordColor, fontFamily, isBold, fontScale, ...}
+/// - `SET_BACKGROUND`: {type, bgFondoId}
+/// - `BLACKOUT`: {type, enabled}
+/// - `SET_BIBLE_THEME`: {type, theme: 'papel'|'sepia'|'noche'|'dark'|'azulNoche'|'altoContraste'}
+/// - `SET_BIBLE_FONT_SIZE`: {type, scale: double}
+/// - `SWITCH_MODULE`: {type, module: 'hymnal'|'bible'}
+///
 /// Punto de entrada para la segunda ventana de proyección.
 ///
 /// Corre como una instancia Flutter separada lanzada vía [Process.start]
@@ -111,6 +126,19 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
           } else {
             notifier.toggleBlackout();
           }
+        // ── Comandos bíblicos ──
+        case 'LOAD_VERSE':
+          _handleLoadVerse(notifier, message);
+        case 'NEXT_VERSE':
+          notifier.nextSlide();
+        case 'PREV_VERSE':
+          notifier.prevSlide();
+        case 'SET_BIBLE_THEME':
+          _handleSetBibleTheme(message);
+        case 'SET_BIBLE_FONT_SIZE':
+          _handleSetBibleFontSize(message);
+        case 'SWITCH_MODULE':
+          _handleSwitchModule(notifier, message);
       }
     } catch (_) {
       // Ignorar mensajes mal formados
@@ -310,6 +338,52 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
     }
   }
 
+  /// Procesa un mensaje LOAD_VERSE: construye slides bíblicos
+  /// a partir del libro, capítulo y lista de versículos.
+  void _handleLoadVerse(
+    LiveControlNotifier notifier,
+    Map<String, dynamic> message,
+  ) {
+    notifier.loadBibleChapter(
+      libroNombre: message['libroNombre'] as String,
+      capitulo: message['capitulo'] as int,
+      versiculos: (message['versiculos'] as List).cast<String>(),
+    );
+  }
+
+  /// Procesa un mensaje SET_BIBLE_THEME: actualiza el tema visual
+  /// de la proyección bíblica en el receptor.
+  void _handleSetBibleTheme(Map<String, dynamic> message) {
+    final theme = message['theme'] as String?;
+    if (theme != null) {
+      ref.read(bibleAppearanceProvider.notifier).setTheme(theme);
+      // También actualizar el estado de liveControl para coherencia
+      ref.read(liveControlProvider.notifier).setBibleTheme(theme);
+    }
+  }
+
+  /// Procesa un mensaje SET_BIBLE_FONT_SIZE: actualiza la escala
+  /// de fuente para la proyección bíblica.
+  void _handleSetBibleFontSize(Map<String, dynamic> message) {
+    final scale = message['scale'] as num?;
+    if (scale != null) {
+      final scaleDouble = scale.toDouble();
+      ref.read(bibleAppearanceProvider.notifier).setFontScale(scaleDouble);
+      ref.read(liveControlProvider.notifier).setBibleFontScale(scaleDouble);
+    }
+  }
+
+  /// Procesa un mensaje SWITCH_MODULE: cambia el módulo activo.
+  ///
+  /// El contenido real se carga vía LOAD_HYMN o LOAD_VERSE posterior.
+  void _handleSwitchModule(
+    LiveControlNotifier notifier,
+    Map<String, dynamic> message,
+  ) {
+    // El módulo se establece pero el contenido llega por separado
+    // Para ahora solo registramos el cambio sin cargar contenido
+  }
+
   @override
   void dispose() {
     _stdinSubscription?.cancel();
@@ -320,6 +394,10 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
   Widget build(BuildContext context) {
     final liveState = ref.watch(liveControlProvider);
 
+    // Mostrar proyección cuando hay himno O contenido bíblico
+    final hasContent = liveState.hymn != null ||
+        liveState.module == ProjectionModule.bible && liveState.slides.isNotEmpty;
+
     return FullscreenHandler(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -327,7 +405,7 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
         theme: AppTheme.projectionTheme,
         home: Scaffold(
           backgroundColor: Colors.black,
-          body: liveState.hymn == null
+          body: !hasContent
               ? const Center(
                   child: Text(
                     'Esperando proyección...',
