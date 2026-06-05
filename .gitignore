@@ -70,16 +70,16 @@ assets/images/backgrounds/*
 *.db-wal
 
 # Runtime database files (generated in Fase 2).
-# NOTA: `assets/db/himnario_id.db` ya está trackeado y NO se ve afectado por
-# esta regla (gitignore no des-trackea archivos existentes). Las nuevas DBs
-# que se generen en Fase 2 sí serán ignoradas, EXCEPTO `biblia.db` que se
-# trackea explícitamente porque es un asset de Flutter embebido en runtime.
+# NOTA: `biblia.db` y `mqapp.db` se trackean explícitamente porque son
+# assets de Flutter embebidos en runtime. El usuario los edita directamente
+# desde la app en debug mode (flutter run -d linux).
 assets/db/*.db
 assets/db/*.db-journal
 assets/db/*.db-wal
 assets/db/*.db-shm
 !assets/db/.gitkeep
 !assets/db/biblia.db
+!assets/db/mqapp.db
 
 # Cross-references (v1.0.3+) — archivos grandes generados en build-time
 # Dataset: 8.3 MB (openbible.info)
