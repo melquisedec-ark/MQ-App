@@ -283,4 +283,32 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
   void setBibleFontScale(double scale) {
     state = state.copyWith(bibleFontScale: scale.clamp(0.8, 4.0));
   }
+
+  /// Salta a un versículo específico dentro del capítulo cargado.
+  void goToVerse(int verseNumber) {
+    if (verseNumber >= 1 && verseNumber <= state.versiculos.length) {
+      // +1 porque el slide 0 es el título del capítulo
+      state = state.copyWith(
+        currentSlideIndex: verseNumber,
+        versiculoActual: verseNumber - 1,
+        isBlackout: false,
+      );
+    }
+  }
+
+  /// Indica que se necesita cargar un capítulo adyacente.
+  /// El emisor debe llamar a projectBibleChapter con el nuevo capítulo.
+  void requestAdjacentChapter(bool next) {
+    final newCap = next ? state.capitulo + 1 : state.capitulo - 1;
+    if (newCap >= 1) {
+      // El emisor manejará la carga real del capítulo
+      state = state.copyWith(
+        capitulo: newCap,
+        versiculos: [],
+        slides: [],
+        currentSlideIndex: 0,
+        versiculoActual: 0,
+      );
+    }
+  }
 }
