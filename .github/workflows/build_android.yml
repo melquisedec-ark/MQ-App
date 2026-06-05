@@ -1,0 +1,114 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Build version label (e.g. 1.0.9)'
+        required: false
+        default: 'latest'
+  push:
+    branches:
+      - mq-app-init
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK (debug — sin keystore)
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MQ_App-android-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          compression-level: 0
+
+      - name: Upload to GitHub Release (solo en workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.inputs.version }}"
+          if [ "$TAG" = "latest" ]; then
+            TAG="build-${{ github.run_number }}"
+          fi
+          gh release upload "$TAG" build/app/outputs/flutter-apk/app-debug.apk --clobber
+
+  build-aab:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/mq-app-init')
+    needs: build-apk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Setup keystore (si existen secrets)
+        if: env.KEYSTORE_B64 != ''
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PROPERTIES: ${{ secrets.ANDROID_KEYSTORE_PROPERTIES }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > android/app/mqapp.keystore
+          echo "$KEYSTORE_PROPERTIES" > android/key.properties
+        continue-on-error: true
+
+      - name: Build AAB release (con keystore si disponible)
+        run: flutter build appbundle --release
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MQ_App-android-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          compression-level: 0
+
+      - name: Upload AAB to GitHub Release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.inputs.version }}"
+          if [ "$TAG" = "latest" ]; then
+            TAG="build-${{ github.run_number }}"
+          fi
+          gh release upload "$TAG" build/app/outputs/bundle/release/app-release.aab --clobber
