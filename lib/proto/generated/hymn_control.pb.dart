@@ -418,6 +418,8 @@ class CommandRequest extends $pb.GeneratedMessage {
     VerseReference? targetVerse,
     ModuleType? targetModule,
     EmitterViewMode? viewMode,
+    $core.String? bibleTheme,
+    $core.double? bibleFontScale,
   }) {
     final result = create();
     if (type != null) result.type = type;
@@ -438,6 +440,8 @@ class CommandRequest extends $pb.GeneratedMessage {
     if (targetVerse != null) result.targetVerse = targetVerse;
     if (targetModule != null) result.targetModule = targetModule;
     if (viewMode != null) result.viewMode = viewMode;
+    if (bibleTheme != null) result.bibleTheme = bibleTheme;
+    if (bibleFontScale != null) result.bibleFontScale = bibleFontScale;
     return result;
   }
 
@@ -477,6 +481,8 @@ class CommandRequest extends $pb.GeneratedMessage {
         enumValues: ModuleType.values)
     ..aE<EmitterViewMode>(22, _omitFieldNames ? '' : 'viewMode',
         enumValues: EmitterViewMode.values)
+    ..aOS(29, _omitFieldNames ? '' : 'bibleTheme')
+    ..aD(30, _omitFieldNames ? '' : 'bibleFontScale')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -655,6 +661,24 @@ class CommandRequest extends $pb.GeneratedMessage {
   $core.bool hasViewMode() => $_has(16);
   @$pb.TagNumber(22)
   void clearViewMode() => $_clearField(22);
+
+  @$pb.TagNumber(29)
+  $core.String get bibleTheme => $_getSZ(17);
+  @$pb.TagNumber(29)
+  set bibleTheme($core.String value) => $_setString(17, value);
+  @$pb.TagNumber(29)
+  $core.bool hasBibleTheme() => $_has(17);
+  @$pb.TagNumber(29)
+  void clearBibleTheme() => $_clearField(29);
+
+  @$pb.TagNumber(30)
+  $core.double get bibleFontScale => $_getN(18);
+  @$pb.TagNumber(30)
+  set bibleFontScale($core.double value) => $_setDouble(18, value);
+  @$pb.TagNumber(30)
+  $core.bool hasBibleFontScale() => $_has(18);
+  @$pb.TagNumber(30)
+  void clearBibleFontScale() => $_clearField(30);
 }
 
 class CommandResponse extends $pb.GeneratedMessage {
@@ -742,6 +766,8 @@ class DisplayStatus extends $pb.GeneratedMessage {
     $core.double? cardOpacity,
     $core.double? projectionFontScale,
     ModuleContext? moduleContext,
+    $core.String? bibleTheme,
+    $core.double? bibleFontScale,
   }) {
     final result = create();
     if (currentHymnId != null) result.currentHymnId = currentHymnId;
@@ -765,6 +791,8 @@ class DisplayStatus extends $pb.GeneratedMessage {
     if (projectionFontScale != null)
       result.projectionFontScale = projectionFontScale;
     if (moduleContext != null) result.moduleContext = moduleContext;
+    if (bibleTheme != null) result.bibleTheme = bibleTheme;
+    if (bibleFontScale != null) result.bibleFontScale = bibleFontScale;
     return result;
   }
 
@@ -801,6 +829,8 @@ class DisplayStatus extends $pb.GeneratedMessage {
         fieldType: $pb.PbFieldType.OF)
     ..aOM<ModuleContext>(17, _omitFieldNames ? '' : 'moduleContext',
         subBuilder: ModuleContext.create)
+    ..aOS(18, _omitFieldNames ? '' : 'bibleTheme')
+    ..aD(19, _omitFieldNames ? '' : 'bibleFontScale')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -979,6 +1009,25 @@ class DisplayStatus extends $pb.GeneratedMessage {
   void clearModuleContext() => $_clearField(17);
   @$pb.TagNumber(17)
   ModuleContext ensureModuleContext() => $_ensure(16);
+
+  /// Apariencia bíblica (solo cuando module = BIBLIA).
+  @$pb.TagNumber(18)
+  $core.String get bibleTheme => $_getSZ(17);
+  @$pb.TagNumber(18)
+  set bibleTheme($core.String value) => $_setString(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasBibleTheme() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearBibleTheme() => $_clearField(18);
+
+  @$pb.TagNumber(19)
+  $core.double get bibleFontScale => $_getN(18);
+  @$pb.TagNumber(19)
+  set bibleFontScale($core.double value) => $_setDouble(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasBibleFontScale() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearBibleFontScale() => $_clearField(19);
 }
 
 /// Referencia canónica a un versículo bíblico.

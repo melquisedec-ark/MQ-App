@@ -60,6 +60,10 @@ class CommandType extends $pb.ProtobufEnum {
       CommandType._(27, _omitEnumNames ? '' : 'SWITCH_TO_HIMNAL');
   static const CommandType SET_EMITTER_VIEW_MODE =
       CommandType._(28, _omitEnumNames ? '' : 'SET_EMITTER_VIEW_MODE');
+  static const CommandType SET_BIBLE_THEME =
+      CommandType._(29, _omitEnumNames ? '' : 'SET_BIBLE_THEME');
+  static const CommandType SET_BIBLE_FONT_SCALE =
+      CommandType._(30, _omitEnumNames ? '' : 'SET_BIBLE_FONT_SCALE');
 
   static const $core.List<CommandType> values = <CommandType>[
     NEXT_STANZA,
@@ -83,10 +87,12 @@ class CommandType extends $pb.ProtobufEnum {
     SWITCH_TO_BIBLE,
     SWITCH_TO_HIMNAL,
     SET_EMITTER_VIEW_MODE,
+    SET_BIBLE_THEME,
+    SET_BIBLE_FONT_SCALE,
   ];
 
   static final $core.List<CommandType?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 28);
+      $pb.ProtobufEnum.$_initByValueList(values, 30);
   static CommandType? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

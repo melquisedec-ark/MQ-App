@@ -92,6 +92,8 @@ enum CommandType {
   SWITCH_TO_BIBLE = 26;
   SWITCH_TO_HIMNAL = 27;
   SET_EMITTER_VIEW_MODE = 28;
+  SET_BIBLE_THEME = 29;
+  SET_BIBLE_FONT_SCALE = 30;
 }
 
 message CommandRequest {
@@ -115,6 +117,8 @@ message CommandRequest {
   optional VerseReference target_verse = 20;  // GO_TO_VERSE
   optional ModuleType target_module = 21;     // SWITCH_TO_*
   optional EmitterViewMode view_mode = 22;    // SET_EMITTER_VIEW_MODE
+  optional string bible_theme = 29;           // SET_BIBLE_THEME
+  optional double bible_font_scale = 30;      // SET_BIBLE_FONT_SCALE
 }
 
 message CommandResponse {
@@ -143,6 +147,9 @@ message DisplayStatus {
   // Contexto del módulo activo (Biblia o Himnario) para el emisor.
   // Tag 17 (libre; 15 y 16 ya usados por apariencia).
   optional ModuleContext module_context = 17;
+  // Apariencia bíblica (solo cuando module = BIBLIA).
+  optional string bible_theme = 18;
+  optional double bible_font_scale = 19;
 }
 
 // ─── BIBLE MODULE MESSAGES ───────────────────────────────────────

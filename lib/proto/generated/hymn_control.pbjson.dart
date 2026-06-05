@@ -40,6 +40,8 @@ const CommandType$json = {
     {'1': 'SWITCH_TO_BIBLE', '2': 26},
     {'1': 'SWITCH_TO_HIMNAL', '2': 27},
     {'1': 'SET_EMITTER_VIEW_MODE', '2': 28},
+    {'1': 'SET_BIBLE_THEME', '2': 29},
+    {'1': 'SET_BIBLE_FONT_SCALE', '2': 30},
   ],
 };
 
@@ -52,7 +54,8 @@ final $typed_data.Uint8List commandTypeDescriptor = $convert.base64Decode(
     'TkNFEAsSDgoKTkVYVF9WRVJTRRAUEg4KClBSRVZfVkVSU0UQFRIQCgxORVhUX0NIQVBURVIQFh'
     'IQCgxQUkVWX0NIQVBURVIQFxIPCgtHT19UT19WRVJTRRAYEhMKD1RPR0dMRV9GQVZPUklURRAZ'
     'EhMKD1NXSVRDSF9UT19CSUJMRRAaEhQKEFNXSVRDSF9UT19ISU1OQUwQGxIZChVTRVRfRU1JVF'
-    'RFUl9WSUVXX01PREUQHA==');
+    'RFUl9WSUVXX01PREUQHBITCg9TRVRfQklCTEVfVEhFTUUQHRIYChRTRVRfQklCTEVfRk9OVF9T'
+    'Q0FMRRAe');
 
 @$core.Deprecated('Use moduleTypeDescriptor instead')
 const ModuleType$json = {
@@ -295,6 +298,24 @@ const CommandRequest$json = {
       '10': 'viewMode',
       '17': true
     },
+    {
+      '1': 'bible_theme',
+      '3': 29,
+      '4': 1,
+      '5': 9,
+      '9': 11,
+      '10': 'bibleTheme',
+      '17': true
+    },
+    {
+      '1': 'bible_font_scale',
+      '3': 30,
+      '4': 1,
+      '5': 1,
+      '9': 12,
+      '10': 'bibleFontScale',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_text_color'},
@@ -308,6 +329,8 @@ const CommandRequest$json = {
     {'1': '_target_verse'},
     {'1': '_target_module'},
     {'1': '_view_mode'},
+    {'1': '_bible_theme'},
+    {'1': '_bible_font_scale'},
   ],
 };
 
@@ -325,10 +348,13 @@ final $typed_data.Uint8List commandRequestDescriptor = $convert.base64Decode(
     '9yGA4gASgJSAdSB2JnQ29sb3KIAQESPQoMdGFyZ2V0X3ZlcnNlGBQgASgLMhUubXFhcHAuVmVy'
     'c2VSZWZlcmVuY2VICFILdGFyZ2V0VmVyc2WIAQESOwoNdGFyZ2V0X21vZHVsZRgVIAEoDjIRLm'
     '1xYXBwLk1vZHVsZVR5cGVICVIMdGFyZ2V0TW9kdWxliAEBEjgKCXZpZXdfbW9kZRgWIAEoDjIW'
-    'Lm1xYXBwLkVtaXR0ZXJWaWV3TW9kZUgKUgh2aWV3TW9kZYgBAUINCgtfdGV4dF9jb2xvckIOCg'
-    'xfY2hvcmRfY29sb3JCDgoMX2ZvbnRfZmFtaWx5QgoKCF9pc19ib2xkQg4KDF9zaG93X2Nob3Jk'
-    'c0IPCg1fY2FyZF9vcGFjaXR5QhgKFl9wcm9qZWN0aW9uX2ZvbnRfc2NhbGVCCwoJX2JnX2NvbG'
-    '9yQg8KDV90YXJnZXRfdmVyc2VCEAoOX3RhcmdldF9tb2R1bGVCDAoKX3ZpZXdfbW9kZQ==');
+    'Lm1xYXBwLkVtaXR0ZXJWaWV3TW9kZUgKUgh2aWV3TW9kZYgBARIkCgtiaWJsZV90aGVtZRgdIA'
+    'EoCUgLUgpiaWJsZVRoZW1liAEBEi0KEGJpYmxlX2ZvbnRfc2NhbGUYHiABKAFIDFIOYmlibGVG'
+    'b250U2NhbGWIAQFCDQoLX3RleHRfY29sb3JCDgoMX2Nob3JkX2NvbG9yQg4KDF9mb250X2ZhbW'
+    'lseUIKCghfaXNfYm9sZEIOCgxfc2hvd19jaG9yZHNCDwoNX2NhcmRfb3BhY2l0eUIYChZfcHJv'
+    'amVjdGlvbl9mb250X3NjYWxlQgsKCV9iZ19jb2xvckIPCg1fdGFyZ2V0X3ZlcnNlQhAKDl90YX'
+    'JnZXRfbW9kdWxlQgwKCl92aWV3X21vZGVCDgoMX2JpYmxlX3RoZW1lQhMKEV9iaWJsZV9mb250'
+    'X3NjYWxl');
 
 @$core.Deprecated('Use commandResponseDescriptor instead')
 const CommandResponse$json = {
@@ -454,6 +480,24 @@ const DisplayStatus$json = {
       '10': 'moduleContext',
       '17': true
     },
+    {
+      '1': 'bible_theme',
+      '3': 18,
+      '4': 1,
+      '5': 9,
+      '9': 8,
+      '10': 'bibleTheme',
+      '17': true
+    },
+    {
+      '1': 'bible_font_scale',
+      '3': 19,
+      '4': 1,
+      '5': 1,
+      '9': 9,
+      '10': 'bibleFontScale',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_text_color'},
@@ -464,6 +508,8 @@ const DisplayStatus$json = {
     {'1': '_card_opacity'},
     {'1': '_projection_font_scale'},
     {'1': '_module_context'},
+    {'1': '_bible_theme'},
+    {'1': '_bible_font_scale'},
   ],
 };
 
@@ -482,9 +528,11 @@ final $typed_data.Uint8List displayStatusDescriptor = $convert.base64Decode(
     'KAhIBFIKc2hvd0Nob3Jkc4gBARImCgxjYXJkX29wYWNpdHkYDyABKAJIBVILY2FyZE9wYWNpdH'
     'mIAQESNwoVcHJvamVjdGlvbl9mb250X3NjYWxlGBAgASgCSAZSE3Byb2plY3Rpb25Gb250U2Nh'
     'bGWIAQESQAoObW9kdWxlX2NvbnRleHQYESABKAsyFC5tcWFwcC5Nb2R1bGVDb250ZXh0SAdSDW'
-    '1vZHVsZUNvbnRleHSIAQFCDQoLX3RleHRfY29sb3JCDgoMX2Nob3JkX2NvbG9yQg4KDF9mb250'
-    'X2ZhbWlseUIKCghfaXNfYm9sZEIOCgxfc2hvd19jaG9yZHNCDwoNX2NhcmRfb3BhY2l0eUIYCh'
-    'ZfcHJvamVjdGlvbl9mb250X3NjYWxlQhEKD19tb2R1bGVfY29udGV4dA==');
+    '1vZHVsZUNvbnRleHSIAQESJAoLYmlibGVfdGhlbWUYEiABKAlICFIKYmlibGVUaGVtZYgBARIt'
+    'ChBiaWJsZV9mb250X3NjYWxlGBMgASgBSAlSDmJpYmxlRm9udFNjYWxliAEBQg0KC190ZXh0X2'
+    'NvbG9yQg4KDF9jaG9yZF9jb2xvckIOCgxfZm9udF9mYW1pbHlCCgoIX2lzX2JvbGRCDgoMX3No'
+    'b3dfY2hvcmRzQg8KDV9jYXJkX29wYWNpdHlCGAoWX3Byb2plY3Rpb25fZm9udF9zY2FsZUIRCg'
+    '9fbW9kdWxlX2NvbnRleHRCDgoMX2JpYmxlX3RoZW1lQhMKEV9iaWJsZV9mb250X3NjYWxl');
 
 @$core.Deprecated('Use verseReferenceDescriptor instead')
 const VerseReference$json = {

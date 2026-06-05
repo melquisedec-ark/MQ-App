@@ -21,6 +21,7 @@ import '../../../features/biblia/data/models/versiculo.dart';
 import '../../../features/biblia/data/repositories/biblia_repository.dart';
 import '../../../presentation/shared_widgets/providers/appearance_provider.dart';
 import '../../../presentation/views_projection/providers/live_control_providers.dart';
+import '../../../presentation/views_projection/providers/presentation_providers.dart';
 import '../../../presentation/views_projection/providers/projection_providers.dart';
 import '../../../proto/generated/hymn_control.pbgrpc.dart';
 
@@ -349,6 +350,29 @@ class GrpcDisplayServer extends HymnControlServiceBase {
           }
           break;
 
+        case CommandType.SET_BIBLE_THEME:
+          if (_container != null && request.hasBibleTheme()) {
+            _container.read(liveControlProvider.notifier).setBibleTheme(request.bibleTheme);
+            _container.read(windowServiceProvider).sendMessage({
+              'type': 'SET_BIBLE_THEME',
+              'theme': request.bibleTheme,
+            });
+            _log.info('Bible theme cambiado a: ${request.bibleTheme}');
+          }
+          break;
+
+        case CommandType.SET_BIBLE_FONT_SCALE:
+          if (_container != null && request.hasBibleFontScale()) {
+            final scale = request.bibleFontScale.clamp(0.8, 4.0);
+            _container.read(liveControlProvider.notifier).setBibleFontScale(scale);
+            _container.read(windowServiceProvider).sendMessage({
+              'type': 'SET_BIBLE_FONT_SIZE',
+              'scale': scale,
+            });
+            _log.info('Bible font scale cambiado a: $scale');
+          }
+          break;
+
         default:
           _log.warning('Tipo de comando no manejado: ${request.type}');
       }
@@ -446,6 +470,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         fontSize: 48.0,
         displayName: displayName,
         moduleContext: _bibleModuleContextCache,
+        bibleTheme: state.module == ProjectionModule.bible ? state.bibleTheme : null,
+        bibleFontScale: state.module == ProjectionModule.bible ? state.bibleFontScale : null,
       );
     }
 
@@ -460,6 +486,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       fontSize: 48.0,
       displayName: displayName,
       moduleContext: _bibleModuleContextCache,
+      bibleTheme: state.module == ProjectionModule.bible ? state.bibleTheme : null,
+      bibleFontScale: state.module == ProjectionModule.bible ? state.bibleFontScale : null,
     );
   }
 
@@ -669,6 +697,12 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (cap != null) {
       if (_bibleState.versiculoNumero < cap.totalVersiculos) {
         await _updateBibleVerse(_bibleState.versiculoNumero + 1);
+        // Enviar NEXT_SLIDE al subproceso de proyección
+        try {
+          _container.read(windowServiceProvider).sendMessage({'type': 'NEXT_SLIDE'});
+        } catch (e) {
+          _log.warning('Error enviando NEXT_SLIDE al subproceso: $e');
+        }
         return;
       }
     }
@@ -680,6 +714,15 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         capitulo: nextCap.$2,
       );
       await _updateBibleVerse(1);
+      // Cargar nuevo capítulo y enviar LOAD_VERSE
+      await _sendCurrentChapterToSubprocess();
+    } else {
+      // No hay siguiente capítulo, solo avanzar slide
+      try {
+        _container.read(windowServiceProvider).sendMessage({'type': 'NEXT_SLIDE'});
+      } catch (e) {
+        _log.warning('Error enviando NEXT_SLIDE al subproceso: $e');
+      }
     }
   }
 
@@ -687,6 +730,12 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (_container == null) return;
     if (_bibleState.versiculoNumero > 1) {
       await _updateBibleVerse(_bibleState.versiculoNumero - 1);
+      // Enviar PREV_SLIDE al subproceso de proyección
+      try {
+        _container.read(windowServiceProvider).sendMessage({'type': 'PREV_SLIDE'});
+      } catch (e) {
+        _log.warning('Error enviando PREV_SLIDE al subproceso: $e');
+      }
       return;
     }
     // Primer versículo → último del capítulo anterior
@@ -705,7 +754,16 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         final cap = await repo.getCapitulo(libro.id, _bibleState.capitulo);
         if (cap != null) {
           await _updateBibleVerse(cap.totalVersiculos);
+          // Cargar nuevo capítulo y enviar LOAD_VERSE
+          await _sendCurrentChapterToSubprocess();
         }
+      }
+    } else {
+      // No hay capítulo anterior, solo retroceder slide
+      try {
+        _container.read(windowServiceProvider).sendMessage({'type': 'PREV_SLIDE'});
+      } catch (e) {
+        _log.warning('Error enviando PREV_SLIDE al subproceso: $e');
       }
     }
   }
@@ -719,6 +777,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         capitulo: nextCap.$2,
       );
       await _updateBibleVerse(1);
+      // Cargar nuevo capítulo y enviar LOAD_VERSE al subproceso
+      await _sendCurrentChapterToSubprocess();
     }
   }
 
@@ -727,6 +787,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (_bibleState.capitulo > 1) {
       _bibleState = _bibleState.copyWith(capitulo: _bibleState.capitulo - 1);
       await _updateBibleVerse(1);
+      // Cargar capítulo anterior y enviar LOAD_VERSE al subproceso
+      await _sendCurrentChapterToSubprocess();
       return;
     }
     final prevCap = await _getPrevCapituloOrLibro();
@@ -736,6 +798,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         capitulo: prevCap.$2,
       );
       await _updateBibleVerse(1);
+      // Cargar capítulo anterior y enviar LOAD_VERSE al subproceso
+      await _sendCurrentChapterToSubprocess();
     }
   }
 
@@ -759,6 +823,15 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     );
     await _resolveAndCacheBibleContext();
     _syncBibleStateToProviders();
+    // Enviar GO_TO_SLIDE al subproceso (versículo = índice de slide, título es slide 0)
+    try {
+      _container.read(windowServiceProvider).sendMessage({
+        'type': 'GO_TO_SLIDE',
+        'index': versiculo,
+      });
+    } catch (e) {
+      _log.warning('Error enviando GO_TO_SLIDE al subproceso: $e');
+    }
   }
 
   Future<void> _handleToggleFavorite() async {
@@ -799,13 +872,11 @@ class GrpcDisplayServer extends HymnControlServiceBase {
   }
 
   Future<void> _handleSwitchToBible() async {
-    // El display ya tiene un `_bibleState` interno; solo forzamos un
-    // rebuild del `module_context` cache para que el próximo `WatchStatus`
-    // lo incluya. La proyección bíblica en sí (render) es trabajo futuro;
-    // por ahora, este comando prepara el estado.
     _bibleState = _BibleDisplayState.initial();
     await _resolveAndCacheBibleContext();
     _syncBibleStateToProviders();
+    // Cargar Génesis 1 y enviar LOAD_VERSE al subproceso
+    await _sendCurrentChapterToSubprocess();
     _log.info('Cambio a módulo Biblia solicitado');
   }
 
@@ -816,6 +887,41 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     // internamente; el próximo `WatchStatus` indicará el cambio vía
     // el log, y el cliente lo refleja en su UI local.
     _log.fine('View mode actualizado: $mode');
+  }
+
+  /// Carga el capítulo actual desde la BD y envía LOAD_VERSE al subproceso.
+  ///
+  /// Resuelve el libro por número canónico, obtiene el capítulo y todos
+  /// sus versículos, y los envía como mensaje JSON al proceso de proyección.
+  Future<void> _sendCurrentChapterToSubprocess() async {
+    if (_container == null) return;
+    try {
+      final repo = _container.read(bibliaRepositoryProvider);
+      final libro = await repo.getLibroByNumero(
+        _bibleState.versionId,
+        _bibleState.libroNumero,
+      );
+      if (libro == null) {
+        _log.warning('Libro ${_bibleState.libroNumero} no encontrado para LOAD_VERSE');
+        return;
+      }
+      final cap = await repo.getCapitulo(libro.id, _bibleState.capitulo);
+      if (cap == null) {
+        _log.warning('Capítulo ${_bibleState.capitulo} no encontrado para LOAD_VERSE');
+        return;
+      }
+      final versiculos = await repo.getVersiculosByCapitulo(cap.id);
+      _container.read(windowServiceProvider).sendMessage({
+        'type': 'LOAD_VERSE',
+        'libroNombre': libro.nombre,
+        'capitulo': _bibleState.capitulo,
+        'versiculos': versiculos.map((v) => v.texto).toList(),
+      });
+      _log.fine('LOAD_VERSE enviado: ${libro.nombre} ${_bibleState.capitulo} '
+          '(${versiculos.length} versículos)');
+    } catch (e) {
+      _log.warning('Error enviando LOAD_VERSE al subproceso: $e');
+    }
   }
 
   /// Resuelve el versículo actual (y prev/next) y actualiza el cache.
