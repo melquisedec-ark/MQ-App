@@ -165,6 +165,34 @@ class LiveProjectionScreen extends ConsumerWidget {
           baseFontSize: baseFontSize,
           appearance: appearance,
         ),
+      BibleTitleSlide(:final libroNombre, :final capitulo) => _BibleTitleSlide(
+          libroNombre: libroNombre,
+          capitulo: capitulo,
+          baseFontSize: baseFontSize,
+          appearance: appearance,
+          textTheme: textTheme,
+        ),
+      VerseSlide(:final texto, :final referencia, :final numero, :final totalVersiculos) =>
+        _VerseSlide(
+          key: ValueKey('verse_${liveState.currentSlideIndex}'),
+          texto: texto,
+          referencia: referencia,
+          numero: numero,
+          totalVersiculos: totalVersiculos,
+          baseFontSize: baseFontSize,
+          theme: liveState.bibleTheme,
+          fontScale: liveState.bibleFontScale,
+          transitionDuration: config.transitionDurationMs,
+          appearance: appearance,
+          textTheme: textTheme,
+        ),
+      BibleEndSlide(:final libroNombre, :final capitulo) => _BibleEndSlide(
+          libroNombre: libroNombre,
+          capitulo: capitulo,
+          baseFontSize: baseFontSize,
+          appearance: appearance,
+          textTheme: textTheme,
+        ),
     };
   }
 
@@ -624,6 +652,216 @@ class _AmenSlide extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
         textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+/// Slide de título bíblico: libro + capítulo centrado, full screen.
+class _BibleTitleSlide extends StatelessWidget {
+  final String libroNombre;
+  final int capitulo;
+  final double baseFontSize;
+  final HymnAppearanceState appearance;
+  final TextTheme textTheme;
+
+  const _BibleTitleSlide({
+    required this.libroNombre,
+    required this.capitulo,
+    required this.baseFontSize,
+    required this.appearance,
+    required this.textTheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            libroNombre,
+            style: TextStyle(
+              fontFamily: appearance.fontFamily,
+              color: appearance.textColor,
+              fontSize: baseFontSize * 1.8,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Capítulo $capitulo',
+            style: TextStyle(
+              fontFamily: appearance.fontFamily,
+              color: appearance.textColor.withValues(alpha: 0.7),
+              fontSize: baseFontSize * 1.2,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Slide de versículo individual con texto y referencia.
+class _VerseSlide extends StatefulWidget {
+  final String texto;
+  final String referencia;
+  final int numero;
+  final int totalVersiculos;
+  final double baseFontSize;
+  final String theme;
+  final double fontScale;
+  final int transitionDuration;
+  final HymnAppearanceState appearance;
+  final TextTheme textTheme;
+
+  const _VerseSlide({
+    super.key,
+    required this.texto,
+    required this.referencia,
+    required this.numero,
+    required this.totalVersiculos,
+    required this.baseFontSize,
+    required this.theme,
+    required this.fontScale,
+    required this.transitionDuration,
+    required this.appearance,
+    required this.textTheme,
+  });
+
+  @override
+  State<_VerseSlide> createState() => _VerseSlideState();
+}
+
+class _VerseSlideState extends State<_VerseSlide>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: Duration(milliseconds: widget.transitionDuration),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fontSize = widget.baseFontSize * widget.fontScale;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+      child: FadeTransition(
+        opacity: _animation,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Referencia arriba
+            Text(
+              widget.referencia,
+              style: TextStyle(
+                fontFamily: widget.appearance.fontFamily,
+                color: widget.appearance.textColor.withValues(alpha: 0.6),
+                fontSize: fontSize * 0.7,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            // Texto del versículo
+            Text(
+              widget.texto,
+              style: TextStyle(
+                fontFamily: widget.appearance.fontFamily,
+                color: widget.appearance.textColor,
+                fontSize: fontSize,
+                height: 1.4,
+                fontWeight: FontWeight.w400,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            // Número de versículo / total
+            Text(
+              '${widget.numero} / ${widget.totalVersiculos}',
+              style: TextStyle(
+                fontFamily: widget.appearance.fontFamily,
+                color: widget.appearance.textColor.withValues(alpha: 0.4),
+                fontSize: fontSize * 0.5,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Slide de fin de capítulo bíblico.
+class _BibleEndSlide extends StatelessWidget {
+  final String libroNombre;
+  final int capitulo;
+  final double baseFontSize;
+  final HymnAppearanceState appearance;
+  final TextTheme textTheme;
+
+  const _BibleEndSlide({
+    required this.libroNombre,
+    required this.capitulo,
+    required this.baseFontSize,
+    required this.appearance,
+    required this.textTheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Fin del capítulo',
+            style: TextStyle(
+              fontFamily: appearance.fontFamily,
+              color: appearance.textColor,
+              fontSize: baseFontSize * 1.5,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '$libroNombre $capitulo',
+            style: TextStyle(
+              fontFamily: appearance.fontFamily,
+              color: appearance.textColor.withValues(alpha: 0.6),
+              fontSize: baseFontSize * 1.0,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

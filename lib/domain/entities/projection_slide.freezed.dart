@@ -21,6 +21,11 @@ mixin _$ProjectionSlide {
     required TResult Function(Himno himno) title,
     required TResult Function(Estrofa estrofa) lyrics,
     required TResult Function() amen,
+    required TResult Function(String libroNombre, int capitulo) bibleTitle,
+    required TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)
+        verse,
+    required TResult Function(String libroNombre, int capitulo) bibleEnd,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -28,6 +33,11 @@ mixin _$ProjectionSlide {
     TResult? Function(Himno himno)? title,
     TResult? Function(Estrofa estrofa)? lyrics,
     TResult? Function()? amen,
+    TResult? Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult? Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult? Function(String libroNombre, int capitulo)? bibleEnd,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -35,6 +45,11 @@ mixin _$ProjectionSlide {
     TResult Function(Himno himno)? title,
     TResult Function(Estrofa estrofa)? lyrics,
     TResult Function()? amen,
+    TResult Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult Function(String libroNombre, int capitulo)? bibleEnd,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -43,6 +58,9 @@ mixin _$ProjectionSlide {
     required TResult Function(TitleSlide value) title,
     required TResult Function(LyricsSlide value) lyrics,
     required TResult Function(AmenSlide value) amen,
+    required TResult Function(BibleTitleSlide value) bibleTitle,
+    required TResult Function(VerseSlide value) verse,
+    required TResult Function(BibleEndSlide value) bibleEnd,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -50,6 +68,9 @@ mixin _$ProjectionSlide {
     TResult? Function(TitleSlide value)? title,
     TResult? Function(LyricsSlide value)? lyrics,
     TResult? Function(AmenSlide value)? amen,
+    TResult? Function(BibleTitleSlide value)? bibleTitle,
+    TResult? Function(VerseSlide value)? verse,
+    TResult? Function(BibleEndSlide value)? bibleEnd,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -57,6 +78,9 @@ mixin _$ProjectionSlide {
     TResult Function(TitleSlide value)? title,
     TResult Function(LyricsSlide value)? lyrics,
     TResult Function(AmenSlide value)? amen,
+    TResult Function(BibleTitleSlide value)? bibleTitle,
+    TResult Function(VerseSlide value)? verse,
+    TResult Function(BibleEndSlide value)? bibleEnd,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -166,6 +190,11 @@ class _$TitleSlideImpl extends TitleSlide {
     required TResult Function(Himno himno) title,
     required TResult Function(Estrofa estrofa) lyrics,
     required TResult Function() amen,
+    required TResult Function(String libroNombre, int capitulo) bibleTitle,
+    required TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)
+        verse,
+    required TResult Function(String libroNombre, int capitulo) bibleEnd,
   }) {
     return title(himno);
   }
@@ -176,6 +205,11 @@ class _$TitleSlideImpl extends TitleSlide {
     TResult? Function(Himno himno)? title,
     TResult? Function(Estrofa estrofa)? lyrics,
     TResult? Function()? amen,
+    TResult? Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult? Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult? Function(String libroNombre, int capitulo)? bibleEnd,
   }) {
     return title?.call(himno);
   }
@@ -186,6 +220,11 @@ class _$TitleSlideImpl extends TitleSlide {
     TResult Function(Himno himno)? title,
     TResult Function(Estrofa estrofa)? lyrics,
     TResult Function()? amen,
+    TResult Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult Function(String libroNombre, int capitulo)? bibleEnd,
     required TResult orElse(),
   }) {
     if (title != null) {
@@ -200,6 +239,9 @@ class _$TitleSlideImpl extends TitleSlide {
     required TResult Function(TitleSlide value) title,
     required TResult Function(LyricsSlide value) lyrics,
     required TResult Function(AmenSlide value) amen,
+    required TResult Function(BibleTitleSlide value) bibleTitle,
+    required TResult Function(VerseSlide value) verse,
+    required TResult Function(BibleEndSlide value) bibleEnd,
   }) {
     return title(this);
   }
@@ -210,6 +252,9 @@ class _$TitleSlideImpl extends TitleSlide {
     TResult? Function(TitleSlide value)? title,
     TResult? Function(LyricsSlide value)? lyrics,
     TResult? Function(AmenSlide value)? amen,
+    TResult? Function(BibleTitleSlide value)? bibleTitle,
+    TResult? Function(VerseSlide value)? verse,
+    TResult? Function(BibleEndSlide value)? bibleEnd,
   }) {
     return title?.call(this);
   }
@@ -220,6 +265,9 @@ class _$TitleSlideImpl extends TitleSlide {
     TResult Function(TitleSlide value)? title,
     TResult Function(LyricsSlide value)? lyrics,
     TResult Function(AmenSlide value)? amen,
+    TResult Function(BibleTitleSlide value)? bibleTitle,
+    TResult Function(VerseSlide value)? verse,
+    TResult Function(BibleEndSlide value)? bibleEnd,
     required TResult orElse(),
   }) {
     if (title != null) {
@@ -325,6 +373,11 @@ class _$LyricsSlideImpl extends LyricsSlide {
     required TResult Function(Himno himno) title,
     required TResult Function(Estrofa estrofa) lyrics,
     required TResult Function() amen,
+    required TResult Function(String libroNombre, int capitulo) bibleTitle,
+    required TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)
+        verse,
+    required TResult Function(String libroNombre, int capitulo) bibleEnd,
   }) {
     return lyrics(estrofa);
   }
@@ -335,6 +388,11 @@ class _$LyricsSlideImpl extends LyricsSlide {
     TResult? Function(Himno himno)? title,
     TResult? Function(Estrofa estrofa)? lyrics,
     TResult? Function()? amen,
+    TResult? Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult? Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult? Function(String libroNombre, int capitulo)? bibleEnd,
   }) {
     return lyrics?.call(estrofa);
   }
@@ -345,6 +403,11 @@ class _$LyricsSlideImpl extends LyricsSlide {
     TResult Function(Himno himno)? title,
     TResult Function(Estrofa estrofa)? lyrics,
     TResult Function()? amen,
+    TResult Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult Function(String libroNombre, int capitulo)? bibleEnd,
     required TResult orElse(),
   }) {
     if (lyrics != null) {
@@ -359,6 +422,9 @@ class _$LyricsSlideImpl extends LyricsSlide {
     required TResult Function(TitleSlide value) title,
     required TResult Function(LyricsSlide value) lyrics,
     required TResult Function(AmenSlide value) amen,
+    required TResult Function(BibleTitleSlide value) bibleTitle,
+    required TResult Function(VerseSlide value) verse,
+    required TResult Function(BibleEndSlide value) bibleEnd,
   }) {
     return lyrics(this);
   }
@@ -369,6 +435,9 @@ class _$LyricsSlideImpl extends LyricsSlide {
     TResult? Function(TitleSlide value)? title,
     TResult? Function(LyricsSlide value)? lyrics,
     TResult? Function(AmenSlide value)? amen,
+    TResult? Function(BibleTitleSlide value)? bibleTitle,
+    TResult? Function(VerseSlide value)? verse,
+    TResult? Function(BibleEndSlide value)? bibleEnd,
   }) {
     return lyrics?.call(this);
   }
@@ -379,6 +448,9 @@ class _$LyricsSlideImpl extends LyricsSlide {
     TResult Function(TitleSlide value)? title,
     TResult Function(LyricsSlide value)? lyrics,
     TResult Function(AmenSlide value)? amen,
+    TResult Function(BibleTitleSlide value)? bibleTitle,
+    TResult Function(VerseSlide value)? verse,
+    TResult Function(BibleEndSlide value)? bibleEnd,
     required TResult orElse(),
   }) {
     if (lyrics != null) {
@@ -446,6 +518,11 @@ class _$AmenSlideImpl extends AmenSlide {
     required TResult Function(Himno himno) title,
     required TResult Function(Estrofa estrofa) lyrics,
     required TResult Function() amen,
+    required TResult Function(String libroNombre, int capitulo) bibleTitle,
+    required TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)
+        verse,
+    required TResult Function(String libroNombre, int capitulo) bibleEnd,
   }) {
     return amen();
   }
@@ -456,6 +533,11 @@ class _$AmenSlideImpl extends AmenSlide {
     TResult? Function(Himno himno)? title,
     TResult? Function(Estrofa estrofa)? lyrics,
     TResult? Function()? amen,
+    TResult? Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult? Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult? Function(String libroNombre, int capitulo)? bibleEnd,
   }) {
     return amen?.call();
   }
@@ -466,6 +548,11 @@ class _$AmenSlideImpl extends AmenSlide {
     TResult Function(Himno himno)? title,
     TResult Function(Estrofa estrofa)? lyrics,
     TResult Function()? amen,
+    TResult Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult Function(String libroNombre, int capitulo)? bibleEnd,
     required TResult orElse(),
   }) {
     if (amen != null) {
@@ -480,6 +567,9 @@ class _$AmenSlideImpl extends AmenSlide {
     required TResult Function(TitleSlide value) title,
     required TResult Function(LyricsSlide value) lyrics,
     required TResult Function(AmenSlide value) amen,
+    required TResult Function(BibleTitleSlide value) bibleTitle,
+    required TResult Function(VerseSlide value) verse,
+    required TResult Function(BibleEndSlide value) bibleEnd,
   }) {
     return amen(this);
   }
@@ -490,6 +580,9 @@ class _$AmenSlideImpl extends AmenSlide {
     TResult? Function(TitleSlide value)? title,
     TResult? Function(LyricsSlide value)? lyrics,
     TResult? Function(AmenSlide value)? amen,
+    TResult? Function(BibleTitleSlide value)? bibleTitle,
+    TResult? Function(VerseSlide value)? verse,
+    TResult? Function(BibleEndSlide value)? bibleEnd,
   }) {
     return amen?.call(this);
   }
@@ -500,6 +593,9 @@ class _$AmenSlideImpl extends AmenSlide {
     TResult Function(TitleSlide value)? title,
     TResult Function(LyricsSlide value)? lyrics,
     TResult Function(AmenSlide value)? amen,
+    TResult Function(BibleTitleSlide value)? bibleTitle,
+    TResult Function(VerseSlide value)? verse,
+    TResult Function(BibleEndSlide value)? bibleEnd,
     required TResult orElse(),
   }) {
     if (amen != null) {
@@ -512,4 +608,586 @@ class _$AmenSlideImpl extends AmenSlide {
 abstract class AmenSlide extends ProjectionSlide {
   const factory AmenSlide() = _$AmenSlideImpl;
   const AmenSlide._() : super._();
+}
+
+/// @nodoc
+abstract class _$$BibleTitleSlideImplCopyWith<$Res> {
+  factory _$$BibleTitleSlideImplCopyWith(_$BibleTitleSlideImpl value,
+          $Res Function(_$BibleTitleSlideImpl) then) =
+      __$$BibleTitleSlideImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String libroNombre, int capitulo});
+}
+
+/// @nodoc
+class __$$BibleTitleSlideImplCopyWithImpl<$Res>
+    extends _$ProjectionSlideCopyWithImpl<$Res, _$BibleTitleSlideImpl>
+    implements _$$BibleTitleSlideImplCopyWith<$Res> {
+  __$$BibleTitleSlideImplCopyWithImpl(
+      _$BibleTitleSlideImpl _value, $Res Function(_$BibleTitleSlideImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? libroNombre = null,
+    Object? capitulo = null,
+  }) {
+    return _then(_$BibleTitleSlideImpl(
+      libroNombre: null == libroNombre
+          ? _value.libroNombre
+          : libroNombre // ignore: cast_nullable_to_non_nullable
+              as String,
+      capitulo: null == capitulo
+          ? _value.capitulo
+          : capitulo // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$BibleTitleSlideImpl extends BibleTitleSlide {
+  const _$BibleTitleSlideImpl(
+      {required this.libroNombre, required this.capitulo})
+      : super._();
+
+  @override
+  final String libroNombre;
+  @override
+  final int capitulo;
+
+  @override
+  String toString() {
+    return 'ProjectionSlide.bibleTitle(libroNombre: $libroNombre, capitulo: $capitulo)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BibleTitleSlideImpl &&
+            (identical(other.libroNombre, libroNombre) ||
+                other.libroNombre == libroNombre) &&
+            (identical(other.capitulo, capitulo) ||
+                other.capitulo == capitulo));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, libroNombre, capitulo);
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BibleTitleSlideImplCopyWith<_$BibleTitleSlideImpl> get copyWith =>
+      __$$BibleTitleSlideImplCopyWithImpl<_$BibleTitleSlideImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(Himno himno) title,
+    required TResult Function(Estrofa estrofa) lyrics,
+    required TResult Function() amen,
+    required TResult Function(String libroNombre, int capitulo) bibleTitle,
+    required TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)
+        verse,
+    required TResult Function(String libroNombre, int capitulo) bibleEnd,
+  }) {
+    return bibleTitle(libroNombre, capitulo);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(Himno himno)? title,
+    TResult? Function(Estrofa estrofa)? lyrics,
+    TResult? Function()? amen,
+    TResult? Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult? Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult? Function(String libroNombre, int capitulo)? bibleEnd,
+  }) {
+    return bibleTitle?.call(libroNombre, capitulo);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(Himno himno)? title,
+    TResult Function(Estrofa estrofa)? lyrics,
+    TResult Function()? amen,
+    TResult Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult Function(String libroNombre, int capitulo)? bibleEnd,
+    required TResult orElse(),
+  }) {
+    if (bibleTitle != null) {
+      return bibleTitle(libroNombre, capitulo);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(TitleSlide value) title,
+    required TResult Function(LyricsSlide value) lyrics,
+    required TResult Function(AmenSlide value) amen,
+    required TResult Function(BibleTitleSlide value) bibleTitle,
+    required TResult Function(VerseSlide value) verse,
+    required TResult Function(BibleEndSlide value) bibleEnd,
+  }) {
+    return bibleTitle(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(TitleSlide value)? title,
+    TResult? Function(LyricsSlide value)? lyrics,
+    TResult? Function(AmenSlide value)? amen,
+    TResult? Function(BibleTitleSlide value)? bibleTitle,
+    TResult? Function(VerseSlide value)? verse,
+    TResult? Function(BibleEndSlide value)? bibleEnd,
+  }) {
+    return bibleTitle?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(TitleSlide value)? title,
+    TResult Function(LyricsSlide value)? lyrics,
+    TResult Function(AmenSlide value)? amen,
+    TResult Function(BibleTitleSlide value)? bibleTitle,
+    TResult Function(VerseSlide value)? verse,
+    TResult Function(BibleEndSlide value)? bibleEnd,
+    required TResult orElse(),
+  }) {
+    if (bibleTitle != null) {
+      return bibleTitle(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class BibleTitleSlide extends ProjectionSlide {
+  const factory BibleTitleSlide(
+      {required final String libroNombre,
+      required final int capitulo}) = _$BibleTitleSlideImpl;
+  const BibleTitleSlide._() : super._();
+
+  String get libroNombre;
+  int get capitulo;
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$BibleTitleSlideImplCopyWith<_$BibleTitleSlideImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$VerseSlideImplCopyWith<$Res> {
+  factory _$$VerseSlideImplCopyWith(
+          _$VerseSlideImpl value, $Res Function(_$VerseSlideImpl) then) =
+      __$$VerseSlideImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({int numero, String texto, String referencia, int totalVersiculos});
+}
+
+/// @nodoc
+class __$$VerseSlideImplCopyWithImpl<$Res>
+    extends _$ProjectionSlideCopyWithImpl<$Res, _$VerseSlideImpl>
+    implements _$$VerseSlideImplCopyWith<$Res> {
+  __$$VerseSlideImplCopyWithImpl(
+      _$VerseSlideImpl _value, $Res Function(_$VerseSlideImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? numero = null,
+    Object? texto = null,
+    Object? referencia = null,
+    Object? totalVersiculos = null,
+  }) {
+    return _then(_$VerseSlideImpl(
+      numero: null == numero
+          ? _value.numero
+          : numero // ignore: cast_nullable_to_non_nullable
+              as int,
+      texto: null == texto
+          ? _value.texto
+          : texto // ignore: cast_nullable_to_non_nullable
+              as String,
+      referencia: null == referencia
+          ? _value.referencia
+          : referencia // ignore: cast_nullable_to_non_nullable
+              as String,
+      totalVersiculos: null == totalVersiculos
+          ? _value.totalVersiculos
+          : totalVersiculos // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$VerseSlideImpl extends VerseSlide {
+  const _$VerseSlideImpl(
+      {required this.numero,
+      required this.texto,
+      required this.referencia,
+      required this.totalVersiculos})
+      : super._();
+
+  @override
+  final int numero;
+  @override
+  final String texto;
+  @override
+  final String referencia;
+  @override
+  final int totalVersiculos;
+
+  @override
+  String toString() {
+    return 'ProjectionSlide.verse(numero: $numero, texto: $texto, referencia: $referencia, totalVersiculos: $totalVersiculos)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$VerseSlideImpl &&
+            (identical(other.numero, numero) || other.numero == numero) &&
+            (identical(other.texto, texto) || other.texto == texto) &&
+            (identical(other.referencia, referencia) ||
+                other.referencia == referencia) &&
+            (identical(other.totalVersiculos, totalVersiculos) ||
+                other.totalVersiculos == totalVersiculos));
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, numero, texto, referencia, totalVersiculos);
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$VerseSlideImplCopyWith<_$VerseSlideImpl> get copyWith =>
+      __$$VerseSlideImplCopyWithImpl<_$VerseSlideImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(Himno himno) title,
+    required TResult Function(Estrofa estrofa) lyrics,
+    required TResult Function() amen,
+    required TResult Function(String libroNombre, int capitulo) bibleTitle,
+    required TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)
+        verse,
+    required TResult Function(String libroNombre, int capitulo) bibleEnd,
+  }) {
+    return verse(numero, texto, referencia, totalVersiculos);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(Himno himno)? title,
+    TResult? Function(Estrofa estrofa)? lyrics,
+    TResult? Function()? amen,
+    TResult? Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult? Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult? Function(String libroNombre, int capitulo)? bibleEnd,
+  }) {
+    return verse?.call(numero, texto, referencia, totalVersiculos);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(Himno himno)? title,
+    TResult Function(Estrofa estrofa)? lyrics,
+    TResult Function()? amen,
+    TResult Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult Function(String libroNombre, int capitulo)? bibleEnd,
+    required TResult orElse(),
+  }) {
+    if (verse != null) {
+      return verse(numero, texto, referencia, totalVersiculos);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(TitleSlide value) title,
+    required TResult Function(LyricsSlide value) lyrics,
+    required TResult Function(AmenSlide value) amen,
+    required TResult Function(BibleTitleSlide value) bibleTitle,
+    required TResult Function(VerseSlide value) verse,
+    required TResult Function(BibleEndSlide value) bibleEnd,
+  }) {
+    return verse(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(TitleSlide value)? title,
+    TResult? Function(LyricsSlide value)? lyrics,
+    TResult? Function(AmenSlide value)? amen,
+    TResult? Function(BibleTitleSlide value)? bibleTitle,
+    TResult? Function(VerseSlide value)? verse,
+    TResult? Function(BibleEndSlide value)? bibleEnd,
+  }) {
+    return verse?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(TitleSlide value)? title,
+    TResult Function(LyricsSlide value)? lyrics,
+    TResult Function(AmenSlide value)? amen,
+    TResult Function(BibleTitleSlide value)? bibleTitle,
+    TResult Function(VerseSlide value)? verse,
+    TResult Function(BibleEndSlide value)? bibleEnd,
+    required TResult orElse(),
+  }) {
+    if (verse != null) {
+      return verse(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class VerseSlide extends ProjectionSlide {
+  const factory VerseSlide(
+      {required final int numero,
+      required final String texto,
+      required final String referencia,
+      required final int totalVersiculos}) = _$VerseSlideImpl;
+  const VerseSlide._() : super._();
+
+  int get numero;
+  String get texto;
+  String get referencia;
+  int get totalVersiculos;
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$VerseSlideImplCopyWith<_$VerseSlideImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$BibleEndSlideImplCopyWith<$Res> {
+  factory _$$BibleEndSlideImplCopyWith(
+          _$BibleEndSlideImpl value, $Res Function(_$BibleEndSlideImpl) then) =
+      __$$BibleEndSlideImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String libroNombre, int capitulo});
+}
+
+/// @nodoc
+class __$$BibleEndSlideImplCopyWithImpl<$Res>
+    extends _$ProjectionSlideCopyWithImpl<$Res, _$BibleEndSlideImpl>
+    implements _$$BibleEndSlideImplCopyWith<$Res> {
+  __$$BibleEndSlideImplCopyWithImpl(
+      _$BibleEndSlideImpl _value, $Res Function(_$BibleEndSlideImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? libroNombre = null,
+    Object? capitulo = null,
+  }) {
+    return _then(_$BibleEndSlideImpl(
+      libroNombre: null == libroNombre
+          ? _value.libroNombre
+          : libroNombre // ignore: cast_nullable_to_non_nullable
+              as String,
+      capitulo: null == capitulo
+          ? _value.capitulo
+          : capitulo // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$BibleEndSlideImpl extends BibleEndSlide {
+  const _$BibleEndSlideImpl({required this.libroNombre, required this.capitulo})
+      : super._();
+
+  @override
+  final String libroNombre;
+  @override
+  final int capitulo;
+
+  @override
+  String toString() {
+    return 'ProjectionSlide.bibleEnd(libroNombre: $libroNombre, capitulo: $capitulo)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BibleEndSlideImpl &&
+            (identical(other.libroNombre, libroNombre) ||
+                other.libroNombre == libroNombre) &&
+            (identical(other.capitulo, capitulo) ||
+                other.capitulo == capitulo));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, libroNombre, capitulo);
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BibleEndSlideImplCopyWith<_$BibleEndSlideImpl> get copyWith =>
+      __$$BibleEndSlideImplCopyWithImpl<_$BibleEndSlideImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(Himno himno) title,
+    required TResult Function(Estrofa estrofa) lyrics,
+    required TResult Function() amen,
+    required TResult Function(String libroNombre, int capitulo) bibleTitle,
+    required TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)
+        verse,
+    required TResult Function(String libroNombre, int capitulo) bibleEnd,
+  }) {
+    return bibleEnd(libroNombre, capitulo);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(Himno himno)? title,
+    TResult? Function(Estrofa estrofa)? lyrics,
+    TResult? Function()? amen,
+    TResult? Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult? Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult? Function(String libroNombre, int capitulo)? bibleEnd,
+  }) {
+    return bibleEnd?.call(libroNombre, capitulo);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(Himno himno)? title,
+    TResult Function(Estrofa estrofa)? lyrics,
+    TResult Function()? amen,
+    TResult Function(String libroNombre, int capitulo)? bibleTitle,
+    TResult Function(
+            int numero, String texto, String referencia, int totalVersiculos)?
+        verse,
+    TResult Function(String libroNombre, int capitulo)? bibleEnd,
+    required TResult orElse(),
+  }) {
+    if (bibleEnd != null) {
+      return bibleEnd(libroNombre, capitulo);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(TitleSlide value) title,
+    required TResult Function(LyricsSlide value) lyrics,
+    required TResult Function(AmenSlide value) amen,
+    required TResult Function(BibleTitleSlide value) bibleTitle,
+    required TResult Function(VerseSlide value) verse,
+    required TResult Function(BibleEndSlide value) bibleEnd,
+  }) {
+    return bibleEnd(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(TitleSlide value)? title,
+    TResult? Function(LyricsSlide value)? lyrics,
+    TResult? Function(AmenSlide value)? amen,
+    TResult? Function(BibleTitleSlide value)? bibleTitle,
+    TResult? Function(VerseSlide value)? verse,
+    TResult? Function(BibleEndSlide value)? bibleEnd,
+  }) {
+    return bibleEnd?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(TitleSlide value)? title,
+    TResult Function(LyricsSlide value)? lyrics,
+    TResult Function(AmenSlide value)? amen,
+    TResult Function(BibleTitleSlide value)? bibleTitle,
+    TResult Function(VerseSlide value)? verse,
+    TResult Function(BibleEndSlide value)? bibleEnd,
+    required TResult orElse(),
+  }) {
+    if (bibleEnd != null) {
+      return bibleEnd(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class BibleEndSlide extends ProjectionSlide {
+  const factory BibleEndSlide(
+      {required final String libroNombre,
+      required final int capitulo}) = _$BibleEndSlideImpl;
+  const BibleEndSlide._() : super._();
+
+  String get libroNombre;
+  int get capitulo;
+
+  /// Create a copy of ProjectionSlide
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$BibleEndSlideImplCopyWith<_$BibleEndSlideImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }

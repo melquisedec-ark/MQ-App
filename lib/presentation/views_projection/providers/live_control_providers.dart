@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/estrofa.dart';
 import '../../../domain/entities/himno.dart';
 import '../../../domain/entities/projection_slide.dart';
+import 'presentation_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Providers independientes
@@ -33,10 +34,8 @@ final liveControlProvider =
 /// Estado completo del control en vivo.
 ///
 /// Modela el flujo de presentación basado en [ProjectionSlide]:
-///   Slide 0:  [TÍTULO + NÚMERO]
-///   Slide 1:  [LETRA ESTROFA 1]
-///   ...
-///   Slide N:  ["AMÉN"]
+///   Himnario: Slide 0: [TÍTULO + NÚMERO] → Slide 1..N: [LETRA ESTROFA] → Slide N+1: ["AMÉN"]
+///   Biblia:   Slide 0: [LIBRO + CAPÍTULO] → Slide 1..N: [VERSÍCULO] → Slide N+1: ["FIN"]
 class LiveControlState {
   final Himno? hymn;
   final List<ProjectionSlide> slides;
@@ -44,12 +43,28 @@ class LiveControlState {
   final bool isBlackout;
   final int? versionPaisId;
 
+  // Bible fields
+  final ProjectionModule module;
+  final List<String> versiculos;
+  final String libroNombre;
+  final int capitulo;
+  final int versiculoActual;
+  final String bibleTheme;
+  final double bibleFontScale;
+
   const LiveControlState({
     this.hymn,
     this.slides = const [],
     this.currentSlideIndex = 0,
     this.isBlackout = false,
     this.versionPaisId,
+    this.module = ProjectionModule.hymnal,
+    this.versiculos = const <String>[],
+    this.libroNombre = '',
+    this.capitulo = 0,
+    this.versiculoActual = 0,
+    this.bibleTheme = 'papel',
+    this.bibleFontScale = 1.0,
   });
 
   // ── Getters del nuevo modelo ───────────────────────────────
@@ -85,6 +100,13 @@ class LiveControlState {
     int? currentSlideIndex,
     bool? isBlackout,
     int? versionPaisId,
+    ProjectionModule? module,
+    List<String>? versiculos,
+    String? libroNombre,
+    int? capitulo,
+    int? versiculoActual,
+    String? bibleTheme,
+    double? bibleFontScale,
   }) {
     return LiveControlState(
       hymn: hymn ?? this.hymn,
@@ -92,6 +114,13 @@ class LiveControlState {
       currentSlideIndex: currentSlideIndex ?? this.currentSlideIndex,
       isBlackout: isBlackout ?? this.isBlackout,
       versionPaisId: versionPaisId ?? this.versionPaisId,
+      module: module ?? this.module,
+      versiculos: versiculos ?? this.versiculos,
+      libroNombre: libroNombre ?? this.libroNombre,
+      capitulo: capitulo ?? this.capitulo,
+      versiculoActual: versiculoActual ?? this.versiculoActual,
+      bibleTheme: bibleTheme ?? this.bibleTheme,
+      bibleFontScale: bibleFontScale ?? this.bibleFontScale,
     );
   }
 }
@@ -207,5 +236,51 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
   /// Actualiza el estado completo desde una fuente externa (p.ej. servidor gRPC).
   void updateFromServer(LiveControlState newState) {
     state = newState;
+  }
+
+  // ── Métodos bíblicos ──────────────────────────────────────
+
+  /// Carga un capítulo bíblico completo para proyección.
+  void loadBibleChapter({
+    required String libroNombre,
+    required int capitulo,
+    required List<String> versiculos,
+  }) {
+    state = state.copyWith(
+      module: ProjectionModule.bible,
+      libroNombre: libroNombre,
+      capitulo: capitulo,
+      versiculos: versiculos,
+      versiculoActual: 0,
+      currentSlideIndex: 0,
+      slides: _buildBibleSlides(libroNombre, capitulo, versiculos),
+    );
+  }
+
+  /// Construye slides bíblicos: título + versículos + fin.
+  List<ProjectionSlide> _buildBibleSlides(
+    String libro, int cap, List<String> versos,
+  ) {
+    final slides = <ProjectionSlide>[
+      ProjectionSlide.bibleTitle(libroNombre: libro, capitulo: cap),
+      ...versos.asMap().entries.map((e) => ProjectionSlide.verse(
+        numero: e.key + 1,
+        texto: e.value,
+        referencia: '$libro $cap:${e.key + 1}',
+        totalVersiculos: versos.length,
+      )),
+      ProjectionSlide.bibleEnd(libroNombre: libro, capitulo: cap),
+    ];
+    return slides;
+  }
+
+  /// Cambia tema bíblico en proyección.
+  void setBibleTheme(String theme) {
+    state = state.copyWith(bibleTheme: theme);
+  }
+
+  /// Cambia escala de fuente bíblica en proyección.
+  void setBibleFontScale(double scale) {
+    state = state.copyWith(bibleFontScale: scale.clamp(0.8, 4.0));
   }
 }

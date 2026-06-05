@@ -4,6 +4,7 @@ import 'package:mqapp/core/enums/himno_tipo.dart';
 import 'package:mqapp/domain/entities/estrofa.dart';
 import 'package:mqapp/domain/entities/himno.dart';
 import 'package:mqapp/domain/entities/projection_slide.dart';
+import 'package:mqapp/presentation/views_projection/providers/presentation_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Helpers
@@ -142,6 +143,11 @@ void main() {
         ProjectionSlide.title(himno: _createHimno()),
         ProjectionSlide.lyrics(estrofa: _createEstrofas()[0]),
         const ProjectionSlide.amen(),
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1),
+        const ProjectionSlide.verse(
+          numero: 1, texto: 'Texto', referencia: 'Génesis 1:1', totalVersiculos: 1,
+        ),
+        const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1),
       ];
 
       for (final slide in slides) {
@@ -149,6 +155,9 @@ void main() {
           TitleSlide() => 'portada',
           LyricsSlide() => 'letra',
           AmenSlide() => 'amen',
+          BibleTitleSlide() => 'titulo',
+          VerseSlide() => 'versiculo',
+          BibleEndSlide() => 'fin',
         };
         expect(label, isNotEmpty);
       }
@@ -201,6 +210,276 @@ void main() {
         ProjectionSlide.title(himno: _createHimno()),
         isNot(ProjectionSlide.lyrics(estrofa: _createEstrofas()[0])),
       );
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // Tests de slides bíblicos
+  // ═══════════════════════════════════════════════════════════════
+
+  group('ProjectionSlide — tipos bíblicos', () {
+    test('BibleTitleSlide se crea con libro y capítulo', () {
+      final slide = ProjectionSlide.bibleTitle(
+        libroNombre: 'Génesis',
+        capitulo: 1,
+      );
+
+      expect(slide, isA<BibleTitleSlide>());
+      final title = slide as BibleTitleSlide;
+      expect(title.libroNombre, 'Génesis');
+      expect(title.capitulo, 1);
+      expect(slide.displayLabel, 'Título');
+    });
+
+    test('VerseSlide se crea con número, texto, referencia y total', () {
+      final slide = ProjectionSlide.verse(
+        numero: 1,
+        texto: 'En el principio creó Dios los cielos y la tierra.',
+        referencia: 'Génesis 1:1',
+        totalVersiculos: 31,
+      );
+
+      expect(slide, isA<VerseSlide>());
+      final verse = slide as VerseSlide;
+      expect(verse.numero, 1);
+      expect(verse.texto, 'En el principio creó Dios los cielos y la tierra.');
+      expect(verse.referencia, 'Génesis 1:1');
+      expect(verse.totalVersiculos, 31);
+      expect(slide.displayLabel, 'Versículo');
+    });
+
+    test('BibleEndSlide se crea con libro y capítulo', () {
+      final slide = ProjectionSlide.bibleEnd(
+        libroNombre: 'Génesis',
+        capitulo: 1,
+      );
+
+      expect(slide, isA<BibleEndSlide>());
+      final end = slide as BibleEndSlide;
+      expect(end.libroNombre, 'Génesis');
+      expect(end.capitulo, 1);
+      expect(slide.displayLabel, 'Fin');
+    });
+  });
+
+  group('ProjectionSlide — helpers bíblicos', () {
+    test('BibleTitleSlideHelpers.formatea referencia', () {
+      final slide = ProjectionSlide.bibleTitle(
+        libroNombre: 'Juan',
+        capitulo: 3,
+      ) as BibleTitleSlide;
+
+      expect(slide.referencia, 'Juan 3');
+    });
+
+    test('VerseSlideHelpers.formatea progreso', () {
+      final slide = ProjectionSlide.verse(
+        numero: 16,
+        texto: 'Porque de tal manera amó Dios al mundo...',
+        referencia: 'Juan 3:16',
+        totalVersiculos: 21,
+      ) as VerseSlide;
+
+      expect(slide.progreso, '16/21');
+    });
+
+    test('BibleEndSlideHelpers.formatea referencia con fin', () {
+      final slide = ProjectionSlide.bibleEnd(
+        libroNombre: 'Juan',
+        capitulo: 3,
+      ) as BibleEndSlide;
+
+      expect(slide.referencia, 'Juan 3 — Fin');
+    });
+  });
+
+  group('ProjectionSlide — construcción bíblica completa', () {
+    test('_buildBibleSlides crea secuencia: [Título, Versículos..., Fin]', () {
+      const versiculos = [
+        'En el principio creó Dios los cielos y la tierra.',
+        'Y la tierra estaba desordenada y vacía.',
+        'Y dijo Dios: Sea la luz; y fue la luz.',
+      ];
+
+      final slides = <ProjectionSlide>[
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1),
+        ...versiculos.asMap().entries.map((e) => ProjectionSlide.verse(
+          numero: e.key + 1,
+          texto: e.value,
+          referencia: 'Génesis 1:${e.key + 1}',
+          totalVersiculos: versiculos.length,
+        )),
+        const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1),
+      ];
+
+      expect(slides.length, 5); // Título + 3 versículos + Fin
+      expect(slides[0], isA<BibleTitleSlide>());
+      expect(slides[1], isA<VerseSlide>());
+      expect(slides[2], isA<VerseSlide>());
+      expect(slides[3], isA<VerseSlide>());
+      expect(slides[4], isA<BibleEndSlide>());
+    });
+
+    test('Los versículos mantienen orden y referencia correctos', () {
+      const versiculos = ['Verso A', 'Verso B'];
+      final slides = <ProjectionSlide>[
+        const ProjectionSlide.bibleTitle(libroNombre: 'Test', capitulo: 1),
+        ...versiculos.asMap().entries.map((e) => ProjectionSlide.verse(
+          numero: e.key + 1,
+          texto: e.value,
+          referencia: 'Test 1:${e.key + 1}',
+          totalVersiculos: versiculos.length,
+        )),
+        const ProjectionSlide.bibleEnd(libroNombre: 'Test', capitulo: 1),
+      ];
+
+      final verse1 = slides[1] as VerseSlide;
+      expect(verse1.numero, 1);
+      expect(verse1.texto, 'Verso A');
+      expect(verse1.referencia, 'Test 1:1');
+
+      final verse2 = slides[2] as VerseSlide;
+      expect(verse2.numero, 2);
+      expect(verse2.texto, 'Verso B');
+      expect(verse2.referencia, 'Test 1:2');
+    });
+
+    test('Con 0 versículos: slides = [Título, Fin]', () {
+      const slides = <ProjectionSlide>[
+        ProjectionSlide.bibleTitle(libroNombre: 'Test', capitulo: 1),
+        ProjectionSlide.bibleEnd(libroNombre: 'Test', capitulo: 1),
+      ];
+
+      expect(slides.length, 2);
+      expect(slides[0], isA<BibleTitleSlide>());
+      expect(slides[1], isA<BibleEndSlide>());
+    });
+  });
+
+  group('ProjectionSlide — exhaustividad con tipos bíblicos', () {
+    test('switch cubre los 6 tipos de ProjectionSlide', () {
+      final slides = <ProjectionSlide>[
+        ProjectionSlide.title(himno: _createHimno()),
+        ProjectionSlide.lyrics(estrofa: _createEstrofas()[0]),
+        const ProjectionSlide.amen(),
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1),
+        const ProjectionSlide.verse(
+          numero: 1,
+          texto: 'Texto',
+          referencia: 'Génesis 1:1',
+          totalVersiculos: 1,
+        ),
+        const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1),
+      ];
+
+      for (final slide in slides) {
+        final label = switch (slide) {
+          TitleSlide() => 'portada',
+          LyricsSlide() => 'letra',
+          AmenSlide() => 'amen',
+          BibleTitleSlide() => 'titulo',
+          VerseSlide() => 'versiculo',
+          BibleEndSlide() => 'fin',
+        };
+        expect(label, isNotEmpty);
+      }
+    });
+
+    test('displayLabel retorna valores correctos para los 6 tipos', () {
+      expect(
+        ProjectionSlide.title(himno: _createHimno()).displayLabel,
+        'Portada',
+      );
+      expect(
+        ProjectionSlide.lyrics(estrofa: _createEstrofas()[0]).displayLabel,
+        'Letra',
+      );
+      expect(
+        const ProjectionSlide.amen().displayLabel,
+        'Amén',
+      );
+      expect(
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1).displayLabel,
+        'Título',
+      );
+      expect(
+        const ProjectionSlide.verse(
+          numero: 1,
+          texto: 'Texto',
+          referencia: 'Génesis 1:1',
+          totalVersiculos: 1,
+        ).displayLabel,
+        'Versículo',
+      );
+      expect(
+        const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1).displayLabel,
+        'Fin',
+      );
+    });
+  });
+
+  group('ProjectionSlide — igualdad con tipos bíblicos (freezed)', () {
+    test('BibleTitleSlide con mismos datos son iguales', () {
+      expect(
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1),
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1),
+      );
+    });
+
+    test('BibleTitleSlide con diferente capítulo son diferentes', () {
+      expect(
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1),
+        isNot(const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 2)),
+      );
+    });
+
+    test('VerseSlide con mismos datos son iguales', () {
+      const v1 = ProjectionSlide.verse(
+        numero: 1, texto: 'Hola', referencia: 'Gen 1:1', totalVersiculos: 5,
+      );
+      const v2 = ProjectionSlide.verse(
+        numero: 1, texto: 'Hola', referencia: 'Gen 1:1', totalVersiculos: 5,
+      );
+      expect(v1, v2);
+    });
+
+    test('VerseSlide con diferente texto son diferentes', () {
+      const v1 = ProjectionSlide.verse(
+        numero: 1, texto: 'Hola', referencia: 'Gen 1:1', totalVersiculos: 5,
+      );
+      const v2 = ProjectionSlide.verse(
+        numero: 1, texto: 'Mundo', referencia: 'Gen 1:1', totalVersiculos: 5,
+      );
+      expect(v1, isNot(v2));
+    });
+
+    test('BibleEndSlide con mismos datos son iguales', () {
+      expect(
+        const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1),
+        const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1),
+      );
+    });
+
+    test('Tipos bíblicos diferentes no son iguales', () {
+      expect(
+        const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1),
+        isNot(const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1)),
+      );
+    });
+
+    test('Tipos himnario vs biblia no son iguales', () {
+      expect(
+        ProjectionSlide.title(himno: _createHimno()),
+        isNot(const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1)),
+      );
+    });
+  });
+
+  group('ProjectionModule enum', () {
+    test('tiene valores hymnal y bible', () {
+      expect(ProjectionModule.values, contains(ProjectionModule.hymnal));
+      expect(ProjectionModule.values, contains(ProjectionModule.bible));
+      expect(ProjectionModule.values.length, 2);
     });
   });
 }

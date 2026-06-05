@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Módulo activo en la presentación (himnario o biblia).
+enum ProjectionModule { hymnal, bible }
+
 /// Indica si el modo presentación (proyección) está activo.
 ///
 /// Cuando es `true`, la ventana principal está configurada en modo

@@ -6,13 +6,20 @@ part 'projection_slide.freezed.dart';
 
 /// Representa una diapositiva (slide) en el flujo de presentación.
 ///
-/// El flujo completo de un himno se compone de:
+/// Flujo de himnario:
 /// 1. [TitleSlide]: Título + número del himno (full screen, centrado)
 /// 2. [LyricsSlide]: Letra de cada estrofa (una por slide, máximo tamaño)
 /// 3. [AmenSlide]: "Amén" al final (centrado, full screen)
+///
+/// Flujo de biblia:
+/// 1. [BibleTitleSlide]: Libro + capítulo (full screen, centrado)
+/// 2. [VerseSlide]: Versículo individual con texto y referencia
+/// 3. [BibleEndSlide]: Fin de capítulo (centrado, full screen)
 @freezed
 sealed class ProjectionSlide with _$ProjectionSlide {
   const ProjectionSlide._();
+
+  // ── Himnario ────────────────────────────────────────────────
 
   /// Slide 0: Título + número del himno.
   const factory ProjectionSlide.title({required Himno himno}) = TitleSlide;
@@ -23,11 +30,36 @@ sealed class ProjectionSlide with _$ProjectionSlide {
   /// Slide N: "Amén" al final.
   const factory ProjectionSlide.amen() = AmenSlide;
 
+  // ── Biblia ──────────────────────────────────────────────────
+
+  /// Slide de título de libro/capítulo bíblico.
+  const factory ProjectionSlide.bibleTitle({
+    required String libroNombre,
+    required int capitulo,
+  }) = BibleTitleSlide;
+
+  /// Slide de versículo individual con texto y referencia.
+  const factory ProjectionSlide.verse({
+    required int numero,
+    required String texto,
+    required String referencia,
+    required int totalVersiculos,
+  }) = VerseSlide;
+
+  /// Slide de fin de capítulo bíblico.
+  const factory ProjectionSlide.bibleEnd({
+    required String libroNombre,
+    required int capitulo,
+  }) = BibleEndSlide;
+
   /// Etiqueta textual para identificar el tipo de slide en la UI.
   String get displayLabel => switch (this) {
         TitleSlide() => 'Portada',
         LyricsSlide() => 'Letra',
         AmenSlide() => 'Amén',
+        BibleTitleSlide() => 'Título',
+        VerseSlide() => 'Versículo',
+        BibleEndSlide() => 'Fin',
       };
 }
 
@@ -47,4 +79,22 @@ extension LyricsSlideHelpers on LyricsSlide {
 
   /// `true` si la estrofa es un coro.
   bool get isChorus => estrofa.isChorus;
+}
+
+/// Extension de helpers para [BibleTitleSlide].
+extension BibleTitleSlideHelpers on BibleTitleSlide {
+  /// Referencia formateada: "Génesis 1".
+  String get referencia => '$libroNombre $capitulo';
+}
+
+/// Extension de helpers para [VerseSlide].
+extension VerseSlideHelpers on VerseSlide {
+  /// Progreso del versículo: "1/31".
+  String get progreso => '$numero/$totalVersiculos';
+}
+
+/// Extension de helpers para [BibleEndSlide].
+extension BibleEndSlideHelpers on BibleEndSlide {
+  /// Referencia formateada: "Génesis 1 — Fin".
+  String get referencia => '$libroNombre $capitulo — Fin';
 }

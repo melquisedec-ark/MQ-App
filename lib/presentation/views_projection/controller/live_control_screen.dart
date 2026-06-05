@@ -397,6 +397,54 @@ class LiveControlScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+              BibleTitleSlide(:final libroNombre, :final capitulo) => [
+                  Text(
+                    slide.displayLabel,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: fgColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$libroNombre $capitulo',
+                    style: textTheme.bodySmall?.copyWith(color: fgColor),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              VerseSlide(:final numero, :final referencia) => [
+                  Text(
+                    slide.displayLabel,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: fgColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$referencia (v. $numero)',
+                    style: textTheme.bodySmall?.copyWith(color: fgColor),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              BibleEndSlide(:final libroNombre, :final capitulo) => [
+                  Text(
+                    slide.displayLabel,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: fgColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$libroNombre $capitulo',
+                    style: textTheme.bodySmall?.copyWith(color: fgColor),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
             },
         ],
       ),
