@@ -85,7 +85,11 @@ class LiveProjectionScreen extends ConsumerWidget {
         appearance,
         Stack(
           children: [
-            slideContent,
+            // Transición suave al cambiar de slide o módulo
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: slideContent,
+            ),
             // ── Indicador de conexión (esquina inferior derecha) ──
             Positioned(
               right: 24,

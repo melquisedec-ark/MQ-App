@@ -248,6 +248,7 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
   }) {
     state = state.copyWith(
       module: ProjectionModule.bible,
+      hymn: null, // Limpiar himno al cargar biblia
       libroNombre: libroNombre,
       capitulo: capitulo,
       versiculos: versiculos,
@@ -294,6 +295,30 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
         isBlackout: false,
       );
     }
+  }
+
+  /// Cambia al módulo especificado, limpiando el estado del módulo anterior.
+  void switchToModule(ProjectionModule newModule) {
+    if (state.module == newModule) return; // No-op si ya está en ese módulo
+
+    // Crear nuevo estado directamente para evitar problema con copyWith
+    // y valores null explícitos (hymn ?? this.hymn no permite null explícito)
+    state = LiveControlState(
+      module: newModule,
+      // Limpiar estado del módulo anterior
+      hymn: newModule == ProjectionModule.bible ? null : state.hymn,
+      slides: const [],
+      currentSlideIndex: 0,
+      isBlackout: false,
+      versionPaisId: state.versionPaisId,
+      // Reset Bible fields when switching to hymnal
+      versiculos: newModule == ProjectionModule.hymnal ? const [] : state.versiculos,
+      libroNombre: newModule == ProjectionModule.hymnal ? '' : state.libroNombre,
+      capitulo: newModule == ProjectionModule.hymnal ? 0 : state.capitulo,
+      versiculoActual: newModule == ProjectionModule.hymnal ? 0 : state.versiculoActual,
+      bibleTheme: state.bibleTheme,
+      bibleFontScale: state.bibleFontScale,
+    );
   }
 
   /// Indica que se necesita cargar un capítulo adyacente.

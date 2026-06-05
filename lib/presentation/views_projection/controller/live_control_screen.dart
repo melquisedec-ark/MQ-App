@@ -40,6 +40,44 @@ class LiveControlScreen extends ConsumerWidget {
           onPressed: () => _handleClose(context, ref),
         ),
         actions: [
+          // Botón de cambio de módulo
+          IconButton(
+            icon: Icon(
+              liveState.module == ProjectionModule.bible
+                  ? Icons.menu_book_outlined
+                  : Icons.music_note_outlined,
+            ),
+            tooltip: liveState.module == ProjectionModule.bible
+                ? 'Cambiar a Himnario'
+                : 'Cambiar a Biblia',
+            onPressed: () {
+              final newModule = liveState.module == ProjectionModule.bible
+                  ? ProjectionModule.hymnal
+                  : ProjectionModule.bible;
+              ref.read(liveControlProvider.notifier).switchToModule(newModule);
+
+              // Notificar al subprocess que limpie la pantalla
+              try {
+                ref.read(windowServiceProvider).sendMessage({
+                  'type': 'SWITCH_MODULE',
+                  'module': newModule.name,
+                });
+              } catch (_) {
+                // Subprocess no disponible
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    newModule == ProjectionModule.bible
+                        ? 'Módulo Biblia activado'
+                        : 'Módulo Himnario activado',
+                  ),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
           // Indicador de módulo
           Padding(
             padding: const EdgeInsets.only(right: 4),
@@ -344,7 +382,7 @@ class LiveControlScreen extends ConsumerWidget {
                 icon: Icons.skip_previous_rounded,
                 label: 'Cap. Anterior',
                 onTap: prevEnabled
-                    ? () => _handlePrevChapter(ref, liveState)
+                    ? () => _handlePrevChapter(context, ref, liveState)
                     : () {},
                 backgroundColor: prevEnabled
                     ? colorScheme.secondaryContainer
@@ -361,7 +399,7 @@ class LiveControlScreen extends ConsumerWidget {
                 icon: Icons.skip_next_rounded,
                 label: 'Cap. Siguiente',
                 onTap: nextEnabled
-                    ? () => _handleNextChapter(ref, liveState)
+                    ? () => _handleNextChapter(context, ref, liveState)
                     : () {},
                 backgroundColor: nextEnabled
                     ? colorScheme.secondaryContainer
@@ -378,7 +416,11 @@ class LiveControlScreen extends ConsumerWidget {
   }
 
   /// Maneja la carga del capítulo anterior.
-  Future<void> _handlePrevChapter(WidgetRef ref, LiveControlState liveState) async {
+  Future<void> _handlePrevChapter(
+    BuildContext context,
+    WidgetRef ref,
+    LiveControlState liveState,
+  ) async {
     final notifier = ref.read(liveControlProvider.notifier);
     notifier.requestAdjacentChapter(false);
 
@@ -401,6 +443,19 @@ class LiveControlScreen extends ConsumerWidget {
       final windowService = ref.read(windowServiceProvider);
       final versiculos = await bibliaRepo.getVersiculosByCapitulo(prevCap.id);
       final textos = versiculos.map((v) => v.texto).toList();
+
+      if (textos.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Capítulo sin versículos')),
+        );
+        // Restaurar el estado anterior
+        notifier.loadBibleChapter(
+          libroNombre: liveState.libroNombre,
+          capitulo: liveState.capitulo,
+          versiculos: liveState.versiculos,
+        );
+        return;
+      }
 
       notifier.loadBibleChapter(
         libroNombre: libro.nombre,
@@ -429,7 +484,11 @@ class LiveControlScreen extends ConsumerWidget {
   }
 
   /// Maneja la carga del capítulo siguiente.
-  Future<void> _handleNextChapter(WidgetRef ref, LiveControlState liveState) async {
+  Future<void> _handleNextChapter(
+    BuildContext context,
+    WidgetRef ref,
+    LiveControlState liveState,
+  ) async {
     final notifier = ref.read(liveControlProvider.notifier);
     notifier.requestAdjacentChapter(true);
 
@@ -452,6 +511,20 @@ class LiveControlScreen extends ConsumerWidget {
       final windowService = ref.read(windowServiceProvider);
       final versiculos = await bibliaRepo.getVersiculosByCapitulo(nextCap.id);
       final textos = versiculos.map((v) => v.texto).toList();
+
+      if (textos.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Capítulo sin versículos')),
+        );
+        // Restaurar el estado anterior
+        notifier.loadBibleChapter(
+          libroNombre: liveState.libroNombre,
+          capitulo: liveState.capitulo,
+          versiculos: liveState.versiculos,
+        );
+        return;
+      }
 
       notifier.loadBibleChapter(
         libroNombre: libro.nombre,
@@ -486,6 +559,20 @@ class LiveControlScreen extends ConsumerWidget {
           final windowService = ref.read(windowServiceProvider);
           final versiculos = await bibliaRepo.getVersiculosByCapitulo(firstCap.id);
           final textos = versiculos.map((v) => v.texto).toList();
+
+      if (textos.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Capítulo sin versículos')),
+        );
+        // Restaurar el estado anterior
+        notifier.loadBibleChapter(
+          libroNombre: liveState.libroNombre,
+          capitulo: liveState.capitulo,
+          versiculos: liveState.versiculos,
+        );
+        return;
+      }
 
           notifier.loadBibleChapter(
             libroNombre: nextLibro.nombre,

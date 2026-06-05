@@ -373,15 +373,18 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
     }
   }
 
-  /// Procesa un mensaje SWITCH_MODULE: cambia el módulo activo.
-  ///
-  /// El contenido real se carga vía LOAD_HYMN o LOAD_VERSE posterior.
+  /// Procesa un mensaje SWITCH_MODULE: cambia el módulo activo y limpia
+  /// los slides del módulo anterior.
   void _handleSwitchModule(
     LiveControlNotifier notifier,
     Map<String, dynamic> message,
   ) {
-    // El módulo se establece pero el contenido llega por separado
-    // Para ahora solo registramos el cambio sin cargar contenido
+    final moduleStr = message['module'] as String?;
+    if (moduleStr == 'bible') {
+      notifier.switchToModule(ProjectionModule.bible);
+    } else {
+      notifier.switchToModule(ProjectionModule.hymnal);
+    }
   }
 
   @override
