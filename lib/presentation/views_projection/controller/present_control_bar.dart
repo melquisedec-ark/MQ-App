@@ -239,19 +239,13 @@ class PresentControlBar extends ConsumerWidget {
           ),
         ),
         if (isBible)
-          // En modo Biblia: Lupa busca himnos para cambiar
+          // En modo Biblia: Lupa busca versículos bíblicos
           _FuncButton(
             icon: Icons.search,
             label: 'Buscar',
-            onPressed: () async {
-              final result = await showSearchSheet(
-                context,
-                ref: ref,
-                currentHimnoId: 0,
-              );
-              if (result != null && result > 0 && context.mounted) {
-                _loadAndProject(ref, result);
-              }
+            onPressed: () {
+              // TODO: Implementar búsqueda bíblica en presentación
+              // Por ahora no hace nada (showSearchSheet busca himnos)
             },
           )
         else ...[
@@ -296,14 +290,16 @@ class PresentControlBar extends ConsumerWidget {
             },
           ),
         ],
-        // Botón de cambio de módulo (siempre visible)
+        // Botón de cambio de módulo — muestra el módulo al que CAMBIARÁS
         Consumer(
           builder: (context, ref, _) {
             final liveState = ref.watch(liveControlProvider);
             final isBible = liveState.module == ProjectionModule.bible;
+            // Si estoy en Biblia → botón dice "Himnario" (para cambiar a himnario)
+            // Si estoy en Himnario → botón dice "Biblia" (para cambiar a biblia)
             return _FuncButton(
-              icon: isBible ? Icons.menu_book_outlined : Icons.music_note_outlined,
-              label: isBible ? 'Biblia' : 'Himnario',
+              icon: isBible ? Icons.music_note_outlined : Icons.menu_book_outlined,
+              label: isBible ? 'Himnario' : 'Biblia',
               onPressed: () {
                 final newModule = isBible
                     ? ProjectionModule.hymnal

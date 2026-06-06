@@ -93,7 +93,7 @@ Widget _buildTestApp({
 void main() {
   group('PresentControlBar - Module switch button', () {
     testWidgets(
-        'Botón de módulo muestra label "Biblia" cuando módulo es Bible',
+        'Botón de módulo muestra label "Himnario" cuando módulo es Bible (para cambiar)',
         (tester) async {
       final notifier = LiveControlNotifier();
       notifier.loadBibleChapter(
@@ -106,12 +106,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(notifier.state.module, ProjectionModule.bible);
-      // El botón muestra el módulo actual ("Biblia")
-      expect(find.text('Biblia'), findsOneWidget);
+      // El botón muestra el módulo al que CAMBIARÁS ("Himnario")
+      expect(find.text('Himnario'), findsOneWidget);
     });
 
     testWidgets(
-        'Botón de módulo muestra label "Himnario" cuando módulo es Hymnal',
+        'Botón de módulo muestra label "Biblia" cuando módulo es Hymnal (para cambiar)',
         (tester) async {
       final notifier = LiveControlNotifier();
       notifier.loadHymn(_createTestHimno(), _createTestStanzas());
@@ -120,8 +120,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(notifier.state.module, ProjectionModule.hymnal);
-      // El botón muestra el módulo actual ("Himnario")
-      expect(find.text('Himnario'), findsOneWidget);
+      // El botón muestra el módulo al que CAMBIARÁS ("Biblia")
+      expect(find.text('Biblia'), findsOneWidget);
     });
 
     testWidgets('switchToModule cambia correctamente de Hymnal a Bible', (tester) async {

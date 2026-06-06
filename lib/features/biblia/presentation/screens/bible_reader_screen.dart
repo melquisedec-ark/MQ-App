@@ -138,6 +138,24 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     }
   }
 
+  /// Sincroniza el versículo actual con la proyección (envía NEXT/PREV_SLIDE).
+  void _syncVerseToProjection(WidgetRef ref, int nuevoVersiculo) {
+    final liveState = ref.read(liveControlProvider);
+    // Si no hay slides bíblicos cargados, no hacer nada
+    if (liveState.module != ProjectionModule.bible || liveState.slides.isEmpty) return;
+    // El slide del versículo N está en el índice N (slide 0 = título)
+    final targetIndex = nuevoVersiculo;
+    if (targetIndex >= 0 && targetIndex < liveState.slides.length) {
+      ref.read(liveControlProvider.notifier).goToSlide(targetIndex);
+      try {
+        ref.read(windowServiceProvider).sendMessage({
+          'type': 'GO_TO_SLIDE',
+          'index': targetIndex,
+        });
+      } catch (_) {}
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFullscreen = ref.watch(fullscreenModeProvider);
@@ -163,6 +181,11 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
               capitulo,
               next,
             );
+      }
+      // Si está presentando, sincronizar el versículo actual con la proyección
+      final isPresenting = ref.read(isPresentingProvider);
+      if (isPresenting && next != null && next != prev) {
+        _syncVerseToProjection(ref, next);
       }
     });
 
@@ -198,8 +221,11 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                         'source': 'bible_reader',
                       });
                       ref.read(isPresentingProvider.notifier).state = true;
-                      // Cargar capítulo actual para proyección
-                      await _projectCurrentChapter(context, ref);
+                      // Esperar a que el subproceso esté listo antes de enviar
+                      await Future<void>.delayed(const Duration(milliseconds: 800));
+                      if (context.mounted) {
+                        await _projectCurrentChapter(context, ref);
+                      }
                     }
                   } catch (e) {
                     if (context.mounted) {

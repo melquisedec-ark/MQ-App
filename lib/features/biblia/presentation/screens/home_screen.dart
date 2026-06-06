@@ -8,6 +8,7 @@ import '../../../../core/window_manager/window_providers.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../presentation/shared_widgets/theme_mode_toggle_button.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
+import '../../../../presentation/views_projection/providers/live_control_providers.dart';
 import '../../../../presentation/views_projection/providers/presentation_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
@@ -700,6 +701,7 @@ class _ModuleCard extends StatelessWidget {
 /// FAB para iniciar/detener la presentación desde la home de Biblia.
 ///
 /// Alterna la ventana de proyección y el estado [isPresentingProvider].
+/// Al iniciar, carga el versículo aleatorio actual para proyección.
 class _PresentFAB extends ConsumerWidget {
   const _PresentFAB();
 
@@ -720,6 +722,12 @@ class _PresentFAB extends ConsumerWidget {
               'source': 'bible_home',
             });
             ref.read(isPresentingProvider.notifier).state = true;
+            // Esperar a que el subproceso esté listo
+            await Future<void>.delayed(const Duration(milliseconds: 800));
+            // Cargar el versículo aleatorio actual para proyección
+            if (context.mounted) {
+              await _projectRandomVerse(ref);
+            }
           }
         } catch (e) {
           if (context.mounted) {
@@ -734,5 +742,34 @@ class _PresentFAB extends ConsumerWidget {
       icon: Icon(isPresenting ? Icons.stop_screen_share : Icons.screen_share),
       label: Text(isPresenting ? 'Detener Presentación' : 'Presentar'),
     );
+  }
+
+  /// Proyecta el versículo aleatorio actual en la ventana de proyección.
+  static Future<void> _projectRandomVerse(WidgetRef ref) async {
+    final verse = ref.read(randomVersiculoProvider).valueOrNull;
+    if (verse == null) return;
+    final repo = ref.read(bibliaRepositoryProvider);
+    final libro = await repo.getLibroByNumero(verse.versionId, verse.libroNumero);
+    if (libro == null) return;
+    final cap = await repo.getCapitulo(libro.id, verse.capituloNumero);
+    if (cap == null) return;
+    final versiculos = await repo.getVersiculosByCapitulo(cap.id);
+    if (versiculos.isEmpty) return;
+    final textos = versiculos.map((v) => v.texto).toList();
+    // Actualizar estado de proyección
+    ref.read(liveControlProvider.notifier).loadBibleChapter(
+      libroNombre: libro.nombre,
+      capitulo: verse.capituloNumero,
+      versiculos: textos,
+    );
+    // Enviar al subproceso
+    try {
+      ref.read(windowServiceProvider).sendMessage({
+        'type': 'LOAD_VERSE',
+        'libroNombre': libro.nombre,
+        'capitulo': verse.capituloNumero,
+        'versiculos': textos,
+      });
+    } catch (_) {}
   }
 }
