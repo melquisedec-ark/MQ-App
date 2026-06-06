@@ -5,6 +5,7 @@ import 'package:mqapp/core/enums/himno_tipo.dart';
 import 'package:mqapp/domain/entities/himno.dart';
 import 'package:mqapp/presentation/dual_mode_wrapper/device_mode.dart';
 import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
+import 'package:mqapp/presentation/views_projection/display/live_projection_screen.dart';
 import 'package:mqapp/presentation/views_projection/display/receptor_binding.dart';
 import 'package:mqapp/presentation/views_projection/display/standby_screen.dart';
 import 'package:mqapp/presentation/views_projection/providers/live_control_providers.dart';
@@ -178,5 +179,71 @@ void main() {
       // Icono de nota musical (logo principal)
       expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);
     });
+  });
+
+  group('receptorDisplayProvider - Bible mode', () {
+    testWidgets(
+      'Muestra LiveProjectionScreen cuando módulo Biblia está activo',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            liveControlProvider.overrideWith((ref) {
+              final notifier = LiveControlNotifier();
+              notifier.loadBibleChapter(
+                libroNombre: 'Génesis',
+                capitulo: 1,
+                versiculos: ['En el principio creó Dios los cielos y la tierra.'],
+              );
+              return notifier;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final display = container.read(receptorDisplayProvider);
+        expect(display, isA<LiveProjectionScreen>());
+      },
+    );
+
+    testWidgets(
+      'Muestra StandbyScreen cuando no hay contenido',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            liveControlProvider.overrideWith((ref) => LiveControlNotifier()),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final display = container.read(receptorDisplayProvider);
+        expect(display, isA<StandbyScreen>());
+      },
+    );
+
+    testWidgets(
+      'Muestra StandbyScreen cuando hay blackout aunque haya himno',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            liveControlProvider.overrideWith((ref) {
+              final notifier = LiveControlNotifier();
+              const himno = Himno(
+                id: 1,
+                titulo: 'Santo, Santo, Santo',
+                numero: 1,
+                tipo: HimnoTipo.oficial,
+              );
+              notifier.loadHymn(himno, []);
+              notifier.blackout();
+              return notifier;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final display = container.read(receptorDisplayProvider);
+        expect(display, isA<StandbyScreen>());
+      },
+    );
   });
 }

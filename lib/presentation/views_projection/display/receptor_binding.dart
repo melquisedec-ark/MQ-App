@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../bootstrap/app_initializer.dart';
 import '../../../data/datasources/remote/grpc_display_server.dart';
 import '../providers/live_control_providers.dart';
+import '../providers/presentation_providers.dart';
 import 'live_projection_screen.dart';
 import 'standby_screen.dart';
 
@@ -77,11 +78,13 @@ final receptorInfoProvider = Provider<ReceptorInfo>((ref) {
 /// Provider que determina qué pantalla mostrar en modo Receptor.
 ///
 /// Cuando hay un himno cargado ([liveControlProvider.hymn] no es `null`)
-/// y no está en blackout, muestra [LiveProjectionScreen]; en caso
-/// contrario, muestra [StandbyScreen].
+/// o el módulo bíblico está activo, y no está en blackout, muestra
+/// [LiveProjectionScreen]; en caso contrario, muestra [StandbyScreen].
 final receptorDisplayProvider = Provider<Widget>((ref) {
   final liveState = ref.watch(liveControlProvider);
-  if (liveState.hymn != null && !liveState.isBlackout) {
+  final hasContent = liveState.hymn != null ||
+      liveState.module == ProjectionModule.bible;
+  if (hasContent && !liveState.isBlackout) {
     return const LiveProjectionScreen();
   }
   return const StandbyScreen();

@@ -103,19 +103,26 @@ class PresentControlBar extends ConsumerWidget {
     Himno? hymn,
     bool hasHymn,
   ) {
+    final liveState = ref.watch(liveControlProvider);
     return Row(
       children: [
         Icon(
-          Icons.music_note_rounded,
+          liveState.module == ProjectionModule.bible
+              ? Icons.menu_book_outlined
+              : Icons.music_note_rounded,
           size: 20,
           color: colorScheme.primary,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            hasHymn ? hymn!.titulo : 'Selecciona un himno para proyectar',
+            hasHymn
+                ? hymn!.titulo
+                : liveState.module == ProjectionModule.bible
+                    ? '${liveState.libroNombre} ${liveState.capitulo}'
+                    : 'Selecciona contenido para proyectar',
             style: textTheme.titleSmall?.copyWith(
-              color: hasHymn
+              color: hasHymn || liveState.module == ProjectionModule.bible
                   ? colorScheme.onSurface
                   : colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
@@ -298,8 +305,11 @@ class PresentControlBar extends ConsumerWidget {
       // Ignorar error si la ventana ya estaba cerrada
     }
     ref.read(isPresentingProvider.notifier).state = false;
-    // Resetear el estado del control en vivo cargando un himno vacío
-    ref.read(liveControlProvider.notifier).loadHymn(
+    // Resetear el estado del control en vivo: volver a módulo himnario
+    // y limpiar contenido
+    final notifier = ref.read(liveControlProvider.notifier);
+    notifier.switchToModule(ProjectionModule.hymnal);
+    notifier.loadHymn(
       const Himno(
         id: 0,
         titulo: '',

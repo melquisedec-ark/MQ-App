@@ -13,6 +13,7 @@ import '../../shared_widgets/alphabet_index_bar.dart';
 import '../../shared_widgets/search_bar.dart';
 import '../../shared_widgets/hymn_card.dart';
 import '../../shared_widgets/theme_mode_toggle_button.dart';
+import '../../views_projection/controller/present_control_bar.dart';
 import '../../views_projection/controller/widgets/discover_display_sheet.dart'
     show DiscoverDisplaySheet;
 import '../../views_projection/display/receptor_binding.dart';
@@ -23,6 +24,7 @@ import '../../views_projection/providers/projection_actions.dart'
 import '../providers/hymn_providers.dart';
 import '../../providers/wakelock_provider.dart';
 import 'connected_dashboard.dart';
+import 'present_button.dart';
 import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// Tipos de filtro para himnos.
@@ -388,8 +390,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           bottom: MediaQuery.of(context).padding.bottom + 16,
           child: const ThemeModeToggleButton(),
         ),
+        // Barra de control cuando presentación está activa
+        if (isPresenting && isDesktop) const PresentControlBar(),
       ],
       ),
+      floatingActionButton: isPresenting || !isDesktop
+          ? null // Ocultar FAB al presentar o en modo phone
+          : const PresentButton(),
     );
   }
 
