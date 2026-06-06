@@ -224,8 +224,8 @@ void main() {
         // Verificar que muestra el título bíblico
         expect(find.text('Génesis 1'), findsOneWidget);
 
-        // Verificar que muestra el ícono de libro
-        expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
+        // Verificar que muestra el ícono de libro (header + module switch button)
+        expect(find.byIcon(Icons.menu_book_outlined), findsWidgets);
       },
     );
 

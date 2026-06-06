@@ -450,6 +450,10 @@ void main() {
         ),
       );
 
+      // Reset mock to clear previous calls
+      reset(mockWindowService);
+      when(() => mockWindowService.sendMessage(any())).thenAnswer((_) async {});
+
       // Ahora NEXT_VERSE debe ir al siguiente capítulo (Éxodo 1)
       await server.sendCommand(
         TestServiceCall(),

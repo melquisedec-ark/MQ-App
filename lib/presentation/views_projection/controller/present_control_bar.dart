@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/enums/himno_tipo.dart';
 import '../../../domain/entities/himno.dart';
+import '../../../core/ui/app_snackbar.dart';
 import '../../../core/window_manager/window_providers.dart';
 import '../../shared_widgets/control_sheets.dart';
 import '../../views_personal/providers/audio_providers.dart';
@@ -157,13 +158,14 @@ class PresentControlBar extends ConsumerWidget {
     LiveControlState liveState,
   ) {
     final slide = liveState.currentSlide;
+    final isBible = liveState.module == ProjectionModule.bible;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _NavButton(
           icon: Icons.skip_previous,
-          label: 'Anterior',
+          label: isBible ? 'Anterior' : 'Anterior',
           onPressed: liveState.hasPrevSlide
               ? () {
                   ref.read(liveControlProvider.notifier).prevSlide();
@@ -184,7 +186,9 @@ class PresentControlBar extends ConsumerWidget {
             slide != null
                 ? '${slide.displayLabel} '
                     '${liveState.currentSlideIndex + 1} / ${liveState.slides.length}'
-                : '—',
+                : isBible
+                    ? '${liveState.libroNombre} ${liveState.capitulo}'
+                    : '—',
             style: textTheme.labelSmall?.copyWith(
               color: colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.bold,
@@ -194,7 +198,7 @@ class PresentControlBar extends ConsumerWidget {
         const SizedBox(width: 24),
         _NavButton(
           icon: Icons.skip_next,
-          label: 'Siguiente',
+          label: isBible ? 'Siguiente' : 'Siguiente',
           onPressed: liveState.hasNextSlide
               ? () {
                   ref.read(liveControlProvider.notifier).nextSlide();
@@ -220,6 +224,9 @@ class PresentControlBar extends ConsumerWidget {
     Himno? hymn,
     bool hasHymn,
   ) {
+    final liveState = ref.watch(liveControlProvider);
+    final isBible = liveState.module == ProjectionModule.bible;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -231,43 +238,91 @@ class PresentControlBar extends ConsumerWidget {
             ref: ref,
           ),
         ),
-        _FuncButton(
-          icon: Icons.music_note,
-          label: 'Solfa',
-          onPressed: () => showSolfaSheet(
-            context,
-            ref: ref,
-          ),
-        ),
-        _FuncButton(
-          icon: Icons.audiotrack,
-          label: 'Nota',
-          onPressed: hasHymn
-              ? () => showNoteSheet(
-                    context,
-                    ref: ref,
-                    himnoId: hymn!.id,
-                    currentPistaId: null,
-                    onPlayPista: (pistaId) =>
-                        ref.read(audioRepositoryProvider).play(pistaId),
-                    onStop: () =>
-                        ref.read(audioRepositoryProvider).stop(),
-                  )
-              : null,
-        ),
-        _FuncButton(
-          icon: Icons.search,
-          label: 'Lupa',
-          onPressed: () async {
-            if (!hasHymn || hymn == null) return;
-            final result = await showSearchSheet(
+        if (isBible)
+          // En modo Biblia: Lupa busca himnos para cambiar
+          _FuncButton(
+            icon: Icons.search,
+            label: 'Buscar',
+            onPressed: () async {
+              final result = await showSearchSheet(
+                context,
+                ref: ref,
+                currentHimnoId: 0,
+              );
+              if (result != null && result > 0 && context.mounted) {
+                _loadAndProject(ref, result);
+              }
+            },
+          )
+        else ...[
+          // En modo Himnario: Solfa, Nota, Lupa
+          _FuncButton(
+            icon: Icons.music_note,
+            label: 'Solfa',
+            onPressed: () => showSolfaSheet(
               context,
               ref: ref,
-              currentHimnoId: hymn.id,
+            ),
+          ),
+          _FuncButton(
+            icon: Icons.audiotrack,
+            label: 'Nota',
+            onPressed: hasHymn
+                ? () => showNoteSheet(
+                      context,
+                      ref: ref,
+                      himnoId: hymn!.id,
+                      currentPistaId: null,
+                      onPlayPista: (pistaId) =>
+                          ref.read(audioRepositoryProvider).play(pistaId),
+                      onStop: () =>
+                          ref.read(audioRepositoryProvider).stop(),
+                    )
+                : null,
+          ),
+          _FuncButton(
+            icon: Icons.search,
+            label: 'Lupa',
+            onPressed: () async {
+              if (!hasHymn || hymn == null) return;
+              final result = await showSearchSheet(
+                context,
+                ref: ref,
+                currentHimnoId: hymn.id,
+              );
+              if (result != null && result > 0 && context.mounted) {
+                _loadAndProject(ref, result);
+              }
+            },
+          ),
+        ],
+        // Botón de cambio de módulo (siempre visible)
+        Consumer(
+          builder: (context, ref, _) {
+            final liveState = ref.watch(liveControlProvider);
+            final isBible = liveState.module == ProjectionModule.bible;
+            return _FuncButton(
+              icon: isBible ? Icons.menu_book_outlined : Icons.music_note_outlined,
+              label: isBible ? 'Biblia' : 'Himnario',
+              onPressed: () {
+                final newModule = isBible
+                    ? ProjectionModule.hymnal
+                    : ProjectionModule.bible;
+                ref.read(liveControlProvider.notifier).switchToModule(newModule);
+                try {
+                  ref.read(windowServiceProvider).sendMessage({
+                    'type': 'SWITCH_MODULE',
+                    'module': newModule.name,
+                  });
+                } catch (_) {}
+                if (context.mounted) {
+                  showAppSnackBar(
+                    context,
+                    isBible ? 'Cambiado a Himnario' : 'Cambiado a Biblia',
+                  );
+                }
+              },
             );
-            if (result != null && result > 0 && context.mounted) {
-              _loadAndProject(ref, result);
-            }
           },
         ),
       ],

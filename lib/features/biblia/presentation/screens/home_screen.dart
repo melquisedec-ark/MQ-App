@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/network/connection_state.dart';
 import '../../../../core/ui/app_snackbar.dart';
+import '../../../../core/window_manager/window_providers.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../presentation/shared_widgets/theme_mode_toggle_button.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
+import '../../../../presentation/views_projection/providers/presentation_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
@@ -55,31 +57,32 @@ class HomeScreen extends ConsumerWidget {
           SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ── Logo + tagline ──
-                  _LogoHeader(colorScheme: colorScheme, textTheme: textTheme),
-                  const SizedBox(height: 24),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Logo + tagline ──
+                _LogoHeader(colorScheme: colorScheme, textTheme: textTheme),
+                const SizedBox(height: 24),
 
-                  // ── Card de versículo del día ──
-                  const _RandomVerseCard(),
-                  const SizedBox(height: 24),
+                // ── Card de versículo del día ──
+                const _RandomVerseCard(),
+                const SizedBox(height: 24),
 
-                  // ── 2 cards principales ──
-                  const _ModuleCardsRow(),
-                ],
-              ),
+                // ── 2 cards principales ──
+                const _ModuleCardsRow(),
+              ],
             ),
-            Positioned(
-              right: 16,
-              bottom: MediaQuery.of(context).padding.bottom + 16,
-              child: const ThemeModeToggleButton(),
-            ),
-          ],
-        ),
-      );
-    }
+          ),
+          Positioned(
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            child: const ThemeModeToggleButton(),
+          ),
+        ],
+      ),
+      floatingActionButton: const _PresentFAB(),
+    );
   }
+}
 
 /// Logo "MQ App" + tagline, centrados.
 class _LogoHeader extends StatelessWidget {
@@ -690,6 +693,46 @@ class _ModuleCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// FAB para iniciar/detener la presentación desde la home de Biblia.
+///
+/// Alterna la ventana de proyección y el estado [isPresentingProvider].
+class _PresentFAB extends ConsumerWidget {
+  const _PresentFAB();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPresenting = ref.watch(isPresentingProvider);
+    return FloatingActionButton.extended(
+      heroTag: 'present_button_bible_home',
+      onPressed: () async {
+        final windowService = ref.read(windowServiceProvider);
+        try {
+          if (isPresenting) {
+            await windowService.closeProjectionWindow();
+            ref.read(isPresentingProvider.notifier).state = false;
+          } else {
+            await windowService.openProjectionWindow({
+              'mode': 'local',
+              'source': 'bible_home',
+            });
+            ref.read(isPresentingProvider.notifier).state = true;
+          }
+        } catch (e) {
+          if (context.mounted) {
+            showAppSnackBar(context, 'Error: $e', type: AppSnackBarType.error);
+          }
+        }
+      },
+      backgroundColor: isPresenting
+          ? Theme.of(context).colorScheme.errorContainer
+          : const Color(0xFFCCA43B),
+      foregroundColor: const Color(0xFF1A1A1A),
+      icon: Icon(isPresenting ? Icons.stop_screen_share : Icons.screen_share),
+      label: Text(isPresenting ? 'Detener Presentación' : 'Presentar'),
     );
   }
 }

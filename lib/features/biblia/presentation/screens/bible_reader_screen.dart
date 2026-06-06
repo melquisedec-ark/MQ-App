@@ -5,9 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../core/ui/app_snackbar.dart';
+import '../../../../core/window_manager/window_providers.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../proto/generated/hymn_control.pbgrpc.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
+import '../../../../presentation/views_projection/providers/live_control_providers.dart';
+import '../../../../presentation/views_projection/providers/presentation_providers.dart';
 import '../../../../presentation/providers/fullscreen_mode_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/biblia_version_provider.dart';
@@ -98,6 +101,43 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     }
   }
 
+  /// Proyecta el capítulo bíblico actual en la ventana de proyección.
+  Future<void> _projectCurrentChapter(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(bibliaRepositoryProvider);
+    final libroId = ref.read(currentLibroIdProvider) ?? widget.libroId;
+    final capitulo = ref.read(currentCapituloProvider) ?? widget.capitulo;
+
+    final libro = await repo.getLibroById(libroId);
+    if (libro == null) return;
+
+    final cap = await repo.getCapitulo(libroId, capitulo);
+    if (cap == null) return;
+
+    final versiculos = await repo.getVersiculosByCapitulo(cap.id);
+    if (versiculos.isEmpty) return;
+
+    final textos = versiculos.map((v) => v.texto).toList();
+
+    // Actualizar estado de proyección local
+    ref.read(liveControlProvider.notifier).loadBibleChapter(
+      libroNombre: libro.nombre,
+      capitulo: capitulo,
+      versiculos: textos,
+    );
+
+    // Enviar al subproceso de proyección
+    try {
+      ref.read(windowServiceProvider).sendMessage({
+        'type': 'LOAD_VERSE',
+        'libroNombre': libro.nombre,
+        'capitulo': capitulo,
+        'versiculos': textos,
+      });
+    } catch (_) {
+      // Subproceso no disponible
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isFullscreen = ref.watch(fullscreenModeProvider);
@@ -135,6 +175,41 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           tooltip: 'Atrás',
         ),
         actions: [
+          // Botón Presentar (proyección local)
+          Consumer(
+            builder: (context, ref, _) {
+              final isPresenting = ref.watch(isPresentingProvider);
+              final btnColorScheme = Theme.of(context).colorScheme;
+              return IconButton(
+                icon: Icon(
+                  isPresenting ? Icons.stop_screen_share : Icons.screen_share_outlined,
+                  color: isPresenting ? btnColorScheme.error : btnColorScheme.primary,
+                ),
+                tooltip: isPresenting ? 'Detener Presentación' : 'Presentar',
+                onPressed: () async {
+                  final windowService = ref.read(windowServiceProvider);
+                  try {
+                    if (isPresenting) {
+                      await windowService.closeProjectionWindow();
+                      ref.read(isPresentingProvider.notifier).state = false;
+                    } else {
+                      await windowService.openProjectionWindow({
+                        'mode': 'local',
+                        'source': 'bible_reader',
+                      });
+                      ref.read(isPresentingProvider.notifier).state = true;
+                      // Cargar capítulo actual para proyección
+                      await _projectCurrentChapter(context, ref);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      showAppSnackBar(context, 'Error: $e', type: AppSnackBarType.error);
+                    }
+                  }
+                },
+              );
+            },
+          ),
           _EnviarButton(
             libroId: libroId,
             capitulo: capitulo,

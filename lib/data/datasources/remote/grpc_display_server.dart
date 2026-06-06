@@ -823,14 +823,16 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     );
     await _resolveAndCacheBibleContext();
     _syncBibleStateToProviders();
-    // Enviar GO_TO_SLIDE al subproceso (versículo = índice de slide, título es slide 0)
+    // Cargar el capítulo completo en el subproceso de proyección
+    // y luego ir al versículo específico.
     try {
+      await _sendCurrentChapterToSubprocess();
       _container.read(windowServiceProvider).sendMessage({
         'type': 'GO_TO_SLIDE',
         'index': versiculo,
       });
     } catch (e) {
-      _log.warning('Error enviando GO_TO_SLIDE al subproceso: $e');
+      _log.warning('Error enviando GO_TO_VERSE al subproceso: $e');
     }
   }
 
