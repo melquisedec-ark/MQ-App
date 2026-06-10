@@ -94,9 +94,10 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       // Resolver libroId → libroNumero (canónico) y cachearlo para el
       // cliente gRPC (BibleClientActions lo lee al enviar comandos).
       _syncLibroNumeroFromId(widget.libroId);
-      // 🔁 Proactive sync: si ya estamos presentando al llegar a esta
-      // pantalla, enviar el capítulo actual a la ventana de proyección.
-      if (ref.read(isPresentingProvider)) {
+      // 🔁 Proactive sync: si estamos presentando O en modo emisor,
+      // enviar el capítulo actual al display (local o remoto).
+      if (ref.read(isPresentingProvider) ||
+          ref.read(connectionRoleProvider) == ConnectionRole.emitter) {
         _isSyncingChapter = true;
         _sendChapterToProjection(ref).then((_) {
           if (mounted) _isSyncingChapter = false;

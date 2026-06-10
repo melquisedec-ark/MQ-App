@@ -697,7 +697,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (cap != null) {
       if (_bibleState.versiculoNumero < cap.totalVersiculos) {
         await _updateBibleVerse(_bibleState.versiculoNumero + 1);
-        _updateLiveControlFromBibleState();
+        await _updateLiveControlFromBibleState();
         // Enviar NEXT_SLIDE al subproceso de proyección
         try {
           _container.read(windowServiceProvider).sendMessage({'type': 'NEXT_SLIDE'});
@@ -755,7 +755,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         final cap = await repo.getCapitulo(libro.id, _bibleState.capitulo);
         if (cap != null) {
           await _updateBibleVerse(cap.totalVersiculos);
-          _updateLiveControlFromBibleState();
+          await _updateLiveControlFromBibleState();
           await _sendCurrentChapterToSubprocess();
         }
       }
@@ -860,27 +860,26 @@ class GrpcDisplayServer extends HymnControlServiceBase {
 
   /// Actualiza [liveControlProvider] con el capítulo bíblico actual para que
   /// el receptor muestre [LiveProjectionScreen] en vez de [StandbyScreen].
-  void _updateLiveControlFromBibleState() {
+  /// Ahora es async y espera a que la BD termine.
+  Future<void> _updateLiveControlFromBibleState() async {
     if (_container == null) return;
     final container = _container;
     try {
       final repo = container!.read(bibliaRepositoryProvider);
-      repo.getLibroByNumero(_bibleState.versionId, _bibleState.libroNumero)
-          .then((libro) async {
-        if (libro == null) return;
-        final cap =
-            await repo.getCapitulo(libro.id, _bibleState.capitulo);
-        if (cap == null) return;
-        final versiculos = await repo.getVersiculosByCapitulo(cap.id);
-        if (versiculos.isEmpty) return;
-        container.read(liveControlProvider.notifier).loadBibleChapter(
-          libroNombre: libro.nombre,
-          capitulo: _bibleState.capitulo,
-          versiculos: versiculos.map((v) => v.texto).toList(),
-        );
-      }).catchError((_) {
-        // Silencioso: la BD puede no estar disponible en tests
-      });
+      final libro = await repo.getLibroByNumero(
+        _bibleState.versionId,
+        _bibleState.libroNumero,
+      );
+      if (libro == null) return;
+      final cap = await repo.getCapitulo(libro.id, _bibleState.capitulo);
+      if (cap == null) return;
+      final versiculos = await repo.getVersiculosByCapitulo(cap.id);
+      if (versiculos.isEmpty) return;
+      container.read(liveControlProvider.notifier).loadBibleChapter(
+        libroNombre: libro.nombre,
+        capitulo: _bibleState.capitulo,
+        versiculos: versiculos.map((v) => v.texto).toList(),
+      );
     } catch (_) {
       // Silencioso
     }
