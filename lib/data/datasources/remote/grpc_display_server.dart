@@ -697,6 +697,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (cap != null) {
       if (_bibleState.versiculoNumero < cap.totalVersiculos) {
         await _updateBibleVerse(_bibleState.versiculoNumero + 1);
+        _updateLiveControlFromBibleState();
         // Enviar NEXT_SLIDE al subproceso de proyección
         try {
           _container.read(windowServiceProvider).sendMessage({'type': 'NEXT_SLIDE'});
@@ -714,6 +715,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         capitulo: nextCap.$2,
       );
       await _updateBibleVerse(1);
+      _updateLiveControlFromBibleState();
       // Cargar nuevo capítulo y enviar LOAD_VERSE
       await _sendCurrentChapterToSubprocess();
     } else {
@@ -730,7 +732,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (_container == null) return;
     if (_bibleState.versiculoNumero > 1) {
       await _updateBibleVerse(_bibleState.versiculoNumero - 1);
-      // Enviar PREV_SLIDE al subproceso de proyección
+      _updateLiveControlFromBibleState();
       try {
         _container.read(windowServiceProvider).sendMessage({'type': 'PREV_SLIDE'});
       } catch (e) {
@@ -738,7 +740,6 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       }
       return;
     }
-    // Primer versículo → último del capítulo anterior
     final prevCap = await _getPrevCapituloOrLibro();
     if (prevCap != null) {
       _bibleState = _bibleState.copyWith(
@@ -754,12 +755,11 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         final cap = await repo.getCapitulo(libro.id, _bibleState.capitulo);
         if (cap != null) {
           await _updateBibleVerse(cap.totalVersiculos);
-          // Cargar nuevo capítulo y enviar LOAD_VERSE
+          _updateLiveControlFromBibleState();
           await _sendCurrentChapterToSubprocess();
         }
       }
     } else {
-      // No hay capítulo anterior, solo retroceder slide
       try {
         _container.read(windowServiceProvider).sendMessage({'type': 'PREV_SLIDE'});
       } catch (e) {
@@ -777,7 +777,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         capitulo: nextCap.$2,
       );
       await _updateBibleVerse(1);
-      // Cargar nuevo capítulo y enviar LOAD_VERSE al subproceso
+      _updateLiveControlFromBibleState();
       await _sendCurrentChapterToSubprocess();
     }
   }
@@ -787,7 +787,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (_bibleState.capitulo > 1) {
       _bibleState = _bibleState.copyWith(capitulo: _bibleState.capitulo - 1);
       await _updateBibleVerse(1);
-      // Cargar capítulo anterior y enviar LOAD_VERSE al subproceso
+      _updateLiveControlFromBibleState();
       await _sendCurrentChapterToSubprocess();
       return;
     }
@@ -798,7 +798,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         capitulo: prevCap.$2,
       );
       await _updateBibleVerse(1);
-      // Cargar capítulo anterior y enviar LOAD_VERSE al subproceso
+      _updateLiveControlFromBibleState();
       await _sendCurrentChapterToSubprocess();
     }
   }
@@ -823,16 +823,47 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     );
     await _resolveAndCacheBibleContext();
     _syncBibleStateToProviders();
+    // Actualizar liveControlProvider para que el receptor muestre
+    // LiveProjectionScreen en vez de StandbyScreen.
+    _updateLiveControlFromBibleState();
     // Cargar el capítulo completo en el subproceso de proyección
     // y luego ir al versículo específico.
     try {
       await _sendCurrentChapterToSubprocess();
-      _container.read(windowServiceProvider).sendMessage({
+      _container!.read(windowServiceProvider).sendMessage({
         'type': 'GO_TO_SLIDE',
         'index': versiculo,
       });
     } catch (e) {
       _log.warning('Error enviando GO_TO_VERSE al subproceso: $e');
+    }
+  }
+
+  /// Actualiza [liveControlProvider] con el capítulo bíblico actual para que
+  /// el receptor muestre [LiveProjectionScreen] en vez de [StandbyScreen].
+  void _updateLiveControlFromBibleState() {
+    if (_container == null) return;
+    final container = _container;
+    try {
+      final repo = container!.read(bibliaRepositoryProvider);
+      repo.getLibroByNumero(_bibleState.versionId, _bibleState.libroNumero)
+          .then((libro) async {
+        if (libro == null) return;
+        final cap =
+            await repo.getCapitulo(libro.id, _bibleState.capitulo);
+        if (cap == null) return;
+        final versiculos = await repo.getVersiculosByCapitulo(cap.id);
+        if (versiculos.isEmpty) return;
+        container.read(liveControlProvider.notifier).loadBibleChapter(
+          libroNombre: libro.nombre,
+          capitulo: _bibleState.capitulo,
+          versiculos: versiculos.map((v) => v.texto).toList(),
+        );
+      }).catchError((_) {
+        // Silencioso: la BD puede no estar disponible en tests
+      });
+    } catch (_) {
+      // Silencioso
     }
   }
 
@@ -877,6 +908,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     _bibleState = _BibleDisplayState.initial();
     await _resolveAndCacheBibleContext();
     _syncBibleStateToProviders();
+    _updateLiveControlFromBibleState();
     // Cargar Génesis 1 y enviar LOAD_VERSE al subproceso
     await _sendCurrentChapterToSubprocess();
     _log.info('Cambio a módulo Biblia solicitado');
