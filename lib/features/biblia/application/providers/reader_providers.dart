@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/biblia_config_repository.dart';
 import '../../presentation/widgets/verse_card.dart' show BibleReaderViewMode;
 import 'biblia_config_provider.dart';
+import 'current_libro_provider.dart';
 
 /// Modo de vista del lector bíblico.
 ///
@@ -84,3 +85,13 @@ class ReaderViewModeNotifier extends StateNotifier<BibleReaderViewMode> {
 /// o toca un versículo (en modo `chapter`). Se **preserva** al alternar
 /// entre [readerViewModeProvider] para no perder el contexto de lectura.
 final currentVerseProvider = StateProvider<int>((ref) => 1);
+
+/// Composite key that changes on any (libroId, capitulo) tuple change.
+///
+/// Used to detect chapter/book transitions for auto-sync to the projection
+/// window. Emits a string like `"42:3"` (libroId:capitulo).
+final currentBibleAnchorProvider = Provider<String>((ref) {
+  final libroId = ref.watch(currentLibroIdProvider) ?? 0;
+  final capitulo = ref.watch(currentCapituloProvider) ?? 0;
+  return '$libroId:$capitulo';
+});

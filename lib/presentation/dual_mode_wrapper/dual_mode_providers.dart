@@ -16,19 +16,16 @@ class DualModeNotifier extends StateNotifier<DeviceMode> {
   DualModeNotifier() : super(_detectInitialMode());
 
   static DeviceMode _detectInitialMode() {
-    if (kReleaseMode) {
-      // En producción: detectar automáticamente
-      if (kIsWeb) return DeviceMode.desktop;
-      try {
-        if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-          return DeviceMode.desktop;
-        }
-      } catch (_) {
-        // Platform no disponible (web con import condicional)
+    // Detectar plataforma real siempre (producción y debug).
+    // Solo fallback a phone cuando no se pueda detectar desktop.
+    if (kIsWeb) return DeviceMode.desktop;
+    try {
+      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+        return DeviceMode.desktop;
       }
-      return DeviceMode.phone;
+    } catch (_) {
+      // Platform no disponible (web con import condicional)
     }
-    // En debug: phone por defecto (se puede cambiar con DeviceSwitch)
     return DeviceMode.phone;
   }
 

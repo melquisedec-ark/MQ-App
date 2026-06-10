@@ -78,12 +78,12 @@ final receptorInfoProvider = Provider<ReceptorInfo>((ref) {
 /// Provider que determina qué pantalla mostrar en modo Receptor.
 ///
 /// Cuando hay un himno cargado ([liveControlProvider.hymn] no es `null`)
-/// o el módulo bíblico está activo, y no está en blackout, muestra
+/// o el módulo bíblico está activo con slides, y no está en blackout, muestra
 /// [LiveProjectionScreen]; en caso contrario, muestra [StandbyScreen].
 final receptorDisplayProvider = Provider<Widget>((ref) {
   final liveState = ref.watch(liveControlProvider);
   final hasContent = liveState.hymn != null ||
-      liveState.module == ProjectionModule.bible;
+      (liveState.module == ProjectionModule.bible && liveState.slides.isNotEmpty);
   if (hasContent && !liveState.isBlackout) {
     return const LiveProjectionScreen();
   }

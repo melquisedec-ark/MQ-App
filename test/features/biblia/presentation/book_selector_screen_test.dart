@@ -18,6 +18,8 @@ import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dar
 import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/notas_repository.dart';
 import 'package:mqapp/features/biblia/presentation/screens/book_selector_screen.dart';
+import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
+import 'package:mqapp/presentation/dual_mode_wrapper/device_mode.dart';
 
 import '../helpers/bible_db_test_helper.dart';
 
@@ -48,6 +50,12 @@ Widget _buildHarness({
       }),
       historialStreamProvider.overrideWith((_) async* {
         yield historial;
+      }),
+      // Forzar phone mode para tests (lista simple, no grid desktop)
+      deviceModeProvider.overrideWith((ref) {
+        final notifier = DualModeNotifier();
+        notifier.setMode(DeviceMode.phone);
+        return notifier;
       }),
     ],
     child: MaterialApp.router(

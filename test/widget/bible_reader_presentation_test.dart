@@ -93,15 +93,22 @@ void main() {
     );
 
     testWidgets(
-      'Muestra botón Detener (stop_screen_share) cuando está presentando',
+      'Oculta botón Presentar cuando está presentando (overlay maneja Salir)',
       (tester) async {
         await tester.pumpWidget(_buildTestApp(isPresenting: true));
         await tester.pumpAndSettle();
 
+        // El botón del AppBar se oculta cuando isPresenting=true;
+        // la barra de control (PresentControlBar) maneja "Salir" centralizadamente.
+        expect(
+          find.byIcon(Icons.screen_share_outlined),
+          findsNothing,
+          reason: 'Botón Presentar del AppBar debe ocultarse cuando ya se está presentando',
+        );
         expect(
           find.byIcon(Icons.stop_screen_share),
-          findsOneWidget,
-          reason: 'Botón Detener debe estar visible cuando se está presentando',
+          findsNothing,
+          reason: 'Botón Detener también se oculta — el overlay central maneja la salida',
         );
       },
     );
@@ -118,21 +125,26 @@ void main() {
         verify(
           () => mockWindowService.openProjectionWindow(any()),
         ).called(1);
+
+        // Avanzar tiempo para que expire el Future.delayed(800ms)
+        // y no quede Timer pendiente al final del test.
+        await tester.pump(const Duration(seconds: 1));
       },
     );
 
     testWidgets(
-      'Al tocar Detener cierra ventana de proyección',
+      'Al presentar, el botón Presentar del AppBar se oculta (overlay maneja Salir)',
       (tester) async {
         await tester.pumpWidget(_buildTestApp(isPresenting: true));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.stop_screen_share));
-        await tester.pumpAndSettle();
-
-        verify(
-          () => mockWindowService.closeProjectionWindow(),
-        ).called(1);
+        // El botón del AppBar está oculto cuando se está presentando;
+        // la funcionalidad "Detener" ahora vive en el PresentControlBar central.
+        expect(
+          find.byIcon(Icons.stop_screen_share),
+          findsNothing,
+          reason: 'Botón Detener en AppBar está oculto; el overlay central maneja Salir',
+        );
       },
     );
 
@@ -144,7 +156,9 @@ void main() {
 
         await tester.tap(find.byIcon(Icons.screen_share_outlined));
         await tester.pumpAndSettle();
-        await tester.pump(const Duration(milliseconds: 200));
+        // Avanzar el tiempo suficiente para que el Future.delayed(800ms)
+        // expire y se llame _projectCurrentChapter → _sendChapterToProjection.
+        await tester.pump(const Duration(seconds: 1));
 
         // Verificar que se envió LOAD_VERSE
         verify(

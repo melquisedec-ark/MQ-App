@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/router/app_router.dart';
+
 import '../../../core/enums/himno_tipo.dart';
 import '../../../domain/entities/himno.dart';
-import '../../../core/ui/app_snackbar.dart';
 import '../../../core/window_manager/window_providers.dart';
 import '../../shared_widgets/control_sheets.dart';
 import '../../views_personal/providers/audio_providers.dart';
@@ -239,14 +240,11 @@ class PresentControlBar extends ConsumerWidget {
           ),
         ),
         if (isBible)
-          // En modo Biblia: Lupa busca versículos bíblicos
+          // En modo Biblia: Lupa abre el selector de libros para buscar
           _FuncButton(
             icon: Icons.search,
             label: 'Buscar',
-            onPressed: () {
-              // TODO: Implementar búsqueda bíblica en presentación
-              // Por ahora no hace nada (showSearchSheet busca himnos)
-            },
+            onPressed: () => appRouter.go('/biblia'),
           )
         else ...[
           // En modo Himnario: Solfa, Nota, Lupa
@@ -304,6 +302,14 @@ class PresentControlBar extends ConsumerWidget {
                 final newModule = isBible
                     ? ProjectionModule.hymnal
                     : ProjectionModule.bible;
+                // Navegar al módulo seleccionado usando el router global
+                // (GoRouter.of(context) no funciona desde el overlay del
+                // builder porque está fuera del Navigator).
+                if (newModule == ProjectionModule.hymnal) {
+                  appRouter.go('/himnario');
+                } else {
+                  appRouter.go('/biblia');
+                }
                 ref.read(liveControlProvider.notifier).switchToModule(newModule);
                 try {
                   ref.read(windowServiceProvider).sendMessage({
@@ -311,12 +317,6 @@ class PresentControlBar extends ConsumerWidget {
                     'module': newModule.name,
                   });
                 } catch (_) {}
-                if (context.mounted) {
-                  showAppSnackBar(
-                    context,
-                    isBible ? 'Cambiado a Himnario' : 'Cambiado a Biblia',
-                  );
-                }
               },
             );
           },
@@ -329,7 +329,7 @@ class PresentControlBar extends ConsumerWidget {
   // Acciones
   // ─────────────────────────────────────────────────────────────
 
-  /// Carga un himno por ID en [liveControlProvider].
+  /// Carga un himno por ID en [liveControlProvider] y lo envía al subproceso.
   Future<void> _loadAndProject(WidgetRef ref, int hymnId) async {
     try {
       final repo = ref.read(hymnRepositoryProvider);
@@ -341,6 +341,24 @@ class PresentControlBar extends ConsumerWidget {
             estrofas,
             versionPaisId: versionPaisId,
           );
+      // Enviar al subproceso de proyección
+      final windowService = ref.read(windowServiceProvider);
+      await windowService.sendMessage({
+        'type': 'LOAD_HYMN',
+        'himno_id': himno.id,
+        'titulo': himno.titulo,
+        'numero': himno.numero,
+        'tipo': himno.tipo.name,
+        'estrofas': estrofas
+            .map((e) => {
+                  'id': e.id,
+                  'version_pais_id': e.versionPaisId,
+                  'tipo': e.tipo.name,
+                  'orden': e.orden,
+                  'contenido': e.contenido,
+                })
+            .toList(),
+      });
     } catch (_) {
       // Error silencioso — el Provider mantiene el himno anterior
     }

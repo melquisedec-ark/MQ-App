@@ -241,20 +241,29 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
   // ── Métodos bíblicos ──────────────────────────────────────
 
   /// Carga un capítulo bíblico completo para proyección.
+  ///
+  /// Usa el constructor directo de [LiveControlState] (no [copyWith]) porque
+  /// los campos nullable como [hymn] y [versionPaisId] requieren null explícito
+  /// para limpiar el estado del himnario. [copyWith] interpreta `null` como
+  /// "mantener valor anterior" (`??` operator).
   void loadBibleChapter({
     required String libroNombre,
     required int capitulo,
     required List<String> versiculos,
   }) {
-    state = state.copyWith(
+    state = LiveControlState(
       module: ProjectionModule.bible,
-      hymn: null, // Limpiar himno al cargar biblia
+      hymn: null, // Limpiar himno al cargar biblia (null explícito)
+      slides: _buildBibleSlides(libroNombre, capitulo, versiculos),
+      currentSlideIndex: 0,
+      isBlackout: false,
+      versionPaisId: state.versionPaisId, // Preservar por si vuelve a himnario
       libroNombre: libroNombre,
       capitulo: capitulo,
       versiculos: versiculos,
       versiculoActual: 0,
-      currentSlideIndex: 0,
-      slides: _buildBibleSlides(libroNombre, capitulo, versiculos),
+      bibleTheme: state.bibleTheme,
+      bibleFontScale: state.bibleFontScale,
     );
   }
 

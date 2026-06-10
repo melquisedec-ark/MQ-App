@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../presentation/shared_widgets/glass_card.dart';
+import '../../../../presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/derived_providers.dart';
@@ -151,7 +152,10 @@ class ChapterGridScreen extends ConsumerWidget {
   }
 }
 
-/// Grid de capítulos (5 columnas).
+/// Grid de capítulos responsivo.
+///
+/// Desktop: hasta 10 columnas según ancho. Móvil: 5 columnas fijas.
+/// Padding y espaciado reducidos a la mitad en desktop.
 class _ChapterGrid extends ConsumerWidget {
   const _ChapterGrid({
     required this.capitulos,
@@ -169,15 +173,24 @@ class _ChapterGrid extends ConsumerWidget {
     final favChaptersAsync =
         ref.watch(favoritosPorCapituloProvider(libroId));
     final favChapters = favChaptersAsync.valueOrNull ?? const <int>{};
+    final isDesktop = ref.watch(isDesktopModeProvider);
 
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1,
-      ),
+      padding: EdgeInsets.fromLTRB(
+        isDesktop ? 2 : 16, 8, isDesktop ? 2 : 16, 8),
+      gridDelegate: isDesktop
+          ? SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 52,
+              mainAxisSpacing: 2,
+              crossAxisSpacing: 2,
+              childAspectRatio: 0.85,
+            )
+          : const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
       itemCount: capitulos.length,
       itemBuilder: (context, index) {
         final cap = capitulos[index];
@@ -225,15 +238,18 @@ class _ChapterCell extends StatelessWidget {
                 ? colorScheme.primaryContainer.withValues(alpha: 0.5)
                 : null),
         child: Center(
-          child: Text(
-            '${capitulo.numero}',
-            style: textTheme.titleMedium?.copyWith(
-              color: isHighlighted
-                  ? (hasFavorite
-                      ? colorScheme.onPrimary
-                      : colorScheme.onPrimaryContainer)
-                  : colorScheme.onSurface,
-              fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '${capitulo.numero}',
+              style: textTheme.bodyLarge?.copyWith(
+                color: isHighlighted
+                    ? (hasFavorite
+                        ? colorScheme.onPrimary
+                        : colorScheme.onPrimaryContainer)
+                    : colorScheme.onSurface,
+                fontWeight: isHighlighted ? FontWeight.w800 : FontWeight.w600,
+              ),
             ),
           ),
         ),

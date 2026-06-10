@@ -68,6 +68,8 @@ GoRouter _buildRouter() {
   );
 }
 
+/// Construye la app de prueba con [PresentControlBar] centralizado igual que
+/// `MqApp.build()` en `lib/app.dart`.
 Widget _buildTestApp({
   List<Override> overrides = const [],
 }) {
@@ -77,7 +79,31 @@ Widget _buildTestApp({
       _hymnListOverride,
       ...overrides,
     ],
-    child: MaterialApp.router(routerConfig: _buildRouter()),
+    child: Consumer(
+      builder: (context, ref, child) {
+        final isPresenting = ref.watch(isPresentingProvider);
+        final isDesktop = ref.watch(isDesktopModeProvider);
+        return MaterialApp.router(
+          routerConfig: _buildRouter(),
+          builder: (ctx, routeChild) {
+            final safeChild = routeChild ?? const SizedBox.shrink();
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                safeChild,
+                if (isPresenting && isDesktop)
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: PresentControlBar(),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    ),
   );
 }
 

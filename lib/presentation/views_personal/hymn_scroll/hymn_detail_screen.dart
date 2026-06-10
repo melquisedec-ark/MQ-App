@@ -318,8 +318,8 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
             : AppBar(
                 title: Text('Himno ${widget.himno.numero ?? ''}'),
                 actions: [
-                  // ── Botón Presentar (solo desktop) ──
-                  if (isDesktop)
+                  // ── Botón Presentar (solo desktop, oculto al presentar) ──
+                  if (isDesktop && !isPresenting)
                     IconButton(
                       icon: Icon(isPresenting
                           ? Icons.stop_screen_share
@@ -388,6 +388,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
                   transposeValue: transposeValue,
                   transposedKey: transposedKey,
                   isPhone: isPhone,
+                  showBottomBar: !(isPresenting && isDesktop),
                 ),
         ),
         floatingActionButton: showMobileFullscreen
@@ -832,7 +833,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
     );
   }
 
-  /// Contenido normal con fondo, scroll y barra inferior.
+  /// Contenido normal con fondo, scroll y barra inferior (ocultable).
   Widget _buildNormalBody({
     required Key key,
     required Widget bodyContent,
@@ -841,6 +842,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
     required int transposeValue,
     required String transposedKey,
     required bool isPhone,
+    bool showBottomBar = true,
   }) {
     return Column(
       key: key,
@@ -855,7 +857,8 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
             child: bodyContent,
           ),
         ),
-        _buildBottomBar(context, transposeValue, transposedKey, isPhone),
+        if (showBottomBar)
+          _buildBottomBar(context, transposeValue, transposedKey, isPhone),
       ],
     );
   }

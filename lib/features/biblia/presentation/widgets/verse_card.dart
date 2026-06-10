@@ -94,18 +94,23 @@ class VerseCard extends StatelessWidget {
         children: [
           // Columna izquierda: número gold, ⭐ si es favorito, dot si hay nota,
           // 🔗 si tiene cross-references.
+          // Ancho responsive para números de 1-3 dígitos sin quiebre.
           SizedBox(
-            width: 32,
+            width: numero >= 100 ? 40 : 32,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '$numero',
-                  style: textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFFCCA43B),
-                    fontWeight: FontWeight.w700,
-                    fontFamily:
-                        fontFamily == 'system' ? null : fontFamily,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '$numero',
+                    style: textTheme.titleSmall?.copyWith(
+                      color: const Color(0xFFCCA43B),
+                      fontWeight: FontWeight.w700,
+                      fontFamily:
+                          fontFamily == 'system' ? null : fontFamily,
+                    ),
                   ),
                 ),
                 if (esFavorito)

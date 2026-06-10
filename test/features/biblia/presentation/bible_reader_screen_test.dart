@@ -902,8 +902,8 @@ void main() {
 
   testWidgets('cross-ref con preview muestra texto del versículo destino',
       (tester) async {
-    // Feature #2: las cross-refs deben mostrar un preview del texto
-    // del versículo destino en itálica (~50 chars).
+    // Feature #2: las cross-refs muestran solo la cita por defecto.
+    // Al tocar la cita, se expande el preview del versículo destino.
     await seedCrossReferenciasTestDb(db);
     await setConfig('biblia.reader_view_mode', 'verse');
     await tester.pumpWidget(buildHarness(
@@ -915,7 +915,17 @@ void main() {
 
     // La sección muestra "2 referencias".
     expect(find.text('2 referencias'), findsOneWidget);
-    // Génesis 1:2 tiene texto en el seed → debe mostrar preview.
+    // El preview NO debe ser visible por defecto (solo cita).
+    expect(
+      find.textContaining('Y la tierra estaba desordenada'),
+      findsNothing,
+    );
+    // Tocar la cita para expandir el preview.
+    await tester.tap(find.text('Génesis 1:2'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    // Ahora el preview SÍ debe ser visible.
+    // Ahora el preview SÍ debe ser visible.
     expect(
       find.textContaining('Y la tierra estaba desordenada'),
       findsOneWidget,

@@ -10,6 +10,7 @@ import '../../../../presentation/shared_widgets/theme_mode_toggle_button.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../../../presentation/views_projection/providers/live_control_providers.dart';
 import '../../../../presentation/views_projection/providers/presentation_providers.dart';
+import '../../../../presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
@@ -80,7 +81,15 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: const _PresentFAB(),
+      // FAB visible solo en desktop (no en celular) y sin presentación activa
+      floatingActionButton: Consumer(
+        builder: (context, ref, _) {
+          final isDesktop = ref.watch(isDesktopModeProvider);
+          final isPresenting = ref.watch(isPresentingProvider);
+          if (!isDesktop || isPresenting) return const SizedBox.shrink();
+          return const _PresentFAB();
+        },
+      ),
     );
   }
 }
@@ -724,10 +733,10 @@ class _PresentFAB extends ConsumerWidget {
             ref.read(isPresentingProvider.notifier).state = true;
             // Esperar a que el subproceso esté listo
             await Future<void>.delayed(const Duration(milliseconds: 800));
-            // Cargar el versículo aleatorio actual para proyección
-            if (context.mounted) {
-              await _projectRandomVerse(ref);
-            }
+            // Cargar el versículo aleatorio actual para proyección.
+            // NO usamos context.mounted porque el FAB se desmonta al
+            // activar isPresenting (el overlay toma el control).
+            await _projectRandomVerse(ref);
           }
         } catch (e) {
           if (context.mounted) {
@@ -764,7 +773,7 @@ class _PresentFAB extends ConsumerWidget {
     );
     // Enviar al subproceso
     try {
-      ref.read(windowServiceProvider).sendMessage({
+      await ref.read(windowServiceProvider).sendMessage({
         'type': 'LOAD_VERSE',
         'libroNombre': libro.nombre,
         'capitulo': verse.capituloNumero,

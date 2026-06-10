@@ -11,6 +11,7 @@ import '../../../../proto/generated/hymn_control.pbgrpc.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../../../presentation/views_projection/providers/live_control_providers.dart';
 import '../../../../presentation/views_projection/providers/presentation_providers.dart';
+import '../../../../presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import '../../../../presentation/providers/fullscreen_mode_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
 import '../../application/providers/biblia_version_provider.dart';
@@ -63,6 +64,12 @@ class BibleReaderScreen extends ConsumerStatefulWidget {
 class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   int? _lastRecordedVersiculo;
 
+  /// Guard flag that prevents the verse-level sync listener from firing
+  /// while a chapter-level auto-sync is in progress. This avoids duplicate
+  /// LOAD_VERSE messages and race conditions when the user navigates
+  /// between chapters/books.
+  bool _isSyncingChapter = false;
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +92,14 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       // Resolver libroId → libroNumero (canónico) y cachearlo para el
       // cliente gRPC (BibleClientActions lo lee al enviar comandos).
       _syncLibroNumeroFromId(widget.libroId);
+      // 🔁 Proactive sync: si ya estamos presentando al llegar a esta
+      // pantalla, enviar el capítulo actual a la ventana de proyección.
+      if (ref.read(isPresentingProvider)) {
+        _isSyncingChapter = true;
+        _sendChapterToProjection(ref).then((_) {
+          if (mounted) _isSyncingChapter = false;
+        });
+      }
     });
   }
 
@@ -103,6 +118,16 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
 
   /// Proyecta el capítulo bíblico actual en la ventana de proyección.
   Future<void> _projectCurrentChapter(BuildContext context, WidgetRef ref) async {
+    await _sendChapterToProjection(ref);
+  }
+
+  /// Fetches the current chapter and sends LOAD_VERSE to the projection.
+  ///
+  /// Does NOT open the projection window or wait for readiness — it just
+  /// fetches the current chapter data and sends it to the subprocess.
+  /// Used both by the Presentar button flow and by the auto-sync listener
+  /// on [currentBibleAnchorProvider].
+  Future<void> _sendChapterToProjection(WidgetRef ref) async {
     final repo = ref.read(bibliaRepositoryProvider);
     final libroId = ref.read(currentLibroIdProvider) ?? widget.libroId;
     final capitulo = ref.read(currentCapituloProvider) ?? widget.capitulo;
@@ -127,7 +152,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
 
     // Enviar al subproceso de proyección
     try {
-      ref.read(windowServiceProvider).sendMessage({
+      await ref.read(windowServiceProvider).sendMessage({
         'type': 'LOAD_VERSE',
         'libroNombre': libro.nombre,
         'capitulo': capitulo,
@@ -139,7 +164,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   }
 
   /// Sincroniza el versículo actual con la proyección (envía NEXT/PREV_SLIDE).
-  void _syncVerseToProjection(WidgetRef ref, int nuevoVersiculo) {
+  Future<void> _syncVerseToProjection(WidgetRef ref, int nuevoVersiculo) async {
     final liveState = ref.read(liveControlProvider);
     // Si no hay slides bíblicos cargados, no hacer nada
     if (liveState.module != ProjectionModule.bible || liveState.slides.isEmpty) return;
@@ -148,7 +173,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     if (targetIndex >= 0 && targetIndex < liveState.slides.length) {
       ref.read(liveControlProvider.notifier).goToSlide(targetIndex);
       try {
-        ref.read(windowServiceProvider).sendMessage({
+        await ref.read(windowServiceProvider).sendMessage({
           'type': 'GO_TO_SLIDE',
           'index': targetIndex,
         });
@@ -159,10 +184,24 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   @override
   Widget build(BuildContext context) {
     final isFullscreen = ref.watch(fullscreenModeProvider);
+    final isPresenting = ref.watch(isPresentingProvider);
+    final isDesktop = ref.watch(isDesktopModeProvider);
     final versionId = ref.watch(currentVersionIdProvider);
     final libroId = ref.watch(currentLibroIdProvider) ?? widget.libroId;
     final capitulo = ref.watch(currentCapituloProvider) ?? widget.capitulo;
     final versiculoNum = ref.watch(currentVersiculoNumeroProvider) ?? 1;
+
+    // NEW listener: auto-sync chapter changes to projection
+    ref.listen<String>(currentBibleAnchorProvider, (prev, next) async {
+      final isPresenting = ref.read(isPresentingProvider);
+      if (!isPresenting || next == prev) return;
+      _isSyncingChapter = true;
+      try {
+        await _sendChapterToProjection(ref);
+      } finally {
+        _isSyncingChapter = false;
+      }
+    });
 
     ref.listen<int?>(currentVersiculoNumeroProvider, (prev, next) {
       if (next != null) {
@@ -182,10 +221,13 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
               next,
             );
       }
-      // Si está presentando, sincronizar el versículo actual con la proyección
+      // Si está presentando, sincronizar el versículo actual con la proyección.
+      // Skip verse-level sync while a chapter-level sync is in progress to
+      // avoid race conditions and duplicate LOAD_VERSE messages.
+      if (_isSyncingChapter) return;
       final isPresenting = ref.read(isPresentingProvider);
       if (isPresenting && next != null && next != prev) {
-        _syncVerseToProjection(ref, next);
+        _syncVerseToProjection(ref, next).ignore();
       }
     });
 
@@ -198,35 +240,31 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           tooltip: 'Atrás',
         ),
         actions: [
-          // Botón Presentar (proyección local)
+          // Botón Presentar (proyección local) — solo desktop y sin presentación activa
           Consumer(
             builder: (context, ref, _) {
+              final isDesktop = ref.watch(isDesktopModeProvider);
+              if (!isDesktop) return const SizedBox.shrink();
               final isPresenting = ref.watch(isPresentingProvider);
+              if (isPresenting) return const SizedBox.shrink();
               final btnColorScheme = Theme.of(context).colorScheme;
               return IconButton(
-                icon: Icon(
-                  isPresenting ? Icons.stop_screen_share : Icons.screen_share_outlined,
-                  color: isPresenting ? btnColorScheme.error : btnColorScheme.primary,
-                ),
-                tooltip: isPresenting ? 'Detener Presentación' : 'Presentar',
+                icon: const Icon(Icons.screen_share_outlined),
+                color: btnColorScheme.primary,
+                tooltip: 'Presentar',
                 onPressed: () async {
                   final windowService = ref.read(windowServiceProvider);
                   try {
-                    if (isPresenting) {
-                      await windowService.closeProjectionWindow();
-                      ref.read(isPresentingProvider.notifier).state = false;
-                    } else {
-                      await windowService.openProjectionWindow({
-                        'mode': 'local',
-                        'source': 'bible_reader',
-                      });
-                      ref.read(isPresentingProvider.notifier).state = true;
-                      // Esperar a que el subproceso esté listo antes de enviar
-                      await Future<void>.delayed(const Duration(milliseconds: 800));
-                      if (context.mounted) {
-                        await _projectCurrentChapter(context, ref);
-                      }
-                    }
+                    await windowService.openProjectionWindow({
+                      'mode': 'local',
+                      'source': 'bible_reader',
+                    });
+                    ref.read(isPresentingProvider.notifier).state = true;
+                    // Esperar a que el subproceso esté listo antes de enviar
+                    await Future<void>.delayed(const Duration(milliseconds: 800));
+                    // NO usamos context.mounted: el botón se oculta al
+                    // activar isPresenting, desmontando este Consumer.
+                    await _projectCurrentChapter(context, ref);
                   } catch (e) {
                     if (context.mounted) {
                       showAppSnackBar(context, 'Error: $e', type: AppSnackBarType.error);
@@ -278,7 +316,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 },
               ),
             ),
-            if (!isFullscreen)
+            if (!isFullscreen && !(isPresenting && isDesktop))
               _ReaderBottomBar(
                 libroId: libroId,
                 capitulo: capitulo,

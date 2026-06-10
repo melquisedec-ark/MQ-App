@@ -324,7 +324,7 @@ class _ResultCard extends ConsumerWidget {
           // Referencia
           Text(
             result.referencia,
-            style: textTheme.labelLarge?.copyWith(
+            style: textTheme.titleSmall?.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.w700,
             ),

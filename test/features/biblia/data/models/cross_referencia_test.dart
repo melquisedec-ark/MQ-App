@@ -191,10 +191,10 @@ void main() {
       expect(m.id, 1);
       expect(m.toLibroId, 1);
       expect(m.votos, 5);
-      // Preview truncado a ~52 chars + ellipsis.
+      // Preview completo (sin truncar).
       expect(m.previewTexto, isNotNull);
-      expect(m.previewTexto!.length, lessThanOrEqualTo(55));
-      expect(m.previewTexto, contains('Por tanto, el Señor'));
+      expect(m.previewTexto, contains('Emanuel'));
+      expect(m.previewTexto!.length, greaterThan(55));
     });
 
     test('fromMap sin preview_texto: preview es null', () {
@@ -214,7 +214,7 @@ void main() {
       expect(m.previewTexto, isNull);
     });
 
-    test('preview texto corto (<=55 chars) no se trunca', () {
+    test('preview texto corto se guarda completo', () {
       final m = CrossReferenciaConPreview.fromMap({
         'id': 3,
         'version_id': 1,

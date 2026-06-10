@@ -6,6 +6,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:mqapp/core/window_manager/window_service.dart';
 import 'package:mqapp/presentation/shared_widgets/control_sheets.dart';
 import 'package:mqapp/core/window_manager/window_providers.dart';
+import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
+import 'package:mqapp/presentation/dual_mode_wrapper/device_mode.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Mocks
@@ -30,6 +32,12 @@ void main() {
     return ProviderScope(
       overrides: [
         windowServiceProvider.overrideWithValue(mockWindowService),
+        // Forzar phone mode en tests para evitar overflow en pantalla pequeña
+        deviceModeProvider.overrideWith((ref) {
+          final notifier = DualModeNotifier();
+          notifier.setMode(DeviceMode.phone);
+          return notifier;
+        }),
       ],
       child: MaterialApp(
         home: Scaffold(

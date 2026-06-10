@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../presentation/shared_widgets/glass_card.dart';
+import '../../../../presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
 import '../../application/providers/current_versiculo_provider.dart';
@@ -95,6 +96,7 @@ class _LibrosTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final versionId = ref.watch(currentVersionIdProvider);
+    final isDesktop = ref.watch(isDesktopModeProvider);
     final librosAsync = ref.watch(
       librosProvider(LibrosQuery(versionId: versionId, testamento: testamento)),
     );
@@ -108,6 +110,10 @@ class _LibrosTab extends ConsumerWidget {
             title: 'No hay libros disponibles',
             subtitle: '',
           );
+        }
+        // En desktop: grid responsivo de 3/2 columnas. En móvil: lista simple.
+        if (isDesktop) {
+          return _LibrosGrid(libros: libros);
         }
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -123,7 +129,139 @@ class _LibrosTab extends ConsumerWidget {
   }
 }
 
-/// Tile individual de libro con glassmorphism.
+/// Grid responsivo de libros para desktop.
+///
+/// Orden por columnas (vertical): la primera columna tiene Gén, Éxo, Lev...
+/// la segunda Núm, Deu, Jos... etc. Se reorganiza la lista antes de pasarla
+/// al GridView (que por defecto ordena por filas).
+class _LibrosGrid extends ConsumerWidget {
+  const _LibrosGrid({required this.libros});
+
+  final List<Libro> libros;
+
+  /// Reorganiza la lista para que el GridView (orden por filas) muestre
+  /// los items en orden por columnas (vertical). Calcula correctamente
+  /// cuántos items van en cada columna para grids irregulares.
+  static List<T> _toColumnMajor<T>(List<T> items, int columns) {
+    final n = items.length;
+    if (n == 0) return items;
+    final baseCount = n ~/ columns;
+    final extraCols = n % columns;
+    // Calcular inicio y cantidad de cada columna
+    final colStarts = <int>[];
+    final colCounts = <int>[];
+    int offset = 0;
+    for (int c = 0; c < columns; c++) {
+      colStarts.add(offset);
+      final count = baseCount + (c < extraCols ? 1 : 0);
+      colCounts.add(count);
+      offset += count;
+    }
+    // Llenar fila por fila
+    final maxRows = baseCount + (extraCols > 0 ? 1 : 0);
+    final result = <T>[];
+    for (int r = 0; r < maxRows; r++) {
+      for (int c = 0; c < columns; c++) {
+        if (r < colCounts[c]) {
+          result.add(items[colStarts[c] + r]);
+        }
+      }
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 1200 ? 5 : width >= 900 ? 4 : width >= 600 ? 3 : 2;
+        // Reorganizar para orden por columnas
+        final reordered = _toColumnMajor(libros, crossAxisCount);
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            childAspectRatio: crossAxisCount >= 5 ? 5.5 : crossAxisCount == 4 ? 5.0 : 6.0,
+          ),
+          itemCount: reordered.length,
+          itemBuilder: (context, index) {
+            final libro = reordered[index];
+            return _LibroGridTile(libro: libro);
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Tile compacto para el grid de libros en desktop.
+///
+/// Horizontal: número a la izquierda, nombre + capítulos a la derecha.
+class _LibroGridTile extends ConsumerWidget {
+  const _LibroGridTile({required this.libro});
+
+  final Libro libro;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final hasFavoritosAsync = ref.watch(favoritosPorLibroProvider);
+    final hasFavoritos =
+        hasFavoritosAsync.valueOrNull?.contains(libro.id) ?? false;
+
+    return GlassCard(
+      onTap: () {
+        ref.read(currentLibroIdProvider.notifier).state = libro.id;
+        context.pushNamed(
+          'biblia_libro',
+          pathParameters: {'libroId': '${libro.id}'},
+        );
+      },
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Row(
+        children: [
+          // Número canónico
+          SizedBox(
+            width: 28,
+            child: Text(
+              libro.numero.toString().padLeft(2, '0'),
+              style: textTheme.titleSmall?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Nombre
+          Expanded(
+            child: Text(
+              libro.nombre,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (hasFavoritos)
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Icon(Icons.star_rounded, size: 13,
+                  color: const Color(0xFFF59E0B)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tile individual de libro con glassmorphism (modo móvil).
 class _LibroTile extends ConsumerWidget {
   const _LibroTile({required this.libro});
 

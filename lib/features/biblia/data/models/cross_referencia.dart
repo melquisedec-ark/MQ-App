@@ -162,9 +162,10 @@ class CrossReferencia extends Equatable {
 ///
 /// Se obtiene mediante una query con LEFT JOIN a la tabla `versiculo`.
 /// Si el versículo destino no existe en la BD (caso raro), `previewTexto`
-/// será null y la UI no mostrará snippet.
+/// será null y la UI no mostrará snippet. El texto se guarda completo;
+/// la UI decide si truncarlo o no según el contexto.
 class CrossReferenciaConPreview extends CrossReferencia {
-  /// Primeros ~50 chars del texto del versículo destino (o null).
+  /// Texto completo del versículo destino (o null si no existe en la BD).
   final String? previewTexto;
 
   const CrossReferenciaConPreview({
@@ -182,15 +183,9 @@ class CrossReferenciaConPreview extends CrossReferencia {
   });
 
   /// Construye desde una fila de SQLite con `preview_texto` opcional.
+  /// El texto se guarda completo (sin truncar).
   factory CrossReferenciaConPreview.fromMap(Map<String, dynamic> map) {
-    final rawPreview = map['preview_texto'] as String?;
-    // Truncar a ~50 chars con ellipsis si es más largo.
-    String? preview;
-    if (rawPreview != null && rawPreview.isNotEmpty) {
-      preview = rawPreview.length > 55
-          ? '${rawPreview.substring(0, 52)}...'
-          : rawPreview;
-    }
+    final preview = map['preview_texto'] as String?;
     return CrossReferenciaConPreview(
       id: map['id'] as int,
       versionId: map['version_id'] as int,

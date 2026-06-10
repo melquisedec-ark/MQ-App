@@ -109,11 +109,8 @@ final crossReferenciasResueltasProvider = FutureProvider.family
 /// - 0 refs → invisible (`SizedBox.shrink`).
 /// - 1 ref → se muestra inline (header + la ref).
 /// - 2+ refs → se muestran 2, luego "Ver todas (N)" expandible.
-///
-/// C7: tap en una referencia navega con `pushNamed` a la ruta
-/// `biblia_reader` con query param `?v=N` para abrir en el versículo
-/// destino. Si el `to_libro_id` no existe en la versión activa
-/// (caso apócrifo), muestra SnackBar y NO navega.
+/// - Tap en cita → expande el preview del versículo.
+/// - Tap en preview expandido → navega al capítulo destino (deep link).
 class ReferenciasCruzadasSection extends ConsumerStatefulWidget {
   const ReferenciasCruzadasSection({
     super.key,
@@ -135,6 +132,9 @@ class _ReferenciasCruzadasSectionState
     extends ConsumerState<ReferenciasCruzadasSection> {
   /// Modo de colapso: `false` = solo se ven las primeras 2 refs.
   bool _expandido = false;
+
+  /// Índice de la referencia con preview expandido o -1 si ninguna.
+  int _expandedRefIndex = -1;
 
   /// Cantidad de refs a mostrar sin expandir.
   static const int _refsVisiblesIniciales = 2;
@@ -194,11 +194,12 @@ class _ReferenciasCruzadasSectionState
             ),
           ),
           const SizedBox(height: 4),
-          // Lista de refs (tap → navegar)
-          ...refsVisibles.map(
-            (r) => _ReferenciaTile(
-              resuelta: r,
-              onTap: () => _navigateTo(r, context),
+          // Lista de refs: tap → expandir preview, tap en preview → navegar
+          ...refsVisibles.asMap().entries.map(
+            (entry) => _ReferenciaTile(
+              resuelta: entry.value,
+              expanded: _expandedRefIndex == entry.key,
+              onTap: () => _handleRefTap(entry.key, entry.value, context),
             ),
           ),
           // Botón "Ver todas (N)" / "Ver menos"
@@ -243,7 +244,17 @@ class _ReferenciasCruzadasSectionState
     );
   }
 
-  /// C7+C8: navega al versículo destino con pushNamed + query param.
+  /// Tap en una referencia: si no está expandida, la expande. Si ya está
+  /// expandida, navega al capítulo destino.
+  void _handleRefTap(int index, CrossReferenciaResuelta resuelta, BuildContext context) {
+    if (_expandedRefIndex == index) {
+      // Ya expandida → navegar
+      _navigateTo(resuelta, context);
+    } else {
+      // Expandir esta, colapsar la anterior
+      setState(() => _expandedRefIndex = index);
+    }
+  }
   ///
   /// Bug #1 fix: salva y restaura el estado global de providers alrededor
   /// de la navegación para que al volver (pop) el lector original conserve
@@ -302,19 +313,19 @@ class _ReferenciasCruzadasSectionState
 
 /// Tile tappable individual de una cross-reference.
 ///
-/// Muestra la etiqueta canónica ("Génesis 22:12" o "1 Juan 4:9-10")
-/// en color primario, con un icono chevron a la derecha. Si la
-/// referencia tiene rango, el destino es el versículo INICIO del rango
-/// (el resto se muestra en el badge del rango "-14").
-///
-/// Feature #2: muestra preview del texto destino en itálica (~50 chars).
+/// Muestra la cita bíblica. Si está expandido, muestra el preview del
+/// versículo debajo. Comportamiento:
+/// - Tap en cita → expande/colapsa el preview.
+/// - Tap en preview expandido → navega al capítulo destino.
 class _ReferenciaTile extends StatelessWidget {
   const _ReferenciaTile({
     required this.resuelta,
+    required this.expanded,
     required this.onTap,
   });
 
   final CrossReferenciaResuelta resuelta;
+  final bool expanded;
   final VoidCallback onTap;
 
   @override
@@ -323,7 +334,7 @@ class _ReferenciaTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Tooltip(
-      message: resuelta.etiquetaCorta,
+      message: expanded ? 'Toca para ir al capítulo' : resuelta.etiquetaCorta,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(6),
@@ -332,28 +343,26 @@ class _ReferenciaTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Cita (siempre visible)
               Row(
                 children: [
                   Expanded(
                     child: Text(
                       resuelta.etiquetaCorta,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.primary,
+                        color: expanded
+                            ? colorScheme.primary
+                            : colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   if (resuelta.ref.esRango) ...[
                     const SizedBox(width: 6),
-                    // Badge de votos (indica fuerza de la ref en openbible)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color:
-                            colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -367,23 +376,29 @@ class _ReferenciaTile extends StatelessWidget {
                   ],
                   const SizedBox(width: 4),
                   Icon(
-                    Icons.chevron_right_rounded,
+                    expanded ? Icons.open_in_new_rounded : Icons.chevron_right_rounded,
                     size: 18,
                     color: colorScheme.primary,
                   ),
                 ],
               ),
-              // Feature #2: preview snippet del texto destino.
-              if (resuelta.previewTexto != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  resuelta.previewTexto!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontStyle: FontStyle.italic,
-                    height: 1.3,
+              // Preview del versículo (solo visible si expandido)
+              if (expanded && resuelta.previewTexto != null) ...[
+                const SizedBox(height: 4),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    resuelta.previewTexto!,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontStyle: FontStyle.italic,
+                      height: 1.3,
+                    ),
                   ),
                 ),
               ],
