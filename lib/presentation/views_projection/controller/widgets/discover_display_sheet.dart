@@ -11,6 +11,8 @@ import '../../../../domain/repositories/control_repository.dart' as domain;
 import '../../display/receptor_binding.dart';
 import '../../providers/connection_providers.dart';
 import '../../providers/discovery_providers.dart';
+import '../../providers/presentation_providers.dart';
+import '../../../dual_mode_wrapper/dual_mode_providers.dart';
 import 'package:mqapp/core/ui/app_snackbar.dart';
 
 /// BottomSheet modal para descubrir displays en la red vía mDNS,
@@ -116,6 +118,10 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
       final currentRole = ref.read(connectionRoleProvider);
       if (currentRole == ConnectionRole.none) {
         ref.read(connectionRoleProvider.notifier).state = ConnectionRole.emitter;
+        // En desktop: activar overlay de PresentControlBar inmediatamente
+        if (ref.read(isDesktopModeProvider)) {
+          ref.read(isPresentingProvider.notifier).state = true;
+        }
       }
     }
   }

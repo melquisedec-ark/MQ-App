@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
+import 'core/network/connection_state.dart';
 import 'core/theme/app_theme.dart';
 import 'features/biblia/application/providers/biblia_config_provider.dart';
 import 'presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import 'presentation/views_projection/controller/present_control_bar.dart';
+import 'presentation/views_projection/providers/connection_providers.dart';
 import 'presentation/views_projection/providers/presentation_providers.dart';
 
 /// Widget raíz de la aplicación MQ App 2.0.
@@ -25,6 +27,8 @@ class MqApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final isPresenting = ref.watch(isPresentingProvider);
     final isDesktop = ref.watch(isDesktopModeProvider);
+    final role = ref.watch(connectionRoleProvider);
+    final showOverlay = (isPresenting || role == ConnectionRole.emitter) && isDesktop;
     return ProviderScope(
       child: MaterialApp.router(
         title: 'MQ App',
@@ -35,23 +39,18 @@ class MqApp extends ConsumerWidget {
         routerConfig: appRouter,
         builder: (context, child) {
           final safeChild = child ?? const SizedBox.shrink();
-          // Altura estimada del PresentControlBar para reservar espacio
-          // y evitar que el overlay obstruya contenido interactivo (últimos
-          // libros, capítulos, versículos, botones inferiores).
           const controlBarHeight = 200.0;
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Contenido principal con padding inferior cuando el overlay
-              // está activo, para no tapar elementos interactivos del fondo.
-              if (isPresenting && isDesktop)
+              if (showOverlay)
                 Padding(
                   padding: const EdgeInsets.only(bottom: controlBarHeight),
                   child: safeChild,
                 )
               else
                 safeChild,
-              if (isPresenting && isDesktop)
+              if (showOverlay)
                 const Positioned(
                   left: 0,
                   right: 0,
