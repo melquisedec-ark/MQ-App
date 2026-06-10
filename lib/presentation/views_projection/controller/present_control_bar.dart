@@ -346,7 +346,8 @@ class PresentControlBar extends ConsumerWidget {
   // Acciones
   // ─────────────────────────────────────────────────────────────
 
-  /// Carga un himno por ID en [liveControlProvider] y lo envía al subproceso.
+  /// Carga un himno por ID y lo envía al subproceso local y/o al display
+  /// remoto vía gRPC si estamos en modo emisor.
   Future<void> _loadAndProject(WidgetRef ref, int hymnId) async {
     try {
       final repo = ref.read(hymnRepositoryProvider);
@@ -358,7 +359,7 @@ class PresentControlBar extends ConsumerWidget {
             estrofas,
             versionPaisId: versionPaisId,
           );
-      // Enviar al subproceso de proyección
+      // Enviar al subproceso local
       final windowService = ref.read(windowServiceProvider);
       await windowService.sendMessage({
         'type': 'LOAD_HYMN',
@@ -376,6 +377,28 @@ class PresentControlBar extends ConsumerWidget {
                 })
             .toList(),
       });
+      // En modo emisor: también enviar al display remoto vía gRPC
+      final role = ref.read(connectionRoleProvider);
+      if (role == ConnectionRole.emitter) {
+        try {
+          await ref.read(controlDataSourceProvider).sendHymnContent(
+            hymnId: himno.id,
+            titulo: himno.titulo,
+            numero: himno.numero,
+            tipo: himno.tipo.name,
+            versionPaisId: versionPaisId,
+            estrofas: estrofas
+                .map((e) => <String, dynamic>{
+                      'id': e.id,
+                      'version_pais_id': e.versionPaisId,
+                      'tipo': e.tipo.name,
+                      'orden': e.orden,
+                      'contenido': e.contenido,
+                    })
+                .toList(),
+          );
+        } catch (_) {}
+      }
     } catch (_) {
       // Error silencioso — el Provider mantiene el himno anterior
     }

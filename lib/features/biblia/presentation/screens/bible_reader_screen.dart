@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../core/ui/app_snackbar.dart';
+import '../../../../core/network/connection_state.dart';
 import '../../../../core/window_manager/window_providers.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../proto/generated/hymn_control.pbgrpc.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../../../presentation/views_projection/providers/live_control_providers.dart';
 import '../../../../presentation/views_projection/providers/presentation_providers.dart';
+import '../../../../data/datasources/remote/grpc_control_datasource.dart';
 import '../../../../presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import '../../../../presentation/providers/fullscreen_mode_provider.dart';
 import '../../application/providers/bible_grpc_client_provider.dart';
@@ -161,6 +163,26 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     } catch (_) {
       // Subproceso no disponible
     }
+    // En modo emisor: enviar GO_TO_VERSE al display remoto vía gRPC
+    _sendChapterToRemoteDisplay(ref, libro, capitulo);
+  }
+
+  /// Envía el capítulo actual al display remoto vía gRPC si estamos en
+  /// modo emisor. El servidor gRPC carga el capítulo completo al recibir
+  /// GO_TO_VERSE y navega al versículo indicado.
+  void _sendChapterToRemoteDisplay(WidgetRef ref, Libro libro, int capitulo) {
+    final role = ref.read(connectionRoleProvider);
+    if (role != ConnectionRole.emitter) return;
+    try {
+      final versionId = ref.read(currentVersionIdProvider);
+      final versiculo = ref.read(currentVersiculoNumeroProvider) ?? 1;
+      ref.read(controlDataSourceProvider).sendGoToVerse(
+        versionId: versionId,
+        libroNumero: libro.numero,
+        capitulo: capitulo,
+        versiculo: versiculo,
+      );
+    } catch (_) {}
   }
 
   /// Sincroniza el versículo actual con la proyección (envía NEXT/PREV_SLIDE).
