@@ -1,7 +1,7 @@
 name: mqapp
 description: MQ App — Biblia + Himnario digital multiplataforma con control remoto LAN, transposición de acordes y sistema de arreglos personalizados.
 publish_to: 'none'
-version: 1.0.19+19
+version: 1.0.20+20
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

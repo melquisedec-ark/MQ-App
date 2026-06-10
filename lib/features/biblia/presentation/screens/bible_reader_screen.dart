@@ -436,6 +436,23 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
   final ItemScrollController _itemController = ItemScrollController();
   int? _lastScrolledVerse;
 
+  /// Envía el versículo seleccionado al display remoto vía gRPC si estamos
+  /// en modo emisor. Llamado directamente desde el tap, sin guards intermedios.
+  void _emitTapToRemote(WidgetRef ref, int versiculo) {
+    final role = ref.read(connectionRoleProvider);
+    if (role != ConnectionRole.emitter) return;
+    try {
+      final versionId = ref.read(currentVersionIdProvider);
+      final libroNumero = ref.read(currentLibroNumeroProvider) ?? 1;
+      ref.read(controlDataSourceProvider).sendGoToVerse(
+        versionId: versionId,
+        libroNumero: libroNumero,
+        capitulo: widget.capitulo,
+        versiculo: versiculo,
+      );
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final libroId = widget.libroId;
@@ -546,6 +563,8 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
                       ref
                           .read(currentVersiculoNumeroProvider.notifier)
                           .state = numero;
+                      // En modo emisor: enviar directamente al display remoto
+                      _emitTapToRemote(ref, numero);
                     },
                     onLongPress: () {
                       _openNoteEditorForVerse(context, ref, numero, libroId, capitulo, notasEnCapitulo[numero]);
