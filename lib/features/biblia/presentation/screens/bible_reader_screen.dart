@@ -200,7 +200,26 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           'index': targetIndex,
         });
       } catch (_) {}
+      // En modo emisor: enviar GO_TO_VERSE al display remoto
+      _syncVerseToRemoteDisplay(ref, nuevoVersiculo);
     }
+  }
+
+  /// Envía el versículo actual al display remoto vía gRPC (modo emisor).
+  void _syncVerseToRemoteDisplay(WidgetRef ref, int nuevoVersiculo) {
+    final role = ref.read(connectionRoleProvider);
+    if (role != ConnectionRole.emitter) return;
+    try {
+      final versionId = ref.read(currentVersionIdProvider);
+      final libroNumero = ref.read(currentLibroNumeroProvider) ?? 1;
+      final capitulo = ref.read(currentCapituloProvider) ?? 1;
+      ref.read(controlDataSourceProvider).sendGoToVerse(
+        versionId: versionId,
+        libroNumero: libroNumero,
+        capitulo: capitulo,
+        versiculo: nuevoVersiculo,
+      );
+    } catch (_) {}
   }
 
   @override
