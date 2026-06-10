@@ -328,12 +328,24 @@ class PresentControlBar extends ConsumerWidget {
                   appRouter.go('/biblia');
                 }
                 ref.read(liveControlProvider.notifier).switchToModule(newModule);
+                // Enviar al subproceso local
                 try {
                   ref.read(windowServiceProvider).sendMessage({
                     'type': 'SWITCH_MODULE',
                     'module': newModule.name,
                   });
                 } catch (_) {}
+                // En modo emisor: enviar comando al display remoto via gRPC
+                final role = ref.read(connectionRoleProvider);
+                if (role == ConnectionRole.emitter) {
+                  try {
+                    if (newModule == ProjectionModule.hymnal) {
+                      ref.read(controlDataSourceProvider).sendSwitchToHymnal();
+                    } else {
+                      ref.read(controlDataSourceProvider).sendSwitchToBible();
+                    }
+                  } catch (_) {}
+                }
               },
             );
           },

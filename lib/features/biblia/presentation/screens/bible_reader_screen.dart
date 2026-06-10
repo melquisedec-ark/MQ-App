@@ -173,16 +173,15 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   void _sendChapterToRemoteDisplay(WidgetRef ref, Libro libro, int capitulo) {
     final role = ref.read(connectionRoleProvider);
     if (role != ConnectionRole.emitter) return;
-    try {
-      final versionId = ref.read(currentVersionIdProvider);
-      final versiculo = ref.read(currentVersiculoNumeroProvider) ?? 1;
-      ref.read(controlDataSourceProvider).sendGoToVerse(
-        versionId: versionId,
-        libroNumero: libro.numero,
-        capitulo: capitulo,
-        versiculo: versiculo,
-      );
-    } catch (_) {}
+    final versionId = ref.read(currentVersionIdProvider);
+    final versiculo = ref.read(currentVersiculoNumeroProvider) ?? 1;
+    // Fire-and-forget: no await para no bloquear UI
+    ref.read(controlDataSourceProvider).sendGoToVerse(
+      versionId: versionId,
+      libroNumero: libro.numero,
+      capitulo: capitulo,
+      versiculo: versiculo,
+    ).catchError((_) {});
   }
 
   /// Sincroniza el versículo actual con la proyección (envía NEXT/PREV_SLIDE).
@@ -441,16 +440,14 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
   void _emitTapToRemote(WidgetRef ref, int versiculo) {
     final role = ref.read(connectionRoleProvider);
     if (role != ConnectionRole.emitter) return;
-    try {
-      final versionId = ref.read(currentVersionIdProvider);
-      final libroNumero = ref.read(currentLibroNumeroProvider) ?? 1;
-      ref.read(controlDataSourceProvider).sendGoToVerse(
-        versionId: versionId,
-        libroNumero: libroNumero,
-        capitulo: widget.capitulo,
-        versiculo: versiculo,
-      );
-    } catch (_) {}
+    final versionId = ref.read(currentVersionIdProvider);
+    final libroNumero = ref.read(currentLibroNumeroProvider) ?? 1;
+    ref.read(controlDataSourceProvider).sendGoToVerse(
+      versionId: versionId,
+      libroNumero: libroNumero,
+      capitulo: widget.capitulo,
+      versiculo: versiculo,
+    ).catchError((_) {});
   }
 
   @override
