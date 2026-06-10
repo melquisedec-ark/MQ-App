@@ -815,6 +815,15 @@ class GrpcDisplayServer extends HymnControlServiceBase {
           'l=$libroNumero c=$capitulo v=$versiculo');
       return;
     }
+    // Detectar si cambió el capítulo o solo el versículo.
+    // También verificar que el receptor ya tenga contenido bíblico cargado.
+    final yaTieneBiblia = _container!.read(liveControlProvider).module ==
+            ProjectionModule.bible &&
+        _container!.read(liveControlProvider).slides.isNotEmpty;
+    final mismoCapitulo = _bibleState.versionId == versionId &&
+        _bibleState.libroNumero == libroNumero &&
+        _bibleState.capitulo == capitulo;
+
     _bibleState = _bibleState.copyWith(
       versionId: versionId,
       libroNumero: libroNumero,
@@ -823,19 +832,29 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     );
     await _resolveAndCacheBibleContext();
     _syncBibleStateToProviders();
-    // Actualizar liveControlProvider para que el receptor muestre
-    // LiveProjectionScreen en vez de StandbyScreen.
-    _updateLiveControlFromBibleState();
-    // Cargar el capítulo completo en el subproceso de proyección
-    // y luego ir al versículo específico.
-    try {
-      await _sendCurrentChapterToSubprocess();
-      _container!.read(windowServiceProvider).sendMessage({
-        'type': 'GO_TO_SLIDE',
-        'index': versiculo,
-      });
-    } catch (e) {
-      _log.warning('Error enviando GO_TO_VERSE al subproceso: $e');
+
+    if (mismoCapitulo && yaTieneBiblia) {
+      // Solo cambiar versículo dentro del mismo capítulo ya cargado
+      try {
+        _container!.read(windowServiceProvider).sendMessage({
+          'type': 'GO_TO_SLIDE',
+          'index': versiculo,
+        });
+      } catch (e) {
+        _log.warning('Error enviando GO_TO_SLIDE al subproceso: $e');
+      }
+    } else {
+      // Capítulo nuevo o primera carga: cargar completo
+      _updateLiveControlFromBibleState();
+      try {
+        await _sendCurrentChapterToSubprocess();
+        _container!.read(windowServiceProvider).sendMessage({
+          'type': 'GO_TO_SLIDE',
+          'index': versiculo,
+        });
+      } catch (e) {
+        _log.warning('Error enviando GO_TO_VERSE al subproceso: $e');
+      }
     }
   }
 

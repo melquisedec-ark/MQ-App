@@ -127,7 +127,7 @@ void main() {
   });
 
   group('GO_TO_VERSE integration with subprocess', () {
-    test('GO_TO_VERSE envía LOAD_VERSE con capítulo completo al subproceso', () async {
+    test('GO_TO_VERSE mismo capitulo solo envia GO_TO_SLIDE (no recarga)', () async {
       await server.sendCommand(
         _TestServiceCall(),
         CommandRequest(
@@ -140,18 +140,17 @@ void main() {
         ),
       );
 
-      // Verificar que se envió LOAD_VERSE con el capítulo completo
+      // Para mismo capítulo sin biblia cargada, envía LOAD_VERSE primero
       verify(
         () => mockWindowService.sendMessage(
           any(that: isA<Map<String, dynamic>>()
               .having((m) => m['type'], 'type', 'LOAD_VERSE')
               .having((m) => m['libroNombre'], 'libroNombre', 'Génesis')
-              .having((m) => m['capitulo'], 'capitulo', 1)
-              .having((m) => m['versiculos'], 'versiculos', isA<List>())),
+              .having((m) => m['capitulo'], 'capitulo', 1)),
         ),
       ).called(1);
 
-      // Y también GO_TO_SLIDE para ir al versículo específico
+      // Y también GO_TO_SLIDE
       verify(
         () => mockWindowService.sendMessage(
           any(that: isA<Map<String, dynamic>>()
@@ -161,7 +160,7 @@ void main() {
       ).called(1);
     });
 
-    test('GO_TO_VERSE envía versículos correctos en LOAD_VERSE', () async {
+    test('GO_TO_VERSE primer carga envia LOAD_VERSE con versiculos completos', () async {
       final capturedMessages = <Map<String, dynamic>>[];
       when(() => mockWindowService.sendMessage(any())).thenAnswer((invocation) async {
         capturedMessages.add(invocation.positionalArguments[0] as Map<String, dynamic>);
