@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/network/connection_state.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../../core/window_manager/window_providers.dart';
+import '../../../../presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../presentation/shared_widgets/theme_mode_toggle_button.dart';
+import '../../../../presentation/views_projection/display/receptor_binding.dart';
+import '../../../../presentation/views_projection/display/standby_screen.dart';
 import '../../../../presentation/views_projection/providers/connection_providers.dart';
 import '../../../../presentation/views_projection/providers/live_control_providers.dart';
 import '../../../../presentation/views_projection/providers/presentation_providers.dart';
@@ -39,6 +42,13 @@ class HomeScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final connectionState = ref.watch(connectionStateProvider);
+    final role = ref.watch(connectionRoleProvider);
+
+    // ── Modo Receptor: mostrar pantalla de espera / proyección ──
+    if (role == ConnectionRole.receiver) {
+      final display = ref.watch(receptorDisplayProvider);
+      return ReceptorBinding(child: display);
+    }
 
     return Scaffold(
       appBar: AppBar(

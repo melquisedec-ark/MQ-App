@@ -208,8 +208,8 @@ class AppInitializer {
       return;
     }
 
-    // 2. Iniciar broadcast mDNS vía nsd (solo Windows)
-    if (_platform == TargetPlatform.windows) {
+    // 2. Iniciar broadcast mDNS vía nsd (Windows y Linux con Avahi)
+    if (_platform == TargetPlatform.windows || _platform == TargetPlatform.linux) {
       try {
         _mdnsBroadcast = MdnsBroadcastService();
         await _mdnsBroadcast!.start(
@@ -222,15 +222,10 @@ class AppInitializer {
       } catch (e) {
         _log.severe('Error al iniciar broadcast mDNS: $e');
         _log.warning(
-          'El servidor gRPC está funcionando, pero el broadcast mDNS '
-          'falló. Usa conexión manual con la IP de esta máquina.',
+          'El servidor gRPC está funcionando en puerto ${_displayServer!.port}, '
+          'pero el broadcast mDNS falló. Usa conexión manual con la IP de esta máquina.',
         );
       }
-    } else if (_platform == TargetPlatform.linux) {
-      _log.info(
-        'mDNS broadcast no disponible en Linux. '
-        'Usa conexión manual con la IP de esta máquina.',
-      );
     }
   }
 
