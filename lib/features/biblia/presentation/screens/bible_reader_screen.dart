@@ -188,8 +188,13 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   /// Sincroniza el versículo actual con la proyección (envía NEXT/PREV_SLIDE).
   Future<void> _syncVerseToProjection(WidgetRef ref, int nuevoVersiculo) async {
     final liveState = ref.read(liveControlProvider);
-    // Si no hay slides bíblicos cargados, no hacer nada
-    if (liveState.module != ProjectionModule.bible || liveState.slides.isEmpty) return;
+    final role = ref.read(connectionRoleProvider);
+    // En modo emisor, permitir navegación aunque liveControl no tenga módulo biblia
+    final isEmitter = role == ConnectionRole.emitter;
+    if (!isEmitter &&
+        (liveState.module != ProjectionModule.bible || liveState.slides.isEmpty)) {
+      return;
+    }
     // El slide del versículo N está en el índice N (slide 0 = título)
     final targetIndex = nuevoVersiculo;
     if (targetIndex >= 0 && targetIndex < liveState.slides.length) {
