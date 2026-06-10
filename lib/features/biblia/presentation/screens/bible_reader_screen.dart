@@ -205,7 +205,10 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           'index': targetIndex,
         });
       } catch (_) {}
-      // En modo emisor: enviar GO_TO_VERSE al display remoto
+    }
+    // En modo emisor: enviar GO_TO_VERSE al display remoto siempre,
+    // independientemente de si hay slides locales cargados.
+    if (isEmitter) {
       _syncVerseToRemoteDisplay(ref, nuevoVersiculo);
     }
   }
@@ -258,14 +261,15 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       if (next != null && next != _lastRecordedVersiculo) {
         // B2: respetar el toggle "Auto-registrar historial" en Configuración.
         final autoHist = ref.read(autoHistorialProvider);
-        if (!autoHist) return;
-        _lastRecordedVersiculo = next;
-        ref.read(historialRepositoryProvider).record(
-              versionId,
-              libroId,
-              capitulo,
-              next,
-            );
+        if (autoHist) {
+          _lastRecordedVersiculo = next;
+          ref.read(historialRepositoryProvider).record(
+                versionId,
+                libroId,
+                capitulo,
+                next,
+              );
+        }
       }
       // Si está presentando, sincronizar el versículo actual con la proyección.
       // Skip verse-level sync while a chapter-level sync is in progress to
