@@ -325,6 +325,15 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           ],
         ),
       ),
+      // Botón flotante para salir de pantalla completa (todos los dispositivos)
+      floatingActionButton: isFullscreen
+          ? FloatingActionButton.small(
+              onPressed: () =>
+                  ref.read(fullscreenModeProvider.notifier).exitFullscreen(),
+              tooltip: 'Salir de pantalla completa',
+              child: const Icon(Icons.fullscreen_exit_rounded),
+            )
+          : null,
     );
   }
 }

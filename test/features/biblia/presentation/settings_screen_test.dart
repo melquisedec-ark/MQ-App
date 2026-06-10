@@ -91,9 +91,9 @@ void main() {
     await configRepo.dispose();
   });
 
-  testWidgets('renders all four sections and defaults', (tester) async {
-    // Set a tall surface so all 4 sections are visible without scrolling.
-    await tester.binding.setSurfaceSize(const Size(400, 1600));
+  testWidgets('renders all three sections and defaults', (tester) async {
+    // Set a tall surface so all 3 sections are visible without scrolling.
+    await tester.binding.setSurfaceSize(const Size(400, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
@@ -110,7 +110,6 @@ void main() {
 
     // Sections visible
     expect(find.text('BIBLIA'), findsOneWidget);
-    expect(find.text('EMISOR'), findsOneWidget);
     expect(find.text('APARIENCIA'), findsOneWidget);
     expect(find.text('ACERCA DE'), findsOneWidget);
 
@@ -118,7 +117,6 @@ void main() {
     expect(find.text('Versión por defecto'), findsOneWidget);
     expect(find.text('Registrar historial'), findsOneWidget);
     expect(find.text('Color de nota por defecto'), findsOneWidget);
-    expect(find.text('Modo de vista del emisor'), findsOneWidget);
     expect(find.text('Tema de la aplicación'), findsOneWidget);
     expect(find.text('Acerca de MQ-App'), findsOneWidget);
   });
@@ -151,31 +149,5 @@ void main() {
     expect(stored, isFalse,
         reason: 'auto_historial debería haberse guardado como false');
   });
-
-  testWidgets('changing emitter view mode persists to config table',
-      (tester) async {
-    await tester.pumpWidget(
-      _buildHarness(
-        bibliaRepo: bibliaRepo,
-        favRepo: favRepo,
-        notasRepo: notasRepo,
-        histRepo: histRepo,
-        helper: helper,
-        configRepo: configRepo,
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Default is "compact". Tap "Preview" segment.
-    final previewSegment = find.text('Preview');
-    expect(previewSegment, findsOneWidget);
-    await tester.tap(previewSegment);
-    await tester.pumpAndSettle();
-
-    final stored = await configRepo.get(
-      BibliaConfigKeys.emitterViewModeDefault,
-      defaultValue: 'compact',
-    );
-    expect(stored, equals('preview'));
-  });
 }
+

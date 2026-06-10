@@ -8,6 +8,7 @@ import '../../data/models/biblia_version.dart';
 import '../../data/models/nota.dart';
 import '../../application/providers/biblia_config_provider.dart';
 import '../../application/providers/biblia_version_provider.dart';
+import '../../application/providers/historial_provider.dart';
 
 /// Pantalla de Configuración del módulo Biblia.
 ///
@@ -50,15 +51,6 @@ class SettingsScreen extends ConsumerWidget {
                 _AutoHistorialTile(),
                 _Divider(),
                 _NotaColorDefaultTile(),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // ── Emisor ──
-            const _SectionHeader(title: 'Emisor'),
-            const _Card(
-              children: [
-                _EmitterViewModeTile(),
               ],
             ),
             const SizedBox(height: 24),
@@ -245,14 +237,57 @@ class _AutoHistorialTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final value = ref.watch(autoHistorialProvider);
-    return SwitchListTile(
-      secondary: const Icon(Icons.history_rounded),
-      title: const Text('Registrar historial'),
-      subtitle: const Text('Guarda cada versículo que lees'),
-      value: value,
-      onChanged: (v) =>
-          ref.read(autoHistorialProvider.notifier).setEnabled(v),
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: const Icon(Icons.history_rounded),
+          title: const Text('Registrar historial'),
+          subtitle: const Text('Guarda cada versículo que lees (máx. 50)'),
+          value: value,
+          onChanged: (v) =>
+              ref.read(autoHistorialProvider.notifier).setEnabled(v),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _clearHistory(context, ref),
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+              label: const Text('Borrar historial'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.error,
+                side: BorderSide(color: colorScheme.error.withValues(alpha: 0.4)),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _clearHistory(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Borrar historial'),
+        content: const Text('¿Eliminar todo el historial de lectura?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Borrar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(historialRepositoryProvider).clear();
+    }
   }
 }
 
@@ -339,68 +374,6 @@ class _NotaColorDefaultTile extends ConsumerWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Emisor ────────────────────────────────────────────────────
-
-class _EmitterViewModeTile extends ConsumerWidget {
-  const _EmitterViewModeTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final current = ref.watch(emitterViewModeDefaultProvider);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.view_agenda_outlined),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Modo de vista del emisor'),
-                    Text(
-                      'Cambia entre Compact y Preview',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                value: 'compact',
-                label: Text('Compact'),
-                icon: Icon(Icons.short_text_rounded),
-              ),
-              ButtonSegment(
-                value: 'preview',
-                label: Text('Preview'),
-                icon: Icon(Icons.article_outlined),
-              ),
-            ],
-            selected: {current},
-            onSelectionChanged: (sel) {
-              ref
-                  .read(emitterViewModeDefaultProvider.notifier)
-                  .setMode(sel.first);
-            },
-          ),
-        ],
       ),
     );
   }

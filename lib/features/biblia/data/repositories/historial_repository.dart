@@ -8,6 +8,9 @@ import '../models/historial_item.dart';
 
 /// Repositorio del historial de lectura de versículos.
 ///
+/// Mantiene máximo 50 entradas (FIFO: la más antigua se elimina al
+/// agregar una nueva).
+///
 /// Append-only: cada `record` inserta una fila. El sistema usa esto para:
 /// - "Última posición leída" (`ORDER BY fecha_lectura DESC LIMIT 1`).
 /// - Streaks de lectura (`GROUP BY date(fecha_lectura)`).
@@ -78,11 +81,8 @@ class HistorialRepository {
     return rows.map(HistorialItem.fromJoinedMap).toList(growable: false);
   }
 
-  /// Registra una lectura (append). Idempotente en el sentido de que
-  /// múltiples llamadas con la misma cuádrupla crean múltiples filas
-  /// (eso es lo deseado: queremos contar cada lectura individual para
-  /// los stats de "más leídos").
-  ///
+  /// Registra una lectura (append). Si ya hay 50 entradas, elimina la
+  /// más antigua antes de insertar (FIFO).
   /// Devuelve el `id` de la fila insertada.
   Future<int> record(
     int versionId,
@@ -91,6 +91,17 @@ class HistorialRepository {
     int numero,
   ) async {
     final db = await _database;
+    // FIFO: eliminar la más antigua si ya hay 50
+    final countRow = await db.rawQuery(
+      'SELECT COUNT(*) as cnt FROM historial_versiculo',
+    );
+    final count = countRow.first['cnt'] as int?;
+    if (count != null && count >= 50) {
+      await db.rawDelete(
+        'DELETE FROM historial_versiculo WHERE id = '
+        '(SELECT id FROM historial_versiculo ORDER BY fecha_lectura ASC LIMIT 1)',
+      );
+    }
     final timestamp =
         DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
     final id = await db.insert('historial_versiculo', {
