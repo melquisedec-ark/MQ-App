@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
 
 import '../../../core/enums/himno_tipo.dart';
+import '../../../core/network/connection_state.dart';
+import '../../../data/datasources/remote/grpc_control_datasource.dart';
 import '../../../domain/entities/himno.dart';
 import '../../../core/window_manager/window_providers.dart';
 import '../../shared_widgets/control_sheets.dart';
 import '../../views_personal/providers/audio_providers.dart';
 import '../../views_personal/providers/hymn_providers.dart';
+import '../providers/connection_providers.dart';
 import '../providers/live_control_providers.dart';
 import '../providers/presentation_providers.dart';
 
@@ -150,6 +153,18 @@ class PresentControlBar extends ConsumerWidget {
   // ─────────────────────────────────────────────────────────────
   // Navegación: Anterior / Siguiente
   // ─────────────────────────────────────────────────────────────
+  
+  /// Envía comando al subproceso local (WindowService) y también por gRPC
+  /// si está conectado como emisor a un display remoto.
+  void _sendNavCommand(WidgetRef ref, String type, {VoidCallback? gRPCAction}) {
+    // Local: subproceso de proyección
+    ref.read(windowServiceProvider).sendMessage({'type': type});
+    // Remoto: display gRPC si estamos en modo emisor
+    final role = ref.read(connectionRoleProvider);
+    if (role == ConnectionRole.emitter && gRPCAction != null) {
+      gRPCAction();
+    }
+  }
 
   Widget _buildNavigationRow(
     BuildContext context,
@@ -170,9 +185,10 @@ class PresentControlBar extends ConsumerWidget {
           onPressed: liveState.hasPrevSlide
               ? () {
                   ref.read(liveControlProvider.notifier).prevSlide();
-                  ref
-                      .read(windowServiceProvider)
-                      .sendMessage({'type': 'PREV_SLIDE'});
+                  _sendNavCommand(ref, 'PREV_SLIDE',
+                    gRPCAction: () =>
+                        ref.read(controlDataSourceProvider).sendPrevStanza(),
+                  );
                 }
               : null,
         ),
@@ -203,9 +219,10 @@ class PresentControlBar extends ConsumerWidget {
           onPressed: liveState.hasNextSlide
               ? () {
                   ref.read(liveControlProvider.notifier).nextSlide();
-                  ref
-                      .read(windowServiceProvider)
-                      .sendMessage({'type': 'NEXT_SLIDE'});
+                  _sendNavCommand(ref, 'NEXT_SLIDE',
+                    gRPCAction: () =>
+                        ref.read(controlDataSourceProvider).sendNextStanza(),
+                  );
                 }
               : null,
         ),
@@ -364,18 +381,25 @@ class PresentControlBar extends ConsumerWidget {
     }
   }
 
-  /// Finaliza la presentación: cierra la ventana de proyección y
-  /// resetea [isPresentingProvider] a `false`.
+  /// Finaliza la presentación. En modo emisor desconecta del display
+  /// remoto; en modo local cierra la ventana de proyección.
   Future<void> _handleExit(BuildContext context, WidgetRef ref) async {
-    final windowService = ref.read(windowServiceProvider);
-    try {
-      await windowService.closeProjectionWindow();
-    } catch (_) {
-      // Ignorar error si la ventana ya estaba cerrada
+    final role = ref.read(connectionRoleProvider);
+    if (role == ConnectionRole.emitter) {
+      // Desconectar del display remoto
+      try {
+        ref.read(connectionStateProvider.notifier).disconnect();
+      } catch (_) {}
+      ref.read(connectionRoleProvider.notifier).state = ConnectionRole.none;
+    } else {
+      // Cerrar ventana de proyección local
+      final windowService = ref.read(windowServiceProvider);
+      try {
+        await windowService.closeProjectionWindow();
+      } catch (_) {}
     }
     ref.read(isPresentingProvider.notifier).state = false;
-    // Resetear el estado del control en vivo: volver a módulo himnario
-    // y limpiar contenido
+    // Resetear el estado del control en vivo
     final notifier = ref.read(liveControlProvider.notifier);
     notifier.switchToModule(ProjectionModule.hymnal);
     notifier.loadHymn(

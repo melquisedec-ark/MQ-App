@@ -9,10 +9,12 @@ import '../../../domain/entities/himno.dart';
 import '../../shared_widgets/hymn_card.dart';
 import '../../shared_widgets/providers/appearance_provider.dart';
 import '../../shared_widgets/search_bar.dart';
+import '../../dual_mode_wrapper/dual_mode_providers.dart';
 import '../../views_projection/controller/minimal_control_screen.dart';
 import '../../views_projection/providers/active_hymn_providers.dart';
 import '../../views_projection/providers/connection_providers.dart';
 import '../../views_projection/providers/live_control_providers.dart';
+import '../../views_projection/providers/presentation_providers.dart';
 import '../providers/hymn_providers.dart';
 
 /// Dashboard para modo Emisor (conectado a display remoto).
@@ -223,11 +225,20 @@ class _ConnectedDashboardState extends ConsumerState<ConnectedDashboard> {
                             himno.id;
                         await _sendHymnToDisplay(ref, himno);
                         if (context.mounted) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const MinimalControlScreen(),
-                            ),
-                          );
+                          final isDesktop =
+                              ref.read(isDesktopModeProvider);
+                          if (isDesktop) {
+                            // Desktop: activar overlay PresentControlBar
+                            ref.read(isPresentingProvider.notifier).state =
+                                true;
+                          } else {
+                            // Móvil: abrir pantalla de control minimalista
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const MinimalControlScreen(),
+                              ),
+                            );
+                          }
                         }
                       },
                     );
