@@ -144,6 +144,30 @@ Verificar:
 3. En dispatch: el input `version` coincide con el tag del release
 4. El nombre del asset coincide con el que busca `gh release upload`
 
+### Workflow dispatch: el parámetro `version` debe incluir la `v`
+
+El workflow recibe `version` como input, ej: `-f version=v1.0.10`. Si se omite la `v` (ej: `-f version=1.0.10`), el `gh release upload` falla porque el release se llama `v1.0.10`. **Siempre incluir la `v`**.
+
+### Android APK solo se sube al release en workflow_dispatch
+
+El workflow `build_android.yml` tiene el step "Upload to GitHub Release" condicionado a `if: github.event_name == 'workflow_dispatch'`. Los builds por push solo generan artifact, no suben al release. **Siempre disparar Android vía `workflow_dispatch`**.
+
+### Linux y macOS solo se disparan con tags o workflow_dispatch
+
+A diferencia de Android y Windows (que se disparan con push a `mq-app-init`), Linux y macOS requieren **tag** (`v*.*.*`) o `workflow_dispatch`. Si se necesita un build sin tag, usar dispatch.
+
+### Windows build: el upload usa `github.ref_name` (del tag), no el input `version`
+
+En el workflow `build_windows.yml`, el upload step usa `${{ inputs.version || github.ref_name }}`. Si el build se dispara por push (sin input `version`), usa `github.ref_name` que es el nombre del branch (`mq-app-init`), no un tag. Esto causa error 404 en `gh release upload`. **Solución**: disparar Windows también vía `workflow_dispatch` con `-f version=vX.Y.Z`.
+
+### Resources
+
+- Windows build tarda ~5 min
+- Android build tarda ~11 min
+- Linux build tarda ~5 min
+- macOS build tarda ~12 min
+- Todos en paralelo: ~12 min total
+
 ---
 
 ## Comandos utiles
