@@ -13,10 +13,17 @@ import 'package:mqapp/features/biblia/data/models/versiculo.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
 import 'package:mqapp/features/biblia/presentation/screens/bible_reader_screen.dart';
 import 'package:mqapp/presentation/views_projection/providers/presentation_providers.dart';
-import '../test_providers.dart';
+import 'package:mqapp/features/biblia/application/providers/biblia_config_provider.dart';
 
 /// Mock de WindowService.
 class _MockWindowService extends Mock implements WindowService {}
+
+/// Override para themeModeProvider — evita que ThemeModeNotifier acceda a
+/// la base de datos (sqflite) durante los tests de widgets, eliminando
+/// el timer pendiente de 10s que hacía fallar los tests en CI.
+final _themeModeOverride = themeModeProvider.overrideWith(
+  (ref) => ThemeModeNotifier(ref, autoLoad: false)..state = ThemeMode.light,
+);
 
 /// Mock de BibliaRepository.
 class _MockBibliaRepository extends Mock implements BibliaRepository {}
@@ -70,7 +77,7 @@ void main() {
         currentLibroIdProvider.overrideWith((ref) => libroId),
         currentCapituloProvider.overrideWith((ref) => capitulo),
         currentVersiculoNumeroProvider.overrideWith((ref) => 1),
-        themeModeTestOverride,
+        _themeModeOverride,
         ...overrides,
       ],
       child: MaterialApp(
