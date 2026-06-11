@@ -47,6 +47,10 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
   final _manualPortController =
       TextEditingController(text: '${GrpcDisplayServer.defaultPort}');
 
+  /// Focus nodes para detectar si el usuario está escribiendo IP/puerto.
+  final _manualIpFocusNode = FocusNode();
+  final _manualPortFocusNode = FocusNode();
+
   /// Si el permiso [Permission.nearbyWifiDevices] ya fue verificado.
   bool _permissionChecked = false;
 
@@ -67,7 +71,8 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
   @override
   void initState() {
     super.initState();
-    _startAutoRefresh();
+    // NO iniciar auto-refresh aquí: se activa al presionar "Buscar"
+    // o al entrar en la vista de escaneo por primera vez.
     _checkPermission();
   }
 
@@ -85,10 +90,13 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
   }
 
   /// Inicia el timer que invalida [displayScannerProvider] cada 10s.
+  /// No invalida si el usuario está escribiendo una IP manualmente.
   void _startAutoRefresh() {
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (!mounted) return;
+      // No invalidar mientras el usuario escribe una IP
+      if (_manualIpFocusNode.hasFocus || _manualPortFocusNode.hasFocus) return;
       ref.invalidate(displayScannerProvider);
     });
   }
@@ -99,6 +107,8 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
     _refreshTimer = null;
     _manualIpController.dispose();
     _manualPortController.dispose();
+    _manualIpFocusNode.dispose();
+    _manualPortFocusNode.dispose();
     super.dispose();
   }
 
@@ -153,6 +163,8 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
 
   void _selectEmitter() {
     ref.read(connectionRoleProvider.notifier).state = ConnectionRole.emitter;
+    // Iniciar escaneo al seleccionar modo emisor
+    _startAutoRefresh();
   }
 
   void _selectReceiver() {
@@ -183,10 +195,17 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
     final role = ref.watch(connectionRoleProvider);
     final showScanView = role == ConnectionRole.emitter || isConnected;
 
+    // Iniciar escaneo cuando la vista de búsqueda está activa y no hay timer
+    if (showScanView && _refreshTimer == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startAutoRefresh();
+      });
+    }
+
     return DraggableScrollableSheet(
-      initialChildSize: showScanView ? 0.65 : 0.55,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
         return Container(
@@ -814,6 +833,7 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
               flex: 3,
               child: TextField(
                 controller: _manualIpController,
+                focusNode: _manualIpFocusNode,
                 decoration: const InputDecoration(
                   labelText: 'Dirección IP',
                   hintText: '192.168.1.100',
@@ -830,6 +850,7 @@ class _DiscoverDisplaySheetState extends ConsumerState<DiscoverDisplaySheet> {
               flex: 1,
               child: TextField(
                 controller: _manualPortController,
+                focusNode: _manualPortFocusNode,
                 decoration: const InputDecoration(
                   labelText: 'Puerto',
                   hintText: '50051',
