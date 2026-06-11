@@ -8,6 +8,8 @@ on:
         required: false
         default: 'latest'
   push:
+    branches:
+      - mq-app-init
     tags:
       - 'v*.*.*'
 

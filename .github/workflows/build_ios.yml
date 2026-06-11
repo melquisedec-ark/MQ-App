@@ -24,6 +24,8 @@ on:
           - enterprise
 
   push:
+    branches:
+      - mq-app-init
     tags:
       - 'v*.*.*'
 
