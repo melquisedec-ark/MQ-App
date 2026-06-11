@@ -99,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Slide actual es el título bíblico (displayLabel = "Título")
-      expect(find.textContaining('Título'), findsWidgets);
+      expect(find.text('0'), findsWidgets);
 
       // Avanzar
       await tester.tap(find.text('SIGUIENTE'));
@@ -137,7 +137,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Debería estar en el título bíblico
-      expect(find.textContaining('Título'), findsWidgets);
+      expect(find.text('0'), findsWidgets);
     });
 
     testWidgets('Botones de acceso rápido están presentes', (tester) async {
@@ -172,7 +172,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Debería estar en el título bíblico
-      expect(find.textContaining('Título'), findsWidgets);
+      expect(find.text('0'), findsWidgets);
     });
 
     testWidgets('Botón Apagar activa modo blackout', (tester) async {

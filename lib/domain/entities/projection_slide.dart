@@ -57,7 +57,7 @@ sealed class ProjectionSlide with _$ProjectionSlide {
         TitleSlide() => 'Portada',
         LyricsSlide() => 'Letra',
         AmenSlide() => 'Amén',
-        BibleTitleSlide() => 'Título',
+        BibleTitleSlide() => '0',
         VerseSlide() => 'Versículo',
         BibleEndSlide() => 'Fin',
       };

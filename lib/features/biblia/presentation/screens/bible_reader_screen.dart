@@ -557,12 +557,13 @@ class _ChapterVerseListState extends ConsumerState<_ChapterVerseList> {
                     backgroundColor: appearance.backgroundColor,
                     lineHeight: appearance.lineHeight,
                     onTap: () {
+                      // En modo emisor, el tap no modifica estado local
+                      // (ni focus, ni counter, ni envío al display remoto)
+                      if (ref.read(connectionRoleProvider) == ConnectionRole.emitter) return;
                       ref.read(currentVerseProvider.notifier).state = numero;
                       ref
                           .read(currentVersiculoNumeroProvider.notifier)
                           .state = numero;
-                      // En modo emisor: enviar directamente al display remoto
-                      _emitTapToRemote(ref, numero);
                     },
                     onLongPress: () {
                       _openNoteEditorForVerse(context, ref, numero, libroId, capitulo, notasEnCapitulo[numero]);

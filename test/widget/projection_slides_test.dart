@@ -228,7 +228,7 @@ void main() {
       final title = slide as BibleTitleSlide;
       expect(title.libroNombre, 'Génesis');
       expect(title.capitulo, 1);
-      expect(slide.displayLabel, 'Título');
+      expect(slide.displayLabel, '0');
     });
 
     test('VerseSlide se crea con número, texto, referencia y total', () {
@@ -294,7 +294,7 @@ void main() {
   });
 
   group('ProjectionSlide — construcción bíblica completa', () {
-    test('_buildBibleSlides crea secuencia: [Título, Versículos..., Fin]', () {
+    test('_buildBibleSlides crea secuencia: [Título, Versículos...]', () {
       const versiculos = [
         'En el principio creó Dios los cielos y la tierra.',
         'Y la tierra estaba desordenada y vacía.',
@@ -309,15 +309,13 @@ void main() {
           referencia: 'Génesis 1:${e.key + 1}',
           totalVersiculos: versiculos.length,
         )),
-        const ProjectionSlide.bibleEnd(libroNombre: 'Génesis', capitulo: 1),
       ];
 
-      expect(slides.length, 5); // Título + 3 versículos + Fin
+      expect(slides.length, 4); // Título + 3 versículos (sin Fin)
       expect(slides[0], isA<BibleTitleSlide>());
       expect(slides[1], isA<VerseSlide>());
       expect(slides[2], isA<VerseSlide>());
       expect(slides[3], isA<VerseSlide>());
-      expect(slides[4], isA<BibleEndSlide>());
     });
 
     test('Los versículos mantienen orden y referencia correctos', () {
@@ -400,7 +398,7 @@ void main() {
       );
       expect(
         const ProjectionSlide.bibleTitle(libroNombre: 'Génesis', capitulo: 1).displayLabel,
-        'Título',
+        '0',
       );
       expect(
         const ProjectionSlide.verse(

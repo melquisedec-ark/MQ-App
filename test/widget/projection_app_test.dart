@@ -512,11 +512,10 @@ void main() {
         expect(liveState.module, ProjectionModule.bible);
         expect(liveState.libroNombre, 'Génesis');
         expect(liveState.capitulo, 1);
-        expect(liveState.slides.length, 4); // Título + 2 versículos + Fin
+        expect(liveState.slides.length, 3); // Título + 2 versículos (sin Fin)
         expect(liveState.slides[0], isA<BibleTitleSlide>());
         expect(liveState.slides[1], isA<VerseSlide>());
         expect(liveState.slides[2], isA<VerseSlide>());
-        expect(liveState.slides[3], isA<BibleEndSlide>());
 
         await stdinCtrl.close();
       });

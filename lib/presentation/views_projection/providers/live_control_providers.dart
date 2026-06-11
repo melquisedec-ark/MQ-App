@@ -267,7 +267,7 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
     );
   }
 
-  /// Construye slides bíblicos: título + versículos + fin.
+  /// Construye slides bíblicos: título + versículos. Sin slide de fin.
   List<ProjectionSlide> _buildBibleSlides(
     String libro, int cap, List<String> versos,
   ) {
@@ -279,7 +279,6 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
         referencia: '$libro $cap:${e.key + 1}',
         totalVersiculos: versos.length,
       )),
-      ProjectionSlide.bibleEnd(libroNombre: libro, capitulo: cap),
     ];
     return slides;
   }
