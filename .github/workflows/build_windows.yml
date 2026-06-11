@@ -41,8 +41,18 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Fix MSVC experimental/coroutine deprecation
+        run: |
+          # Visual Studio 2022+ depreca <experimental/coroutine>.
+          # Definir macro para suprimir error STL1011 en plugins audioplayers_windows y permission_handler_windows.
+          [System.Environment]::SetEnvironmentVariable('CXXFLAGS', '/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS', 'Process')
+          [System.Environment]::SetEnvironmentVariable('CL', '/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS', 'Process')
+
       - name: Build Windows release
         run: flutter build windows --release
+        env:
+          CXXFLAGS: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
 
       - name: Zip build output
         run: |
