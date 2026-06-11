@@ -11,6 +11,7 @@ import 'core/database/db_version_manager.dart';
 import 'core/theme/app_theme.dart';
 import 'features/biblia/application/providers/biblia_config_provider.dart';
 import 'presentation/views_projection/display/projection_app.dart';
+import 'presentation/shared_widgets/fullscreen_handler.dart';
 import 'presentation/widgets/db_update_screen.dart';
 
 /// Punto de entrada principal de MQ App 2.0.
@@ -140,7 +141,7 @@ Future<void> _startMainApp() async {
             theme: appTheme,
             darkTheme: darkTheme,
             themeMode: ref.watch(themeModeProvider),
-            home: const MqApp(),
+            home: const FullscreenHandler(child: MqApp()),
           ),
         ),
       ),

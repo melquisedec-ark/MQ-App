@@ -61,6 +61,12 @@ sealed class ProjectionSlide with _$ProjectionSlide {
         VerseSlide() => 'Versículo',
         BibleEndSlide() => 'Fin',
       };
+
+  /// Número visible en el control (1-indexed para versículos).
+  int get displayNumber => switch (this) {
+        VerseSlide(:final numero) => numero,
+        _ => 0,
+      };
 }
 
 /// Extension de helpers para [TitleSlide].

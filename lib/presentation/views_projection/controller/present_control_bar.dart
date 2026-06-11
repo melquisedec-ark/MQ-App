@@ -202,7 +202,7 @@ class PresentControlBar extends ConsumerWidget {
           child: Text(
             slide != null
                 ? '${slide.displayLabel} '
-                    '${liveState.currentSlideIndex + 1} / ${liveState.slides.length}'
+                    '${slide.displayNumber > 0 ? slide.displayNumber : liveState.currentSlideIndex + 1} / ${liveState.slides.length}'
                 : isBible
                     ? '${liveState.libroNombre} ${liveState.capitulo}'
                     : '—',
