@@ -20,6 +20,7 @@ import 'package:mqapp/presentation/views_projection/providers/connection_provide
 import 'package:mqapp/core/window_manager/window_providers.dart';
 import 'package:mqapp/core/window_manager/window_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:mqapp/features/biblia/application/providers/biblia_config_provider.dart';
 
 // ─── Mocks ─────────────────────────────────────────────────────
 
@@ -90,30 +91,38 @@ final _desktopModeOverride = isDesktopModeProvider.overrideWith(
   (ref) => true,
 );
 
-/// WindowService mock
-final _mockWindowService = MockWindowService();
+  /// WindowService mock
+  final _mockWindowService = MockWindowService();
 
-/// Provider override para windowServiceProvider con mock
-final _windowServiceOverride = windowServiceProvider.overrideWith(
-  (ref) => _mockWindowService,
-);
+  /// Provider override para windowServiceProvider con mock
+  final _windowServiceOverride = windowServiceProvider.overrideWith(
+    (ref) => _mockWindowService,
+  );
 
-Widget _buildTestApp({
+  /// Override para themeModeProvider — evita que ThemeModeNotifier acceda a
+  /// la base de datos (sqflite) durante los tests de widgets, eliminando
+  /// el timer pendiente de 10s que hacía fallar los tests en CI.
+  final _themeModeOverride = themeModeProvider.overrideWith(
+    (ref) => ThemeModeNotifier(ref)..setThemeMode(ThemeMode.light),
+  );
+
+  Widget _buildTestApp({
   required Himno himno,
   List<Override> overrides = const [],
   NavigatorObserver? navigatorObserver,
 }) {
   return ProviderScope(
-    overrides: [
-      _hymnRepoOverride,
-      _audioRepoOverride,
-      _controlRepoOverride,
-      _stanzasOverride,
-      _isConnectedOverride,
-      _desktopModeOverride,
-      _windowServiceOverride,
-      ...overrides,
-    ],
+      overrides: [
+        _hymnRepoOverride,
+        _audioRepoOverride,
+        _controlRepoOverride,
+        _stanzasOverride,
+        _isConnectedOverride,
+        _desktopModeOverride,
+        _windowServiceOverride,
+        _themeModeOverride,
+        ...overrides,
+      ],
     child: MaterialApp(
       home: HymnDetailScreen(himno: himno),
       routes: {
