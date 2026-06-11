@@ -177,9 +177,9 @@ class _ChapterGrid extends ConsumerWidget {
 
     return GridView.builder(
       padding: EdgeInsets.fromLTRB(
-        isDesktop ? 2 : 16, 8, isDesktop ? 2 : 16, 8),
+        isDesktop ? 2 : 16, 8, isDesktop ? 2 : 16, 8,),
       gridDelegate: isDesktop
-          ? SliverGridDelegateWithMaxCrossAxisExtent(
+          ? const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 52,
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,

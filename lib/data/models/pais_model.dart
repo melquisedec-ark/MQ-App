@@ -1,3 +1,5 @@
+import '../../domain/entities/pais.dart';
+
 class PaisModel {
   final int id;
   final String nombre;
@@ -16,4 +18,6 @@ class PaisModel {
         'nombre': nombre,
         'codigo': codigo,
       };
+
+  Pais toEntity() => Pais(id: id, nombre: nombre, codigo: codigo);
 }

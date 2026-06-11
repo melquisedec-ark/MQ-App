@@ -1,10 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/errors/auth_exception.dart';
 import '../../../core/errors/failures.dart';
 import '../../repositories/hymn_repository.dart';
-import '../../../presentation/views_admin/providers/auth_providers.dart';
-import '../../../presentation/views_personal/providers/hymn_providers.dart';
 
 /// Caso de uso para eliminar (soft-delete) un himno.
 ///
@@ -13,21 +9,25 @@ import '../../../presentation/views_personal/providers/hymn_providers.dart';
 /// proceder con la eliminación.
 class DeleteHymnUseCase {
   final HymnRepository _repository;
-  final Ref _ref;
 
-  DeleteHymnUseCase(this._repository, this._ref);
+  DeleteHymnUseCase(this._repository);
 
   /// Elimina un himno por su ID.
   ///
   /// Primero verifica que el himno no tenga referencias en arreglos
   /// musicales, pistas de audio o historial de reproducción.
   ///
+  /// [himnoId] ID del himno a eliminar.
+  /// [isAdmin] indica si el usuario tiene permisos de administrador.
+  ///
   /// Lanza [AuthException] si el usuario no está autenticado.
   /// Lanza [InvalidArgumentFailure] si el ID es inválido.
   /// Lanza [DatabaseFailure] si el himno tiene referencias activas
   ///   o si ocurre un error en la base de datos.
-  Future<void> execute(int himnoId) async {
-    final isAdmin = _ref.read(isAuthenticatedProvider);
+  Future<void> execute(
+    int himnoId, {
+    required bool isAdmin,
+  }) async {
     if (!isAdmin) {
       throw const AuthException(
         'Solo administradores pueden eliminar himnos',
@@ -51,8 +51,4 @@ class DeleteHymnUseCase {
   }
 }
 
-/// Provider de [DeleteHymnUseCase].
-final deleteHymnUseCaseProvider = Provider<DeleteHymnUseCase>((ref) {
-  final repo = ref.read(hymnRepositoryProvider);
-  return DeleteHymnUseCase(repo, ref);
-});
+

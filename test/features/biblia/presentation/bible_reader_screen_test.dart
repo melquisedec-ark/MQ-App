@@ -262,7 +262,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // Long-press sobre el texto del versículo (que es el que tiene
@@ -320,7 +320,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // El texto de la nota debe ser visible en el preview inline.
@@ -334,7 +334,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // El badge "Tiene nota" no debe aparecer.
@@ -357,11 +357,11 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // Tap en el _NotaPreview widget usando la key.
-    final preview = find.byKey(ValueKey('nota_preview_1'));
+    final preview = find.byKey(const ValueKey('nota_preview_1'));
     expect(preview, findsOneWidget);
     await tester.tap(preview);
     // El padre tiene onDoubleTap, hay que esperar el delay de gesture arena.
@@ -376,7 +376,7 @@ void main() {
   testWidgets('verse mode con nota larga (50+ chars) se trunca con ellipsis',
       (tester) async {
     await setConfig('biblia.reader_view_mode', 'verse');
-    final longNote = 'Esta es una nota muy larga que tiene más de 50 '
+    const longNote = 'Esta es una nota muy larga que tiene más de 50 '
         'caracteres para verificar que se trunca con ellipsis en el preview '
         'cuando excede el maxLines de 5';
     expect(longNote.length, greaterThan(50));
@@ -387,7 +387,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // El texto debe estar presente (widget lo renderiza aunque truncado).
@@ -405,7 +405,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // El botón Editar es visible.
@@ -429,7 +429,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     expect(find.text('Tu nota'), findsOneWidget);
@@ -453,7 +453,7 @@ void main() {
       libroId: 1, // Génesis
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // La sección muestra "2 referencias" (plural porque hay 2).
@@ -473,7 +473,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // El header "N referencias" no debe aparecer en absoluto.
@@ -651,7 +651,7 @@ void main() {
       notasRepositoryProvider.overrideWithValue(notasRepo),
       historialRepositoryProvider.overrideWithValue(histRepo),
       crossReferenciasRepositoryProvider.overrideWithValue(crossRefsRepo),
-    ]);
+    ],);
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
@@ -659,8 +659,8 @@ void main() {
         container: container,
         child: MaterialApp(
           home: Consumer(builder: (context, ref, _) {
-            return BibleReaderScreen(libroId: 1, capitulo: 1);
-          }),
+            return const BibleReaderScreen(libroId: 1, capitulo: 1);
+          },),
         ),
       ),
     );
@@ -779,7 +779,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // La sección tiene "2 referencias" y la primera ref es Génesis 1:2.
@@ -831,7 +831,7 @@ void main() {
           return n;
         },
       ),
-    ]);
+    ],);
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
@@ -910,7 +910,7 @@ void main() {
       libroId: 1,
       capitulo: 1,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
 
     // La sección muestra "2 referencias".
@@ -943,7 +943,7 @@ void main() {
       libroId: 4, // Juan
       capitulo: 3,
       initialViewMode: BibleReaderViewMode.verse,
-    ));
+    ),);
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();

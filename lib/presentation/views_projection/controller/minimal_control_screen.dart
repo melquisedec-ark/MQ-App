@@ -246,7 +246,7 @@ Future<void> _sendHymnToDisplay(
                 'tipo': e.tipo.name,
                 'orden': e.orden,
                 'contenido': e.contenido,
-              })
+              },)
           .toList(),
     );
     // NUEVO: Enviar apariencia actual al display remoto

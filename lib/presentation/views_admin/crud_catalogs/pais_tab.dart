@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../data/models/pais_model.dart';
+import '../../../domain/entities/pais.dart';
 import 'package:mqapp/core/ui/app_snackbar.dart';
 import '../../views_admin/providers/admin_providers.dart'
     show
@@ -16,7 +16,7 @@ import '../../views_admin/providers/auth_providers.dart' show currentUserProvide
 // ─────────────────────────────────────────────────────────────
 
 final _paisListProvider =
-    FutureProvider.autoDispose<List<PaisModel>>((ref) {
+    FutureProvider.autoDispose<List<Pais>>((ref) {
   return ref.watch(getAllPaisesUseCaseProvider).execute();
 });
 
@@ -39,7 +39,7 @@ class _PaisTabState extends ConsumerState<PaisTab> {
   final _codigoController = TextEditingController();
 
   // Modo edición
-  PaisModel? _editando;
+  Pais? _editando;
 
   @override
   void dispose() {
@@ -56,7 +56,7 @@ class _PaisTabState extends ConsumerState<PaisTab> {
     });
   }
 
-  void _cargarEnFormulario(PaisModel pais) {
+  void _cargarEnFormulario(Pais pais) {
     setState(() {
       _editando = pais;
       _nombreController.text = pais.nombre;
@@ -127,7 +127,7 @@ class _PaisTabState extends ConsumerState<PaisTab> {
 
   // ── Eliminar con confirmación ────────────────────────────
 
-  Future<void> _eliminarPais(PaisModel pais) async {
+  Future<void> _eliminarPais(Pais pais) async {
     final admin = ref.read(currentUserProvider);
     if (admin == null) return;
 

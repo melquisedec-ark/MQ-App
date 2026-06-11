@@ -68,8 +68,6 @@ class _NoteEditorModalState extends ConsumerState<NoteEditorModal> {
     final textTheme = Theme.of(context).textTheme;
     final viewInsets = MediaQuery.of(context).viewInsets;
 
-    final defaultColor = ref.watch(notaColorDefaultProvider);
-
     // Escuchar cambios en el provider de nota para cargar datos asíncronos
     // (cuando existingNote es null, ej. desde el bottom bar).
     ref.listen<AsyncValue<Nota?>>(

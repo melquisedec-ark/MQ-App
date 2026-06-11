@@ -109,7 +109,7 @@ void main() {
     test(
       '3. openProjectionWindow() cuando falla Process.start → relanza excepción',
       () async {
-        final ProcessStarter failingStarter = (
+        Future<Process> failingStarter(
           String _, List<String> __, {
           String? workingDirectory,
           Map<String, String>? environment,
@@ -117,8 +117,8 @@ void main() {
           bool? runInShell,
           ProcessStartMode? mode,
         }) async {
-          throw ProcessException('Mock error', []);
-        };
+          throw const ProcessException('Mock error', []);
+        }
 
         final service = SubprocessWindowService(processStarter: failingStarter);
         final events = <WindowEvent>[];

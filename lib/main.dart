@@ -5,7 +5,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
-import 'bootstrap/app_container.dart';
 import 'bootstrap/app_initializer.dart';
 import 'core/database/db_version_manager.dart';
 import 'core/theme/app_theme.dart';
@@ -60,8 +59,6 @@ void main(List<String> args) async {
 /// vía stdin/stdout (protocolo JSON).
 Future<void> _startProjectionWindow() async {
   final container = ProviderContainer();
-  AppContainer().init(container);
-  await windowManager.ensureInitialized();
   // El subproceso NO necesita servidor gRPC (se comunica por stdin/stdout)
   await AppInitializer.initialize(container: container, skipNetwork: true);
 
@@ -97,7 +94,6 @@ Future<void> _startMainApp() async {
 
   // ── Crear contenedor Riverpod ──
   final container = ProviderContainer();
-  AppContainer().init(container);
 
   // ── Verificar si la BD necesita actualización ──
   // Lectura rápida de versiones sin abrir la BD

@@ -276,7 +276,7 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
       texto: e.value,
       referencia: '$libro $cap:${e.key + 1}',
       totalVersiculos: versos.length,
-    )).toList();
+    ),).toList();
   }
 
   /// Cambia tema bíblico en proyección.

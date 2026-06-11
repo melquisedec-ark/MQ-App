@@ -1,11 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/enums/usuario_rol.dart';
 import '../../../core/errors/auth_exception.dart';
-import '../../../data/datasources/local/catalog_local_datasource.dart';
-import '../../../data/models/pista_audio_model.dart';
 import '../../entities/usuario.dart';
 import '../../entities/pista_audio.dart';
+import '../../repositories/pista_audio_repository.dart';
 
 // ─────────────────────────────────────────────────────────────
 // GetPistasByHimnoUseCase
@@ -13,22 +10,15 @@ import '../../entities/pista_audio.dart';
 
 /// Caso de uso para obtener todas las pistas de audio de un himno.
 class GetPistasByHimnoUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final PistaAudioRepository _repository;
 
-  GetPistasByHimnoUseCase(this._dataSource);
+  GetPistasByHimnoUseCase(this._repository);
 
   /// Retorna la lista de [PistaAudio] asociadas al himno con [himnoId].
   Future<List<PistaAudio>> execute(int himnoId) async {
-    final models = await _dataSource.getPistasByHimno(himnoId);
-    return models.map((m) => m.toEntity()).toList();
+    return await _repository.getByHimno(himnoId);
   }
 }
-
-final getPistasByHimnoUseCaseProvider =
-    Provider<GetPistasByHimnoUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return GetPistasByHimnoUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // CreatePistaUseCase
@@ -38,9 +28,9 @@ final getPistasByHimnoUseCaseProvider =
 ///
 /// Requiere permisos de administrador.
 class CreatePistaUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final PistaAudioRepository _repository;
 
-  CreatePistaUseCase(this._dataSource);
+  CreatePistaUseCase(this._repository);
 
   /// Crea una nueva pista de audio para el himno con [himnoId].
   ///
@@ -66,8 +56,7 @@ class CreatePistaUseCase {
       throw const AuthException('La ruta del archivo no puede estar vacía');
     }
 
-    final model = PistaAudioModel(
-      id: 0, // SQLite auto-incrementa
+    return await _repository.create(
       himnoId: himnoId,
       rutaArchivo: rutaArchivo.trim(),
       descripcion: descripcion?.trim(),
@@ -75,15 +64,8 @@ class CreatePistaUseCase {
       formato: formato?.trim(),
       origen: origen,
     );
-
-    return await _dataSource.insertPista(model);
   }
 }
-
-final createPistaUseCaseProvider = Provider<CreatePistaUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return CreatePistaUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // DeletePistaUseCase
@@ -93,9 +75,9 @@ final createPistaUseCaseProvider = Provider<CreatePistaUseCase>((ref) {
 ///
 /// Requiere permisos de administrador.
 class DeletePistaUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final PistaAudioRepository _repository;
 
-  DeletePistaUseCase(this._dataSource);
+  DeletePistaUseCase(this._repository);
 
   /// Elimina la pista de audio con el [id] dado.
   ///
@@ -108,11 +90,6 @@ class DeletePistaUseCase {
         'Solo administradores pueden eliminar pistas de audio',
       );
     }
-    await _dataSource.deletePista(id);
+    await _repository.delete(id);
   }
 }
-
-final deletePistaUseCaseProvider = Provider<DeletePistaUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return DeletePistaUseCase(dataSource);
-});

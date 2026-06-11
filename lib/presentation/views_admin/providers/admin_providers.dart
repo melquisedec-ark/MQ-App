@@ -2,11 +2,11 @@
 // Proveedores de casos de uso — Módulo Admin
 // ─────────────────────────────────────────────────────────────
 // Barrel file que re-exporta los providers de todos los casos
-// de uso del módulo de administración para facilitar su consumo
-// desde la capa de presentación.
+// de uso del módulo de administración desde presentation/.
 
-export '../../../../domain/usecases/admin/manage_categorias.dart'
+export '../../providers/usecases/admin_usecase_providers.dart'
     show
+        // Categorías
         GetAllCategoriasUseCase,
         getAllCategoriasUseCaseProvider,
         CreateCategoriaUseCase,
@@ -14,10 +14,8 @@ export '../../../../domain/usecases/admin/manage_categorias.dart'
         UpdateCategoriaUseCase,
         updateCategoriaUseCaseProvider,
         DeleteCategoriaUseCase,
-        deleteCategoriaUseCaseProvider;
-
-export '../../../../domain/usecases/admin/manage_paises.dart'
-    show
+        deleteCategoriaUseCaseProvider,
+        // Países
         GetAllPaisesUseCase,
         getAllPaisesUseCaseProvider,
         CreatePaisUseCase,
@@ -25,19 +23,15 @@ export '../../../../domain/usecases/admin/manage_paises.dart'
         UpdatePaisUseCase,
         updatePaisUseCaseProvider,
         DeletePaisUseCase,
-        deletePaisUseCaseProvider;
-
-export '../../../../domain/usecases/admin/manage_pistas.dart'
-    show
+        deletePaisUseCaseProvider,
+        // Pistas
         GetPistasByHimnoUseCase,
         getPistasByHimnoUseCaseProvider,
         CreatePistaUseCase,
         createPistaUseCaseProvider,
         DeletePistaUseCase,
-        deletePistaUseCaseProvider;
-
-export '../../../../domain/usecases/admin/manage_fondos.dart'
-    show
+        deletePistaUseCaseProvider,
+        // Fondos
         GetAllFondosUseCase,
         getAllFondosUseCaseProvider,
         CreateFondoUseCase,
@@ -45,10 +39,8 @@ export '../../../../domain/usecases/admin/manage_fondos.dart'
         UpdateFondoUseCase,
         updateFondoUseCaseProvider,
         DeleteFondoUseCase,
-        deleteFondoUseCaseProvider;
-
-export '../../../../domain/usecases/admin/manage_usuarios.dart'
-    show
+        deleteFondoUseCaseProvider,
+        // Usuarios
         GetAllUsuariosUseCase,
         getAllUsuariosUseCaseProvider,
         CreateUsuarioUseCase,

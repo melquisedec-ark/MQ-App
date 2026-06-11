@@ -81,6 +81,9 @@ assets/db/*.db-shm
 !assets/db/biblia.db
 !assets/db/mqapp.db
 
+# Coverage reports
+coverage/
+
 # Cross-references (v1.0.3+) — archivos grandes generados en build-time
 # Dataset: 8.3 MB (openbible.info)
 # Seed SQL: ~27 MB (340k INSERTs)

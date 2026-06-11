@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +13,6 @@ import 'package:mqapp/features/biblia/application/providers/historial_provider.d
 import 'package:mqapp/features/biblia/application/providers/notas_provider.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_config_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
-import 'package:mqapp/features/biblia/data/repositories/biblia_search_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/notas_repository.dart';
@@ -36,7 +34,6 @@ void main() {
   group('B2: Bible reader respeta toggle autoHistorial', () {
     late Database db;
     late BibliaRepository bibliaRepo;
-    late BibliaSearchRepository searchRepo;
     late FavoritosRepository favRepo;
     late NotasRepository notasRepo;
     late HistorialRepository histRepo;
@@ -47,7 +44,6 @@ void main() {
       final bundle = await createBibleReposWithSeed();
       db = bundle.db;
       bibliaRepo = bundle.biblia;
-      searchRepo = bundle.search;
       favRepo = bundle.favoritos;
       notasRepo = bundle.notas;
       histRepo = bundle.historial;
@@ -78,7 +74,7 @@ void main() {
           historialRepositoryProvider.overrideWithValue(histRepo),
           bibliaConfigRepositoryProvider.overrideWithValue(configRepo),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: BibleReaderScreen(libroId: 1, capitulo: 1),
         ),
       );
@@ -88,7 +84,7 @@ void main() {
     ///
     /// Polling con [tester.pump] en lugar de timers para no contaminar
     /// el árbol con timers pendientes.
-    Future<void> _waitForAutoHistorial(
+    Future<void> waitForAutoHistorial(
       WidgetTester tester,
       ProviderContainer container,
       bool expected,
@@ -112,7 +108,7 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(BibleReaderScreen)),
       );
-      await _waitForAutoHistorial(tester, container, true);
+      await waitForAutoHistorial(tester, container, true);
 
       final baseline = await _countHistorialRows(db);
 
@@ -121,7 +117,7 @@ void main() {
 
       final after = await _countHistorialRows(db);
       expect(after, baseline + 1,
-          reason: 'con toggle activo, cambiar versículo debe registrar');
+          reason: 'con toggle activo, cambiar versículo debe registrar',);
     });
 
     testWidgets(
@@ -135,7 +131,7 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(BibleReaderScreen)),
       );
-      await _waitForAutoHistorial(tester, container, false);
+      await waitForAutoHistorial(tester, container, false);
 
       final baseline = await _countHistorialRows(db);
 
@@ -146,7 +142,7 @@ void main() {
 
       final after = await _countHistorialRows(db);
       expect(after, baseline,
-          reason: 'B2: con toggle desactivado, ningún cambio debe registrar');
+          reason: 'B2: con toggle desactivado, ningún cambio debe registrar',);
     });
 
     testWidgets(
@@ -160,7 +156,7 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(BibleReaderScreen)),
       );
-      await _waitForAutoHistorial(tester, container, false);
+      await waitForAutoHistorial(tester, container, false);
 
       final baseline = await _countHistorialRows(db);
 
@@ -178,13 +174,13 @@ void main() {
       await container
           .read(autoHistorialProvider.notifier)
           .setEnabled(true);
-      await _waitForAutoHistorial(tester, container, true);
+      await waitForAutoHistorial(tester, container, true);
 
       // Cambio a v4 → ahora debe registrar.
       container.read(currentVersiculoNumeroProvider.notifier).state = 4;
       await tester.pumpAndSettle();
       expect(await _countHistorialRows(db), baseline + 1,
-          reason: 'tras activar toggle, debe volver a registrar');
+          reason: 'tras activar toggle, debe volver a registrar',);
     });
   });
 }

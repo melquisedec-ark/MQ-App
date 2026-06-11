@@ -1,10 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/enums/usuario_rol.dart';
 import '../../../core/errors/auth_exception.dart';
-import '../../../data/datasources/local/catalog_local_datasource.dart';
 import '../../entities/usuario.dart';
 import '../../entities/categoria.dart';
+import '../../repositories/categoria_repository.dart';
 
 // ─────────────────────────────────────────────────────────────
 // GetAllCategoriasUseCase
@@ -12,32 +10,21 @@ import '../../entities/categoria.dart';
 
 /// Caso de uso para obtener todas las categorías.
 class GetAllCategoriasUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final CategoriaRepository _dataSource;
 
   GetAllCategoriasUseCase(this._dataSource);
 
   /// Retorna la lista completa de [Categoria] ordenadas alfabéticamente.
   Future<List<Categoria>> execute() async {
-    final models = await _dataSource.getAllCategorias();
-    return models.map((m) => m.toEntity()).toList();
+    return await _dataSource.getAll();
   }
 }
-
-final getAllCategoriasUseCaseProvider =
-    Provider<GetAllCategoriasUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return GetAllCategoriasUseCase(dataSource);
-});
-
-// ─────────────────────────────────────────────────────────────
-// CreateCategoriaUseCase
-// ─────────────────────────────────────────────────────────────
 
 /// Caso de uso para crear una nueva categoría.
 ///
 /// Requiere permisos de administrador.
 class CreateCategoriaUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final CategoriaRepository _dataSource;
 
   CreateCategoriaUseCase(this._dataSource);
 
@@ -56,15 +43,10 @@ class CreateCategoriaUseCase {
     if (nombre.trim().isEmpty) {
       throw const AuthException('El nombre de la categoría no puede estar vacío');
     }
-    return await _dataSource.insertCategoria(nombre.trim());
+    return await _dataSource.create(nombre.trim());
   }
 }
 
-final createCategoriaUseCaseProvider =
-    Provider<CreateCategoriaUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return CreateCategoriaUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // DeleteCategoriaUseCase
@@ -74,7 +56,7 @@ final createCategoriaUseCaseProvider =
 ///
 /// Requiere permisos de administrador.
 class DeleteCategoriaUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final CategoriaRepository _dataSource;
 
   DeleteCategoriaUseCase(this._dataSource);
 
@@ -89,15 +71,10 @@ class DeleteCategoriaUseCase {
         'Solo administradores pueden eliminar categorías',
       );
     }
-    await _dataSource.deleteCategoria(id);
+    await _dataSource.delete(id);
   }
 }
 
-final deleteCategoriaUseCaseProvider =
-    Provider<DeleteCategoriaUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return DeleteCategoriaUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // UpdateCategoriaUseCase
@@ -107,7 +84,7 @@ final deleteCategoriaUseCaseProvider =
 ///
 /// Requiere permisos de administrador.
 class UpdateCategoriaUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final CategoriaRepository _dataSource;
 
   UpdateCategoriaUseCase(this._dataSource);
 
@@ -127,12 +104,6 @@ class UpdateCategoriaUseCase {
         'El nombre de la categoría no puede estar vacío',
       );
     }
-    await _dataSource.updateCategoria(id, nombre.trim());
+    await _dataSource.update(id, nombre.trim());
   }
 }
-
-final updateCategoriaUseCaseProvider =
-    Provider<UpdateCategoriaUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return UpdateCategoriaUseCase(dataSource);
-});

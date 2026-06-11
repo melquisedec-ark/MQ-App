@@ -4,7 +4,7 @@ import 'package:mqapp/features/biblia/data/models/cross_referencia.dart';
 void main() {
   group('CrossReferencia', () {
     // Muestra base: Juan 3:16 → Génesis 22:12-14 (rango destino)
-    final sampleRango = CrossReferencia(
+    const sampleRango = CrossReferencia(
       id: 1,
       versionId: 1,
       fromLibroId: 43,
@@ -18,7 +18,7 @@ void main() {
     );
 
     // Muestra 2: versículo único destino
-    final sampleUnico = CrossReferencia(
+    const sampleUnico = CrossReferencia(
       id: 2,
       versionId: 1,
       fromLibroId: 43,
@@ -33,7 +33,7 @@ void main() {
 
     group('fromMap', () {
       test('construye correctamente un versículo único destino', () {
-        final m = CrossReferencia.fromMap({
+        final m = CrossReferencia.fromMap(const {
           'id': 2,
           'version_id': 1,
           'from_libro_id': 43,
@@ -49,7 +49,7 @@ void main() {
       });
 
       test('construye correctamente un rango destino (inicio < fin)', () {
-        final m = CrossReferencia.fromMap({
+        final m = CrossReferencia.fromMap(const {
           'id': 1,
           'version_id': 1,
           'from_libro_id': 43,
@@ -65,7 +65,7 @@ void main() {
       });
 
       test('usa default 1 cuando votos es null en el map', () {
-        final m = CrossReferencia.fromMap({
+        final m = CrossReferencia.fromMap(const {
           'id': 3,
           'version_id': 1,
           'from_libro_id': 1,
@@ -144,14 +144,14 @@ void main() {
     });
 
     test('equality: misma data → iguales (incluye votos)', () {
-      final a = CrossReferencia(
+      const a = CrossReferencia(
         id: 1, versionId: 1,
         fromLibroId: 43, fromCapitulo: 3, fromVersiculo: 16,
         toLibroId: 1, toCapitulo: 22,
         toVersiculoInicio: 12, toVersiculoFin: 14,
         votos: 5,
       );
-      final b = CrossReferencia(
+      const b = CrossReferencia(
         id: 1, versionId: 1,
         fromLibroId: 43, fromCapitulo: 3, fromVersiculo: 16,
         toLibroId: 1, toCapitulo: 22,
@@ -163,7 +163,7 @@ void main() {
     });
 
     test('inequality: votos diferentes → diferentes', () {
-      final a = sampleRango;
+      const a = sampleRango;
       final b = sampleRango.copyWith(votos: 99);
       expect(a, isNot(equals(b)));
     });
@@ -172,7 +172,7 @@ void main() {
   // Feature #2: CrossReferenciaConPreview
   group('CrossReferenciaConPreview', () {
     test('fromMap con preview_texto parsea correctamente', () {
-      final m = CrossReferenciaConPreview.fromMap({
+      final m = CrossReferenciaConPreview.fromMap(const {
         'id': 1,
         'version_id': 1,
         'from_libro_id': 43,
@@ -198,7 +198,7 @@ void main() {
     });
 
     test('fromMap sin preview_texto: preview es null', () {
-      final m = CrossReferenciaConPreview.fromMap({
+      final m = CrossReferenciaConPreview.fromMap(const {
         'id': 2,
         'version_id': 1,
         'from_libro_id': 43,
@@ -215,7 +215,7 @@ void main() {
     });
 
     test('preview texto corto se guarda completo', () {
-      final m = CrossReferenciaConPreview.fromMap({
+      final m = CrossReferenciaConPreview.fromMap(const {
         'id': 3,
         'version_id': 1,
         'from_libro_id': 1,
@@ -232,7 +232,7 @@ void main() {
     });
 
     test('hereda propiedades de CrossReferencia (esRango)', () {
-      final m = CrossReferenciaConPreview.fromMap({
+      final m = CrossReferenciaConPreview.fromMap(const {
         'id': 4,
         'version_id': 1,
         'from_libro_id': 43,
@@ -251,7 +251,7 @@ void main() {
     });
 
     test('equality incluye previewTexto', () {
-      final a = CrossReferenciaConPreview(
+      const a = CrossReferenciaConPreview(
         id: 1, versionId: 1,
         fromLibroId: 1, fromCapitulo: 1, fromVersiculo: 1,
         toLibroId: 1, toCapitulo: 1,
@@ -259,7 +259,7 @@ void main() {
         votos: 1,
         previewTexto: 'Preview A',
       );
-      final b = CrossReferenciaConPreview(
+      const b = CrossReferenciaConPreview(
         id: 1, versionId: 1,
         fromLibroId: 1, fromCapitulo: 1, fromVersiculo: 1,
         toLibroId: 1, toCapitulo: 1,
@@ -269,7 +269,7 @@ void main() {
       );
       expect(a, equals(b));
 
-      final c = CrossReferenciaConPreview(
+      const c = CrossReferenciaConPreview(
         id: 1, versionId: 1,
         fromLibroId: 1, fromCapitulo: 1, fromVersiculo: 1,
         toLibroId: 1, toCapitulo: 1,

@@ -37,14 +37,14 @@ class GrpcControlDataSource {
       _channel = ClientChannel(
         host,
         port: port,
-        options: ChannelOptions(
+        options: const ChannelOptions(
           credentials: ChannelCredentials.insecure(),
           keepAlive: ClientKeepAliveOptions(
             pingInterval: Duration(seconds: 30),
             timeout: Duration(seconds: 10),
             permitWithoutCalls: true,
           ),
-          connectTimeout: const Duration(seconds: 10),
+          connectTimeout: Duration(seconds: 10),
         ),
       );
 
@@ -264,7 +264,7 @@ class GrpcControlDataSource {
           tipo: e['tipo'] as String,
           orden: e['orden'] as int,
           contenido: e['contenido'] as String,
-        )),
+        ),),
       );
 
       final response = await _client!.sendHymnContent(payload);
@@ -288,7 +288,7 @@ class GrpcControlDataSource {
         'id': bg.id,
         'nombre': bg.nombre,
         'tipo': bg.tipo,
-      }).toList();
+      },).toList();
     } on GrpcError catch (e) {
       _log.severe('Error gRPC en getAvailableBackgrounds: $e');
       throw NetworkException(

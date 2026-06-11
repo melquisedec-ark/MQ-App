@@ -20,7 +20,6 @@ dependencies:
   # `remove_diacritics 2` en FTS5. La lib nativa se bundlea con
   # `sqlite3_flutter_libs`, evitando depender de la libsqlite3
   # del sistema (que en iOS < 16 y Android < 14 es < 3.39).
-  sqflite: ^2.4.1
   sqflite_common: ^2.5.4
   sqflite_common_ffi: ^2.3.7
   sqlite3_flutter_libs: ^0.5.0
@@ -51,7 +50,6 @@ dependencies:
 
   # UI Desktop
   window_manager: ^0.5.1
-  desktop_multi_window: ^0.3.0
 
   # File Picker
   file_picker: ^8.0.0
@@ -60,7 +58,6 @@ dependencies:
   uuid: ^4.4.0
   collection: ^1.19.0
   equatable: ^2.0.5
-  intl: ^0.19.0
   logging: ^1.3.0
   url_launcher: ^6.3.2
   wakelock_plus: ^1.5.2

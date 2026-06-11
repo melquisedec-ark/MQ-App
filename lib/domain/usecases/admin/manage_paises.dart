@@ -1,10 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/enums/usuario_rol.dart';
 import '../../../core/errors/auth_exception.dart';
-import '../../../data/datasources/local/catalog_local_datasource.dart';
-import '../../../data/models/pais_model.dart';
 import '../../entities/usuario.dart';
+import '../../entities/pais.dart';
+import '../../repositories/pais_repository.dart';
 
 // ─────────────────────────────────────────────────────────────
 // GetAllPaisesUseCase
@@ -12,20 +10,16 @@ import '../../entities/usuario.dart';
 
 /// Caso de uso para obtener la lista de países.
 class GetAllPaisesUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final PaisRepository _dataSource;
 
   GetAllPaisesUseCase(this._dataSource);
 
-  /// Retorna una lista de [PaisModel] ordenados alfabéticamente.
-  Future<List<PaisModel>> execute() async {
-    return await _dataSource.getAllPaises();
+    /// Retorna una lista de [Pais] ordenados alfabéticamente.
+  Future<List<Pais>> execute() async {
+    return await _dataSource.getAll();
   }
 }
 
-final getAllPaisesUseCaseProvider = Provider<GetAllPaisesUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return GetAllPaisesUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // CreatePaisUseCase
@@ -35,7 +29,7 @@ final getAllPaisesUseCaseProvider = Provider<GetAllPaisesUseCase>((ref) {
 ///
 /// Requiere permisos de administrador.
 class CreatePaisUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final PaisRepository _dataSource;
 
   CreatePaisUseCase(this._dataSource);
 
@@ -54,14 +48,10 @@ class CreatePaisUseCase {
     if (nombre.trim().isEmpty) {
       throw const AuthException('El nombre del país no puede estar vacío');
     }
-    return await _dataSource.insertPais(nombre.trim(), codigo: codigo?.trim());
+    return await _dataSource.create(nombre: nombre.trim(), codigo: codigo?.trim());
   }
 }
 
-final createPaisUseCaseProvider = Provider<CreatePaisUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return CreatePaisUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // UpdatePaisUseCase
@@ -71,7 +61,7 @@ final createPaisUseCaseProvider = Provider<CreatePaisUseCase>((ref) {
 ///
 /// Requiere permisos de administrador.
 class UpdatePaisUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final PaisRepository _dataSource;
 
   UpdatePaisUseCase(this._dataSource);
 
@@ -89,16 +79,14 @@ class UpdatePaisUseCase {
     if (nombre.trim().isEmpty) {
       throw const AuthException('El nombre del país no puede estar vacío');
     }
-    await _dataSource.updatePais(
-      PaisModel(id: id, nombre: nombre.trim(), codigo: codigo?.trim()),
+    await _dataSource.update(
+      id: id,
+      nombre: nombre.trim(),
+      codigo: codigo?.trim(),
     );
   }
 }
 
-final updatePaisUseCaseProvider = Provider<UpdatePaisUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return UpdatePaisUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // DeletePaisUseCase
@@ -108,7 +96,7 @@ final updatePaisUseCaseProvider = Provider<UpdatePaisUseCase>((ref) {
 ///
 /// Requiere permisos de administrador.
 class DeletePaisUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final PaisRepository _dataSource;
 
   DeletePaisUseCase(this._dataSource);
 
@@ -123,11 +111,6 @@ class DeletePaisUseCase {
         'Solo administradores pueden eliminar países',
       );
     }
-    await _dataSource.deletePais(id);
+    await _dataSource.delete(id);
   }
 }
-
-final deletePaisUseCaseProvider = Provider<DeletePaisUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return DeletePaisUseCase(dataSource);
-});

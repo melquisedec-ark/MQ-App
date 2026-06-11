@@ -1,9 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 
 import '../../../core/enums/usuario_rol.dart';
-import '../../../data/datasources/local/catalog_local_datasource.dart';
-import '../../../data/repositories/admin_repository_impl.dart';
 import '../../entities/usuario.dart';
 import '../../repositories/admin_repository.dart';
 
@@ -74,27 +71,3 @@ class DeleteUsuarioUseCase {
     await _repository.deleteUsuario(id);
   }
 }
-
-final getAllUsuariosUseCaseProvider = Provider<GetAllUsuariosUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  final repository = AdminRepositoryImpl(dataSource);
-  return GetAllUsuariosUseCase(repository);
-});
-
-final createUsuarioUseCaseProvider = Provider<CreateUsuarioUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  final repository = AdminRepositoryImpl(dataSource);
-  return CreateUsuarioUseCase(repository);
-});
-
-final updateUsuarioUseCaseProvider = Provider<UpdateUsuarioUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  final repository = AdminRepositoryImpl(dataSource);
-  return UpdateUsuarioUseCase(repository);
-});
-
-final deleteUsuarioUseCaseProvider = Provider<DeleteUsuarioUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  final repository = AdminRepositoryImpl(dataSource);
-  return DeleteUsuarioUseCase(repository);
-});

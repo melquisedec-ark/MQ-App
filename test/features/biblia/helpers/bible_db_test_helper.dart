@@ -65,7 +65,7 @@ Future<Database> createBibleTestDb() async {
   final db = await databaseFactory.openDatabase(
     dbPath,
     options: OpenDatabaseOptions(
-      version: BibleDatabaseHelper.SCHEMA_VERSION,
+      version: BibleDatabaseHelper.kSchemaVersion,
       onCreate: (db, version) async {
         await _applyBibleSchema(db);
       },

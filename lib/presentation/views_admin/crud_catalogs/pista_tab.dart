@@ -6,7 +6,7 @@ import '../../../core/utils/audio_file_service.dart';
 
 import '../../../domain/entities/himno.dart';
 import '../../../domain/entities/pista_audio.dart';
-import '../../../domain/usecases/himno/search_hymns_usecase.dart';
+import '../../providers/usecases/hymn_usecase_providers.dart';
 import 'package:mqapp/core/ui/app_snackbar.dart';
 import '../../views_admin/providers/admin_providers.dart'
     show

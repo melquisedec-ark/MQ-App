@@ -65,14 +65,14 @@ void main() {
     mockRepo = MockHymnRepository();
     mockWindowService = MockWindowService();
 
-    registerFallbackValue(Himno(id: 1, titulo: '', tipo: HimnoTipo.oficial));
+    registerFallbackValue(const Himno(id: 1, titulo: '', tipo: HimnoTipo.oficial));
     registerFallbackValue(<Estrofa>[]);
     registerFallbackValue(<String, dynamic>{});
   });
 
   group('projectHymn', () {
     testWidgets('envía SET_CONFIG después de LOAD_HYMN', (tester) async {
-      final himno = Himno(
+      const himno = Himno(
         id: 1,
         titulo: 'Santo, Santo, Santo',
         numero: 1,
@@ -118,7 +118,7 @@ void main() {
 
     testWidgets('SET_CONFIG contiene todos los campos de apariencia',
         (tester) async {
-      final himno = Himno(
+      const himno = Himno(
         id: 2,
         titulo: 'Test',
         tipo: HimnoTipo.oficial,
@@ -189,7 +189,7 @@ void main() {
 
     testWidgets('SET_CONFIG envía "black" cuando bgColor es transparente',
         (tester) async {
-      final himno = Himno(
+      const himno = Himno(
         id: 3,
         titulo: 'Test',
         tipo: HimnoTipo.oficial,
@@ -232,7 +232,7 @@ void main() {
 
     testWidgets('retorna null en éxito y mensaje de error en fallo',
         (tester) async {
-      final himno = Himno(
+      const himno = Himno(
         id: 99,
         titulo: 'Fallo',
         tipo: HimnoTipo.oficial,

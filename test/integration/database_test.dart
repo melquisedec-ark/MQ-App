@@ -318,7 +318,7 @@ void main() {
           FROM Version_Pais vp
           JOIN Pais p ON p.id = vp.pais_id
           WHERE vp.himno_id = ?
-        ''', [himnoId]);
+        ''', [himnoId],);
         expect(versions, hasLength(1));
         expect(versions[0]['pais'], 'México');
 

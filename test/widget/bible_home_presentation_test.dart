@@ -55,7 +55,7 @@ void main() {
         .thenAnswer((_) async {});
   });
 
-  Widget _buildTestApp({bool isPresenting = false}) {
+  Widget buildTestApp({bool isPresenting = false}) {
     return ProviderScope(
       overrides: [
         windowServiceProvider.overrideWithValue(mockWindowService),
@@ -71,7 +71,7 @@ void main() {
 
   group('Bible HomeScreen PresentFAB', () {
     testWidgets('Muestra "Presentar" cuando NO está presentando', (tester) async {
-      await tester.pumpWidget(_buildTestApp(isPresenting: false));
+      await tester.pumpWidget(buildTestApp(isPresenting: false));
       await tester.pump();
 
       expect(find.text('Presentar'), findsOneWidget);
@@ -79,7 +79,7 @@ void main() {
     });
 
     testWidgets('Muestra "Detener Presentación" cuando SÍ está presentando', (tester) async {
-      await tester.pumpWidget(_buildTestApp(isPresenting: true));
+      await tester.pumpWidget(buildTestApp(isPresenting: true));
       await tester.pump();
 
       expect(find.text('Detener Presentación'), findsOneWidget);
@@ -87,7 +87,7 @@ void main() {
     });
 
     testWidgets('FAB tiene heroTag único', (tester) async {
-      await tester.pumpWidget(_buildTestApp(isPresenting: false));
+      await tester.pumpWidget(buildTestApp(isPresenting: false));
       await tester.pump();
 
       final fab = tester.widget<FloatingActionButton>(
@@ -97,7 +97,7 @@ void main() {
     });
 
     testWidgets('Al tocar "Presentar" abre ventana de proyección', (tester) async {
-      await tester.pumpWidget(_buildTestApp(isPresenting: false));
+      await tester.pumpWidget(buildTestApp(isPresenting: false));
       await tester.pump();
 
       await tester.tap(find.text('Presentar'));
@@ -107,7 +107,7 @@ void main() {
     });
 
     testWidgets('Al tocar "Detener Presentación" cierra ventana', (tester) async {
-      await tester.pumpWidget(_buildTestApp(isPresenting: true));
+      await tester.pumpWidget(buildTestApp(isPresenting: true));
       await tester.pump();
 
       await tester.tap(find.text('Detener Presentación'));
@@ -117,7 +117,7 @@ void main() {
     });
 
     testWidgets('FAB usa color dorado cuando no presenta', (tester) async {
-      await tester.pumpWidget(_buildTestApp(isPresenting: false));
+      await tester.pumpWidget(buildTestApp(isPresenting: false));
       await tester.pump();
 
       final fab = tester.widget<FloatingActionButton>(

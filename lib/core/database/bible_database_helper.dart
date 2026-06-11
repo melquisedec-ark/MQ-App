@@ -26,7 +26,7 @@ final _log = Logger('BibleDatabaseHelper');
 ///
 /// Hay dos números de versión:
 ///
-/// 1. `SCHEMA_VERSION` (int): controla migraciones estructurales aplicadas
+/// 1. `kSchemaVersion` (int): controla migraciones estructurales aplicadas
 ///    por sqflite (`onUpgrade`). Se incrementa cuando cambia el DDL.
 /// 2. Asset version (`bible_schema_version.dart`): controla cuándo se debe
 ///    reemplazar la BD completa. Se incrementa cuando cambia el seed data
@@ -56,7 +56,7 @@ class BibleDatabaseHelper {
   /// * v2: añade tabla `cross_referencia` (migración 004). Triggers de
   ///       validación version_id↔libro_id en ambas FKs. Índices FROM, TO,
   ///       y por votos. ~340k refs precargadas del dataset openbible.
-  static const int SCHEMA_VERSION = 2;
+  static const int kSchemaVersion = 2;
 
   Database? _database;
 
@@ -86,7 +86,7 @@ class BibleDatabaseHelper {
         _log.info('Debug mode: usando BD del proyecto en $projectDb');
         final db = await _openDatabasePlatform(projectDb);
         _log.info(
-          'BibleDatabaseHelper abierta (schema v$SCHEMA_VERSION) en '
+          'BibleDatabaseHelper abierta (schema v$kSchemaVersion) en '
           '${stopwatch.elapsedMilliseconds}ms',
         );
         return db;
@@ -100,7 +100,7 @@ class BibleDatabaseHelper {
       // app no se rompa durante el desarrollo de UI antes de tener la DB.
       final db = await _openInMemoryWithSchema();
       _log.info(
-        'BibleDatabaseHelper abierta in-memory (schema v$SCHEMA_VERSION) en '
+        'BibleDatabaseHelper abierta in-memory (schema v$kSchemaVersion) en '
         '${stopwatch.elapsedMilliseconds}ms',
       );
       return db;
@@ -149,7 +149,7 @@ class BibleDatabaseHelper {
     }
 
     _log.info(
-      'BibleDatabaseHelper abierta (schema v$SCHEMA_VERSION) en '
+      'BibleDatabaseHelper abierta (schema v$kSchemaVersion) en '
       '${stopwatch.elapsedMilliseconds}ms',
     );
     return db;
@@ -179,7 +179,7 @@ class BibleDatabaseHelper {
     final db = await databaseFactoryFfi.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: SCHEMA_VERSION,
+        version: kSchemaVersion,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       ),
@@ -197,7 +197,7 @@ class BibleDatabaseHelper {
     final db = await databaseFactoryFfi.openDatabase(
       inMemoryDatabasePath,
       options: OpenDatabaseOptions(
-        version: SCHEMA_VERSION,
+        version: kSchemaVersion,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       ),

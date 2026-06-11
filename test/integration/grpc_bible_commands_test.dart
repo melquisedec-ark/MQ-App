@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,8 +9,6 @@ import 'package:mqapp/core/window_manager/window_providers.dart';
 import 'package:mqapp/core/window_manager/window_service.dart';
 import 'package:mqapp/data/datasources/remote/grpc_display_server.dart';
 import 'package:mqapp/features/biblia/application/providers/biblia_version_provider.dart';
-import 'package:mqapp/features/biblia/application/providers/current_libro_provider.dart';
-import 'package:mqapp/features/biblia/application/providers/current_versiculo_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/favoritos_provider.dart';
 import 'package:mqapp/features/biblia/data/models/biblia_version.dart';
 import 'package:mqapp/features/biblia/data/models/capitulo.dart';
@@ -19,7 +16,6 @@ import 'package:mqapp/features/biblia/data/models/libro.dart';
 import 'package:mqapp/features/biblia/data/models/versiculo.dart';
 import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
-import 'package:mqapp/presentation/views_projection/providers/live_control_providers.dart';
 import 'package:mqapp/proto/generated/hymn_control.pbgrpc.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────
@@ -50,7 +46,7 @@ ProviderContainer createTestContainer({
 
 /// Datos bíblicos de prueba: Génesis 1 con 5 versículos.
 class TestBibleData {
-  static final version = BibliaVersion(
+  static const version = BibliaVersion(
     id: 1,
     nombre: 'Reina-Valera 1909',
     abreviatura: 'RVR1909',
@@ -58,7 +54,7 @@ class TestBibleData {
     activa: true,
   );
 
-  static final libro = Libro(
+  static const libro = Libro(
     id: 1,
     versionId: 1,
     nombre: 'Génesis',
@@ -92,7 +88,7 @@ class TestBibleData {
         ),
       );
 
-  static final libroExodo = Libro(
+  static const libroExodo = Libro(
     id: 2,
     versionId: 1,
     nombre: 'Éxodo',
@@ -102,7 +98,7 @@ class TestBibleData {
     totalCapitulos: 40,
   );
 
-  static final capituloExodo = Capitulo(
+  static const capituloExodo = Capitulo(
     id: 2,
     libroId: 2,
     numero: 1,
@@ -264,7 +260,7 @@ void main() {
           (m) => m['type'],
           'type',
           'LOAD_VERSE',
-        )),
+        ),),
       ),
     ).called(1);
   });
@@ -298,7 +294,7 @@ void main() {
       () => mockWindowService.sendMessage(
         any(that: isA<Map<String, dynamic>>()
             .having((m) => m['type'], 'type', 'GO_TO_SLIDE')
-            .having((m) => m['index'], 'index', 2)),
+            .having((m) => m['index'], 'index', 2),),
       ),
     ).called(1);
   });
@@ -317,7 +313,7 @@ void main() {
       () => mockWindowService.sendMessage(
         any(that: isA<Map<String, dynamic>>()
             .having((m) => m['type'], 'type', 'SET_BIBLE_THEME')
-            .having((m) => m['theme'], 'theme', 'noche')),
+            .having((m) => m['theme'], 'theme', 'noche'),),
       ),
     ).called(1);
   });
@@ -337,7 +333,7 @@ void main() {
       () => mockWindowService.sendMessage(
         any(that: isA<Map<String, dynamic>>()
             .having((m) => m['type'], 'type', 'SET_BIBLE_FONT_SIZE')
-            .having((m) => m['scale'], 'scale', 2.0)),
+            .having((m) => m['scale'], 'scale', 2.0),),
       ),
     ).called(1);
   });
@@ -355,7 +351,7 @@ void main() {
       () => mockWindowService.sendMessage(
         any(that: isA<Map<String, dynamic>>()
             .having((m) => m['type'], 'type', 'SET_BIBLE_FONT_SIZE')
-            .having((m) => m['scale'], 'scale', 0.8)),
+            .having((m) => m['scale'], 'scale', 0.8),),
       ),
     ).called(1);
   });
@@ -373,7 +369,7 @@ void main() {
       () => mockWindowService.sendMessage(
         any(that: isA<Map<String, dynamic>>()
             .having((m) => m['type'], 'type', 'SET_BIBLE_FONT_SIZE')
-            .having((m) => m['scale'], 'scale', 4.0)),
+            .having((m) => m['scale'], 'scale', 4.0),),
       ),
     ).called(1);
   });
@@ -390,7 +386,7 @@ void main() {
         any(that: isA<Map<String, dynamic>>()
             .having((m) => m['type'], 'type', 'LOAD_VERSE')
             .having((m) => m['libroNombre'], 'libroNombre', 'Génesis')
-            .having((m) => m['capitulo'], 'capitulo', 1)),
+            .having((m) => m['capitulo'], 'capitulo', 1),),
       ),
     ).called(1);
   });
@@ -428,7 +424,7 @@ void main() {
           (m) => m['type'],
           'type',
           'GO_TO_SLIDE',
-        )),
+        ),),
       ),
     );
   });
@@ -467,7 +463,7 @@ void main() {
             (m) => m['type'],
             'type',
             'LOAD_VERSE',
-          )),
+          ),),
         ),
       ).called(1);
     },

@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart' hide ConnectionState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,11 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mqapp/core/enums/himno_tipo.dart';
-import 'package:mqapp/core/window_manager/window_service.dart';
 import 'package:mqapp/data/datasources/remote/grpc_control_datasource.dart';
-import 'package:mqapp/domain/entities/categoria.dart';
 import 'package:mqapp/domain/entities/himno.dart';
-import 'package:mqapp/domain/entities/version_pais.dart';
 import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import 'package:mqapp/presentation/views_personal/dashboard/home_screen.dart';
 import 'package:mqapp/presentation/views_personal/dashboard/present_button.dart';
@@ -22,9 +18,6 @@ import 'package:mqapp/presentation/views_projection/providers/presentation_provi
 
 /// Mock de GrpcControlDataSource para ConnectionNotifier.
 class _MockGrpcControlDataSource extends Mock implements GrpcControlDataSource {}
-
-/// Mock de WindowService para pruebas de presentación.
-class _MockWindowService extends Mock implements WindowService {}
 
 /// ConnectionNotifier en estado desconectado para pruebas.
 final _disconnectedOverride = connectionStateProvider.overrideWith(
@@ -116,7 +109,7 @@ void main() {
         await tester.pumpWidget(_buildTestApp(overrides: [
           _desktopModeOverride(true),
           isPresentingProvider.overrideWith((ref) => false),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -135,7 +128,7 @@ void main() {
         await tester.pumpWidget(_buildTestApp(overrides: [
           _desktopModeOverride(true),
           isPresentingProvider.overrideWith((ref) => true),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -154,7 +147,7 @@ void main() {
         await tester.pumpWidget(_buildTestApp(overrides: [
           _desktopModeOverride(true),
           isPresentingProvider.overrideWith((ref) => true),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -173,7 +166,7 @@ void main() {
         await tester.pumpWidget(_buildTestApp(overrides: [
           _desktopModeOverride(true),
           isPresentingProvider.overrideWith((ref) => false),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -192,7 +185,7 @@ void main() {
         await tester.pumpWidget(_buildTestApp(overrides: [
           _desktopModeOverride(false),
           isPresentingProvider.overrideWith((ref) => false),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -211,7 +204,7 @@ void main() {
         await tester.pumpWidget(_buildTestApp(overrides: [
           _desktopModeOverride(false),
           isPresentingProvider.overrideWith((ref) => true),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -240,7 +233,7 @@ void main() {
           _desktopModeOverride(true),
           isPresentingProvider.overrideWith((ref) => true),
           liveControlProvider.overrideWith((ref) => notifier),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
@@ -272,7 +265,7 @@ void main() {
           _desktopModeOverride(true),
           isPresentingProvider.overrideWith((ref) => true),
           liveControlProvider.overrideWith((ref) => notifier),
-        ]));
+        ],),);
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 

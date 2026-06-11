@@ -289,7 +289,7 @@ class _ConnectedDashboardState extends ConsumerState<ConnectedDashboard> {
                   'tipo': e.tipo.name,
                   'orden': e.orden,
                   'contenido': e.contenido,
-                })
+                },)
             .toList(),
       );
 

@@ -1,10 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/enums/himno_tipo.dart';
 import '../../../core/errors/failures.dart';
 import '../../entities/himno.dart';
 import '../../repositories/hymn_repository.dart';
-import '../../../data/repositories/hymn_repository_impl.dart';
 
 /// Caso de uso para buscar himnos.
 ///
@@ -33,7 +30,4 @@ class SearchHymnsUseCase {
   }
 }
 
-final searchHymnsUseCaseProvider = Provider<SearchHymnsUseCase>((ref) {
-  final repository = HymnRepositoryImpl();
-  return SearchHymnsUseCase(repository);
-});
+

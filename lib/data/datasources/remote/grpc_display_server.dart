@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:grpc/grpc.dart';
 import 'package:logging/logging.dart';
@@ -103,7 +103,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       return;
     }
 
-    final maxAttempts = 10;
+    const maxAttempts = 10;
     int lastError = 0;
 
     for (int i = 0; i < maxAttempts; i++) {
@@ -111,7 +111,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       try {
         _server = Server.create(
           services: [this],
-          keepAliveOptions: ServerKeepAliveOptions(
+          keepAliveOptions: const ServerKeepAliveOptions(
             minIntervalBetweenPingsWithoutData: Duration(seconds: 10),
             maxBadPings: 3,
           ),
@@ -817,9 +817,9 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     }
     // Detectar si cambió el capítulo o solo el versículo.
     // También verificar que el receptor ya tenga contenido bíblico cargado.
-    final yaTieneBiblia = _container!.read(liveControlProvider).module ==
+    final yaTieneBiblia = _container.read(liveControlProvider).module ==
             ProjectionModule.bible &&
-        _container!.read(liveControlProvider).slides.isNotEmpty;
+        _container.read(liveControlProvider).slides.isNotEmpty;
     final mismoCapitulo = _bibleState.versionId == versionId &&
         _bibleState.libroNumero == libroNumero &&
         _bibleState.capitulo == capitulo;
@@ -836,7 +836,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (mismoCapitulo && yaTieneBiblia) {
       // Solo cambiar versículo dentro del mismo capítulo ya cargado
       try {
-        _container!.read(windowServiceProvider).sendMessage({
+        _container.read(windowServiceProvider).sendMessage({
           'type': 'GO_TO_SLIDE',
           'index': versiculo - 1,
         });
@@ -848,7 +848,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       _updateLiveControlFromBibleState();
       try {
         await _sendCurrentChapterToSubprocess();
-        _container!.read(windowServiceProvider).sendMessage({
+        _container.read(windowServiceProvider).sendMessage({
           'type': 'GO_TO_SLIDE',
           'index': versiculo - 1,
         });
@@ -865,7 +865,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (_container == null) return;
     final container = _container;
     try {
-      final repo = container!.read(bibliaRepositoryProvider);
+      final repo = container.read(bibliaRepositoryProvider);
       final libro = await repo.getLibroByNumero(
         _bibleState.versionId,
         _bibleState.libroNumero,

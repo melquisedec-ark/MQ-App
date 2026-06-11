@@ -12,7 +12,7 @@ import 'package:mqapp/presentation/views_personal/hymn_scroll/hymn_detail_screen
 
 /// Himno de prueba.
 Himno _createTestHimno() {
-  return Himno(
+  return const Himno(
     id: 1,
     titulo: 'Santo, Santo, Santo',
     numero: 1,
@@ -27,7 +27,7 @@ Himno _createTestHimno() {
         tonalidadOriginal: 'G',
       ),
     ],
-    categorias: const [Categoria(id: 1, nombre: 'Alabanza')],
+    categorias: [Categoria(id: 1, nombre: 'Alabanza')],
   );
 }
 
@@ -55,7 +55,7 @@ void main() {
       }
 
       expect(found, true,
-          reason: 'B4: ruta "hymn-detail" debe existir en appRouter');
+          reason: 'B4: ruta "hymn-detail" debe existir en appRouter',);
     });
 
     test('ruta "hymn-detail" tiene path "himnario/detalle"', () {
@@ -77,7 +77,7 @@ void main() {
 
       expect(found, isNotNull);
       expect(found!.path, 'detalle',
-          reason: 'B4: debe estar anidada bajo himnario (path relativo)');
+          reason: 'B4: debe estar anidada bajo himnario (path relativo)',);
     });
 
     testWidgets('context.pushNamed("hymn-detail", extra: himno) navega',
@@ -121,7 +121,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('HymnDetail: ${himno.titulo}'), findsOneWidget,
-          reason: 'B4: pushNamed con extra debe llegar al builder con el himno');
+          reason: 'B4: pushNamed con extra debe llegar al builder con el himno',);
     });
 
     testWidgets('HymnDetailScreen acepta Himno como parámetro',

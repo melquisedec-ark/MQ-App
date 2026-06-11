@@ -1,11 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/errors/auth_exception.dart';
 import '../../../core/errors/failures.dart';
 import '../../entities/himno.dart';
 import '../../repositories/hymn_repository.dart';
-import '../../../presentation/views_admin/providers/auth_providers.dart';
-import '../../../presentation/views_personal/providers/hymn_providers.dart';
 
 /// Caso de uso para actualizar un himno completo con sus versiones,
 /// estrofas y categorías.
@@ -13,9 +9,8 @@ import '../../../presentation/views_personal/providers/hymn_providers.dart';
 /// Requiere que el usuario esté autenticado (administrador).
 class UpdateHymnUseCase {
   final HymnRepository _repository;
-  final Ref _ref;
 
-  UpdateHymnUseCase(this._repository, this._ref);
+  UpdateHymnUseCase(this._repository);
 
   /// Actualiza un himno y todos sus datos asociados.
   ///
@@ -25,6 +20,7 @@ class UpdateHymnUseCase {
   /// [estrofas] lista de mapas con datos de estrofas (cada una debe incluir
   ///   `version_idx` apuntando al índice en [versiones]).
   /// [categoriaIds] IDs de categorías a asociar.
+  /// [isAdmin] indica si el usuario tiene permisos de administrador.
   ///
   /// Lanza [AuthException] si el usuario no está autenticado.
   /// Lanza [InvalidArgumentFailure] si los datos son inválidos.
@@ -33,9 +29,9 @@ class UpdateHymnUseCase {
     Himno himno,
     List<Map<String, dynamic>> versiones,
     List<Map<String, dynamic>> estrofas,
-    List<int> categoriaIds,
-  ) async {
-    final isAdmin = _ref.read(isAuthenticatedProvider);
+    List<int> categoriaIds, {
+    required bool isAdmin,
+  }) async {
     if (!isAdmin) {
       throw const AuthException(
         'Solo administradores pueden actualizar himnos',
@@ -60,8 +56,4 @@ class UpdateHymnUseCase {
   }
 }
 
-/// Provider de [UpdateHymnUseCase].
-final updateHymnUseCaseProvider = Provider<UpdateHymnUseCase>((ref) {
-  final repo = ref.read(hymnRepositoryProvider);
-  return UpdateHymnUseCase(repo, ref);
-});
+

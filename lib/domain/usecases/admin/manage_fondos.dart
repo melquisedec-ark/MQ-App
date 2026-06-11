@@ -1,13 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/enums/fondo_pantalla_tipo.dart';
 import '../../../core/enums/usuario_rol.dart';
 import '../../../core/errors/auth_exception.dart';
 import '../../../core/utils/file_storage_service.dart';
-import '../../../data/datasources/local/catalog_local_datasource.dart';
-import '../../../data/models/fondo_pantalla_model.dart';
 import '../../entities/usuario.dart';
 import '../../entities/fondo_pantalla.dart';
+import '../../repositories/fondo_pantalla_repository.dart';
 
 // ─────────────────────────────────────────────────────────────
 // GetAllFondosUseCase
@@ -15,21 +12,15 @@ import '../../entities/fondo_pantalla.dart';
 
 /// Caso de uso para obtener todos los fondos de pantalla.
 class GetAllFondosUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final FondoPantallaRepository _repository;
 
-  GetAllFondosUseCase(this._dataSource);
+  GetAllFondosUseCase(this._repository);
 
   /// Retorna la lista completa de [FondoPantalla] ordenados por nombre.
   Future<List<FondoPantalla>> execute() async {
-    final models = await _dataSource.getAllFondos();
-    return models.map((m) => m.toEntity()).toList();
+    return await _repository.getAll();
   }
 }
-
-final getAllFondosUseCaseProvider = Provider<GetAllFondosUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return GetAllFondosUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // CreateFondoUseCase
@@ -39,9 +30,9 @@ final getAllFondosUseCaseProvider = Provider<GetAllFondosUseCase>((ref) {
 ///
 /// Requiere permisos de administrador.
 class CreateFondoUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final FondoPantallaRepository _repository;
 
-  CreateFondoUseCase(this._dataSource);
+  CreateFondoUseCase(this._repository);
 
   /// Crea un nuevo fondo de pantalla con los datos proporcionados.
   ///
@@ -67,24 +58,16 @@ class CreateFondoUseCase {
       throw const AuthException('El nombre del fondo no puede estar vacío');
     }
 
-    final model = FondoPantallaModel(
-      id: 0, // SQLite auto-incrementa
+    return await _repository.create(
       nombre: nombre.trim(),
-      tipo: tipo.value,
-      ruta_archivo: rutaArchivo?.trim(),
-      color_hex: colorHex?.trim(),
-      es_predeterminado: esPredeterminado ? 1 : 0,
-      activo: activo ? 1 : 0,
+      tipo: tipo,
+      rutaArchivo: rutaArchivo?.trim(),
+      colorHex: colorHex?.trim(),
+      esPredeterminado: esPredeterminado,
+      activo: activo,
     );
-
-    return await _dataSource.insertFondo(model);
   }
 }
-
-final createFondoUseCaseProvider = Provider<CreateFondoUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return CreateFondoUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // UpdateFondoUseCase
@@ -94,9 +77,9 @@ final createFondoUseCaseProvider = Provider<CreateFondoUseCase>((ref) {
 ///
 /// Requiere permisos de administrador.
 class UpdateFondoUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final FondoPantallaRepository _repository;
 
-  UpdateFondoUseCase(this._dataSource);
+  UpdateFondoUseCase(this._repository);
 
   /// Actualiza el fondo de pantalla con los datos proporcionados.
   ///
@@ -122,24 +105,17 @@ class UpdateFondoUseCase {
       throw const AuthException('El nombre del fondo no puede estar vacío');
     }
 
-    final model = FondoPantallaModel(
+    await _repository.update(
       id: id,
       nombre: nombre.trim(),
-      tipo: tipo.value,
-      ruta_archivo: rutaArchivo?.trim(),
-      color_hex: colorHex?.trim(),
-      es_predeterminado: esPredeterminado ? 1 : 0,
-      activo: activo ? 1 : 0,
+      tipo: tipo,
+      rutaArchivo: rutaArchivo?.trim(),
+      colorHex: colorHex?.trim(),
+      esPredeterminado: esPredeterminado,
+      activo: activo,
     );
-
-    await _dataSource.updateFondo(model);
   }
 }
-
-final updateFondoUseCaseProvider = Provider<UpdateFondoUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return UpdateFondoUseCase(dataSource);
-});
 
 // ─────────────────────────────────────────────────────────────
 // DeleteFondoUseCase
@@ -149,9 +125,9 @@ final updateFondoUseCaseProvider = Provider<UpdateFondoUseCase>((ref) {
 ///
 /// Requiere permisos de administrador.
 class DeleteFondoUseCase {
-  final CatalogLocalDataSource _dataSource;
+  final FondoPantallaRepository _repository;
 
-  DeleteFondoUseCase(this._dataSource);
+  DeleteFondoUseCase(this._repository);
 
   /// Elimina el fondo de pantalla con el [id] dado.
   ///
@@ -168,21 +144,16 @@ class DeleteFondoUseCase {
       );
     }
 
-    // 1. Obtener el modelo antes de eliminar (para conocer ruta_archivo)
-    final model = await _dataSource.getFondoById(id);
+    // 1. Obtener el fondo antes de eliminar (para conocer ruta_archivo)
+    final fondo = await _repository.getById(id);
 
     // 2. Eliminar registro de BD
-    await _dataSource.deleteFondo(id);
+    await _repository.delete(id);
 
     // 3. Eliminar archivo físico si está dentro del directorio de la app.
     //    Si el archivo está fuera (galería, etc.), no se toca.
-    if (model?.ruta_archivo != null && model!.ruta_archivo!.isNotEmpty) {
-      await FileStorageService.deleteIfAppFile(model.ruta_archivo!);
+    if (fondo?.rutaArchivo != null && fondo!.rutaArchivo!.isNotEmpty) {
+      await FileStorageService.deleteIfAppFile(fondo.rutaArchivo!);
     }
   }
 }
-
-final deleteFondoUseCaseProvider = Provider<DeleteFondoUseCase>((ref) {
-  final dataSource = CatalogLocalDataSource();
-  return DeleteFondoUseCase(dataSource);
-});

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../domain/entities/himno.dart';
-import '../../../../domain/usecases/himno/delete_hymn_usecase.dart';
+import '../../providers/usecases/hymn_usecase_providers.dart';
 import '../../views_personal/providers/hymn_providers.dart';
 import 'hymn_form_screen.dart';
 import 'package:mqapp/core/ui/app_snackbar.dart';
@@ -69,7 +69,7 @@ class _HymnListScreenState extends ConsumerState<HymnListScreen> {
 
     try {
       final deleteUseCase = ref.read(deleteHymnUseCaseProvider);
-      await deleteUseCase.execute(himno.id);
+      await deleteUseCase.execute(himno.id, isAdmin: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('"${himno.titulo}" eliminado')),

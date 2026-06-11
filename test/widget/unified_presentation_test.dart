@@ -226,7 +226,7 @@ void main() {
   // ═══════════════════════════════════════════════════════════════
 
   group('ProjectionApp — SWITCH_MODULE handler', () {
-    Widget _buildTestApp({Stream<String>? stdinOverride}) {
+    Widget buildTestApp({Stream<String>? stdinOverride}) {
       return ProviderScope(
         overrides: [
           controlRepositoryProvider.overrideWith(
@@ -253,7 +253,7 @@ void main() {
         (tester) async {
       final stdinCtrl = StreamController<String>.broadcast();
       await tester.pumpWidget(
-        _buildTestApp(stdinOverride: stdinCtrl.stream),
+        buildTestApp(stdinOverride: stdinCtrl.stream),
       );
       await tester.pumpAndSettle();
 
@@ -273,7 +273,7 @@ void main() {
             'contenido': 'Estrofa 1',
           },
         ],
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final container =
@@ -285,7 +285,7 @@ void main() {
       stdinCtrl.add(jsonEncode({
         'type': 'SWITCH_MODULE',
         'module': 'bible',
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final state = container.read(liveControlProvider);
@@ -300,7 +300,7 @@ void main() {
         (tester) async {
       final stdinCtrl = StreamController<String>.broadcast();
       await tester.pumpWidget(
-        _buildTestApp(stdinOverride: stdinCtrl.stream),
+        buildTestApp(stdinOverride: stdinCtrl.stream),
       );
       await tester.pumpAndSettle();
 
@@ -310,7 +310,7 @@ void main() {
         'libroNombre': 'Génesis',
         'capitulo': 1,
         'versiculos': ['Verso 1', 'Verso 2'],
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final container =
@@ -322,7 +322,7 @@ void main() {
       stdinCtrl.add(jsonEncode({
         'type': 'SWITCH_MODULE',
         'module': 'hymnal',
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final state = container.read(liveControlProvider);
@@ -338,7 +338,7 @@ void main() {
         (tester) async {
       final stdinCtrl = StreamController<String>.broadcast();
       await tester.pumpWidget(
-        _buildTestApp(stdinOverride: stdinCtrl.stream),
+        buildTestApp(stdinOverride: stdinCtrl.stream),
       );
       await tester.pumpAndSettle();
 
@@ -346,7 +346,7 @@ void main() {
       stdinCtrl.add(jsonEncode({
         'type': 'SWITCH_MODULE',
         'module': 'bible',
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       // Intentar avanzar (no hay slides, debe ser no-op)
@@ -531,7 +531,7 @@ void main() {
             'contenido': 'Alabanza al Señor',
           },
         ],
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final container =
@@ -542,7 +542,7 @@ void main() {
       stdinCtrl.add(jsonEncode({
         'type': 'SWITCH_MODULE',
         'module': 'bible',
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final state = container.read(liveControlProvider);
@@ -589,7 +589,7 @@ void main() {
           'Yo soy el Señor tu Dios',
           'No tendrás dioses ajenos',
         ],
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final container =
@@ -601,7 +601,7 @@ void main() {
       stdinCtrl.add(jsonEncode({
         'type': 'SWITCH_MODULE',
         'module': 'hymnal',
-      }));
+      }),);
       await tester.pumpAndSettle();
 
       final state = container.read(liveControlProvider);

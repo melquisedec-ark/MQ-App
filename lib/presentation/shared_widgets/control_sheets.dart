@@ -403,9 +403,9 @@ List<Widget> _brushSheetChildren({
     // ==========================================
     SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      secondary: Icon(
+      secondary: const Icon(
         Icons.blur_on_rounded,
-        color: const Color(0xFFCCA43B),
+        color: Color(0xFFCCA43B),
       ),
       title: const Text('Efecto Glass'),
       subtitle: Text(

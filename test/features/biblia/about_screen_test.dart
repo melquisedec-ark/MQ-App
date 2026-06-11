@@ -67,19 +67,18 @@ void main() {
     });
 
     testWidgets('botón Volver hace pop', (tester) async {
-      int popped = 0;
       final router = GoRouter(
-        initialLocation: '/about',
+        initialLocation: '/',
         routes: [
-          GoRoute(
-            path: '/about',
-            name: 'about',
-            builder: (_, __) => const AboutScreen(),
-          ),
           GoRoute(
             path: '/',
             name: 'home',
             builder: (_, __) => const Scaffold(body: Text('home')),
+          ),
+          GoRoute(
+            path: '/about',
+            name: 'about',
+            builder: (_, __) => const AboutScreen(),
           ),
         ],
       );
@@ -94,15 +93,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap en "Volver" debe hacer pop.
-      // (No podemos verificar el pop directamente, pero sí que no crashea.)
+      // Navegar a AboutScreen para tener algo en la pila y poder hacer pop.
+      router.push('/about');
+      await tester.pumpAndSettle();
+      expect(find.byType(AboutScreen), findsOneWidget);
+
+      // El botón puede estar fuera del viewport; asegurar visibilidad antes del tap.
+      await tester.ensureVisible(find.text('Volver'));
       await tester.tap(find.text('Volver'));
       await tester.pumpAndSettle();
-      // Si llegó aquí sin excepción, el test pasa.
-      expect(find.byType(AboutScreen), findsOneWidget);
-      // popped counter no es usado, lo declaramos solo para evitar warning.
-      popped++;
-      expect(popped, 1);
+
+      // Verificar que la navegación ocurrió: regresó a home y AboutScreen desapareció.
+      expect(find.text('home'), findsOneWidget);
+      expect(find.byType(AboutScreen), findsNothing);
     });
 
     // C9 follow-up: la sección de atribuciones lista los datasets

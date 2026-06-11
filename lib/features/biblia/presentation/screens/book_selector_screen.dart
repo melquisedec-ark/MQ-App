@@ -250,10 +250,10 @@ class _LibroGridTile extends ConsumerWidget {
             ),
           ),
           if (hasFavoritos)
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
+            const Padding(
+              padding: EdgeInsets.only(left: 4),
               child: Icon(Icons.star_rounded, size: 13,
-                  color: const Color(0xFFF59E0B)),
+                  color: Color(0xFFF59E0B),),
             ),
         ],
       ),
@@ -325,12 +325,12 @@ class _LibroTile extends ConsumerWidget {
                     ),
                     if (hasFavoritos) ...[
                       const SizedBox(width: 6),
-                      Tooltip(
+                      const Tooltip(
                         message: 'Tiene versículos favoritos',
                         child: Icon(
                           Icons.star_rounded,
                           size: 16,
-                          color: const Color(0xFFF59E0B),
+                          color: Color(0xFFF59E0B),
                         ),
                       ),
                     ],

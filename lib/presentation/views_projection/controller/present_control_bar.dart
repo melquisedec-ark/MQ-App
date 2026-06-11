@@ -5,7 +5,6 @@ import '../../../core/router/app_router.dart';
 
 import '../../../core/enums/himno_tipo.dart';
 import '../../../core/network/connection_state.dart';
-import '../../../data/datasources/remote/grpc_control_datasource.dart';
 import '../../../domain/entities/himno.dart';
 import '../../../core/window_manager/window_providers.dart';
 import '../../shared_widgets/control_sheets.dart';
@@ -386,7 +385,7 @@ class PresentControlBar extends ConsumerWidget {
                   'tipo': e.tipo.name,
                   'orden': e.orden,
                   'contenido': e.contenido,
-                })
+                },)
             .toList(),
       });
       // En modo emisor: también enviar al display remoto vía gRPC
@@ -406,7 +405,7 @@ class PresentControlBar extends ConsumerWidget {
                       'tipo': e.tipo.name,
                       'orden': e.orden,
                       'contenido': e.contenido,
-                    })
+                    },)
                 .toList(),
           );
         } catch (_) {}

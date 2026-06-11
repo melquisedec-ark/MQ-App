@@ -79,7 +79,7 @@ void main() {
   group('projectBibleChapter', () {
     testWidgets('envía LOAD_VERSE con datos correctos en éxito',
         (tester) async {
-      final libro = Libro(
+      const libro = Libro(
         id: 1,
         versionId: 1,
         nombre: 'Génesis',
@@ -88,7 +88,7 @@ void main() {
         numero: 1,
         totalCapitulos: 50,
       );
-      final cap = Capitulo(id: 100, libroId: 1, numero: 1, totalVersiculos: 31);
+      const cap = Capitulo(id: 100, libroId: 1, numero: 1, totalVersiculos: 31);
       final versiculos = [
         const Versiculo(id: 1, capituloId: 100, numero: 1, texto: 'En el principio...'),
         const Versiculo(id: 2, capituloId: 100, numero: 2, texto: 'Y la tierra...'),
@@ -147,12 +147,12 @@ void main() {
 
     testWidgets('envía SET_BIBLE_THEME y SET_BIBLE_FONT_SIZE',
         (tester) async {
-      final libro = Libro(
+      const libro = Libro(
         id: 1, versionId: 1, nombre: 'Juan',
         abreviatura: 'Jn', testamento: Testamento.nt,
         numero: 43, totalCapitulos: 21,
       );
-      final cap = Capitulo(id: 200, libroId: 1, numero: 3, totalVersiculos: 21);
+      const cap = Capitulo(id: 200, libroId: 1, numero: 3, totalVersiculos: 21);
       final versiculos = [
         const Versiculo(id: 10, capituloId: 200, numero: 16, texto: 'Porque de tal manera...'),
       ];
@@ -233,7 +233,7 @@ void main() {
     });
 
     testWidgets('retorna error cuando capítulo no existe', (tester) async {
-      final libro = Libro(
+      const libro = Libro(
         id: 1, versionId: 1, nombre: 'Génesis',
         abreviatura: 'Gn', testamento: Testamento.at,
         numero: 1, totalCapitulos: 50,
@@ -267,12 +267,12 @@ void main() {
     });
 
     testWidgets('retorna error cuando no hay versículos', (tester) async {
-      final libro = Libro(
+      const libro = Libro(
         id: 1, versionId: 1, nombre: 'Génesis',
         abreviatura: 'Gn', testamento: Testamento.at,
         numero: 1, totalCapitulos: 50,
       );
-      final cap = Capitulo(id: 300, libroId: 1, numero: 1, totalVersiculos: 0);
+      const cap = Capitulo(id: 300, libroId: 1, numero: 1, totalVersiculos: 0);
 
       when(() => mockRepo.getLibroById(1)).thenAnswer((_) async => libro);
       when(() => mockRepo.getCapitulo(1, 1)).thenAnswer((_) async => cap);

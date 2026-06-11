@@ -32,7 +32,7 @@ void main() {
 
     /// Harness mínimo: muestra el FAB en una pantalla y permite
     /// interceptar el `ConsumerWidget` vía `ProviderScope` overrides.
-    Widget _harness({ThemeMode initial = ThemeMode.system}) {
+    Widget harness({ThemeMode initial = ThemeMode.system}) {
       return ProviderScope(
         overrides: [
           bibliaConfigRepositoryProvider.overrideWithValue(repo),
@@ -56,7 +56,7 @@ void main() {
 
     testWidgets('tap cicla al siguiente modo (system → light)',
         (tester) async {
-      await tester.pumpWidget(_harness());
+      await tester.pumpWidget(harness());
       await tester.pumpAndSettle();
 
       // El icono inicial es brightness_auto (system).
@@ -72,7 +72,7 @@ void main() {
     testWidgets('tap cicla: light → dark → system', (tester) async {
       // Sembrar BD con 'light' para que el notifier arranque ahí.
       await repo.set(BibliaConfigKeys.themeMode, 'light');
-      await tester.pumpWidget(_harness());
+      await tester.pumpWidget(harness());
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.light_mode), findsOneWidget);
@@ -90,7 +90,7 @@ void main() {
 
     testWidgets('long press abre BottomSheet con 3 RadioListTile',
         (tester) async {
-      await tester.pumpWidget(_harness());
+      await tester.pumpWidget(harness());
       await tester.pumpAndSettle();
 
       // Hacer long press manual: pointer down + esperar + pointer up.
@@ -112,7 +112,7 @@ void main() {
         (tester) async {
       // Sembrar 'light' como inicio.
       await repo.set(BibliaConfigKeys.themeMode, 'light');
-      await tester.pumpWidget(_harness());
+      await tester.pumpWidget(harness());
       await tester.pumpAndSettle();
 
       // Long press manual para abrir el BottomSheet.

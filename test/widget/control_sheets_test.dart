@@ -28,7 +28,7 @@ void main() {
   });
 
   /// Widget helper que muestra el BrushSheet en un contexto controlado.
-  Widget _buildTestApp() {
+  Widget buildTestApp() {
     return ProviderScope(
       overrides: [
         windowServiceProvider.overrideWithValue(mockWindowService),
@@ -63,7 +63,7 @@ void main() {
         sentMessages.add(msg);
       });
 
-      await tester.pumpWidget(_buildTestApp());
+      await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
       // Abrir el sheet de la Brocha
@@ -112,7 +112,7 @@ void main() {
             invocation.positionalArguments[0] as Map<String, dynamic>;
       });
 
-      await tester.pumpWidget(_buildTestApp());
+      await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Abrir Brocha'));
@@ -149,7 +149,7 @@ void main() {
         'bgColor',
       ]) {
         expect(capturedMessage!.containsKey(key), true,
-            reason: 'Falta campo $key en SET_CONFIG');
+            reason: 'Falta campo $key en SET_CONFIG',);
       }
       // Campos legacy
       for (final key in [
@@ -159,7 +159,7 @@ void main() {
         'background',
       ]) {
         expect(capturedMessage!.containsKey(key), true,
-            reason: 'Falta campo legacy $key en SET_CONFIG');
+            reason: 'Falta campo legacy $key en SET_CONFIG',);
       }
     });
   });

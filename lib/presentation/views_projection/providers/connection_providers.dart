@@ -65,7 +65,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionState> {
   static final _log = Logger('ConnectionNotifier');
 
   // ── Constantes ────────────────────────────────────────────────
-  static final _heartbeatInterval = Duration(seconds: 15);
+  static const _heartbeatInterval = Duration(seconds: 15);
   static const _maxFailedPings = 3;
   static const _maxReconnectAttempts = 5;
   static const _backoffDelays = [

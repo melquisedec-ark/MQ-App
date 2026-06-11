@@ -5,7 +5,6 @@ import 'package:sqflite_common/sqflite.dart';
 
 import 'package:mqapp/features/biblia/application/providers/current_versiculo_provider.dart';
 import 'package:mqapp/features/biblia/application/providers/reader_providers.dart';
-import 'package:mqapp/features/biblia/data/repositories/biblia_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/favoritos_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/historial_repository.dart';
 import 'package:mqapp/features/biblia/data/repositories/notas_repository.dart';
@@ -19,7 +18,6 @@ void main() {
   });
 
   late Database db;
-  late BibliaRepository bibliaRepo;
   late FavoritosRepository favRepo;
   late NotasRepository notasRepo;
   late HistorialRepository histRepo;
@@ -27,7 +25,6 @@ void main() {
   setUp(() async {
     final bundle = await createBibleReposWithSeed();
     db = bundle.db;
-    bibliaRepo = bundle.biblia;
     favRepo = bundle.favoritos;
     notasRepo = bundle.notas;
     histRepo = bundle.historial;
@@ -296,12 +293,12 @@ void main() {
       container.read(readerViewModeProvider.notifier)
           .setViewMode(BibleReaderViewMode.verse);
       expect(container.read(readerViewModeProvider),
-          BibleReaderViewMode.verse);
+          BibleReaderViewMode.verse,);
 
       container.read(readerViewModeProvider.notifier)
           .setViewMode(BibleReaderViewMode.chapter);
       expect(container.read(readerViewModeProvider),
-          BibleReaderViewMode.chapter);
+          BibleReaderViewMode.chapter,);
     });
 
     test('currentVerseProvider NO se resetea al alternar viewMode', () {
@@ -377,7 +374,7 @@ void main() {
       // Simular confirmDismiss con crossRefCount = 0 → retorna false.
       // No se ejecuta el cambio de modo.
       const crossRefCount = 0;
-      final shouldChange = crossRefCount != null && crossRefCount > 0;
+      const shouldChange = crossRefCount > 0;
       expect(shouldChange, isFalse);
 
       // El modo sigue siendo chapter.
@@ -390,7 +387,7 @@ void main() {
     test('Dismissible con crossRefCount null: no cambia de modo', () {
       // Si crossRefCount es null (no se cargó aún), no cambia de modo.
       const int? crossRefCount = null;
-      final shouldChange = crossRefCount != null && crossRefCount > 0;
+      const shouldChange = crossRefCount != null && crossRefCount > 0;
       expect(shouldChange, isFalse);
     });
   });

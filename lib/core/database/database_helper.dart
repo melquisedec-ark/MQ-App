@@ -1,6 +1,5 @@
 import 'dart:io' show Platform, File, Directory;
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:sqflite_common/sqlite_api.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -28,10 +27,10 @@ class DatabaseHelper {
 
   /// Versión del esquema SQLite (migraciones de tabla/columna).
   ///
-  /// SCHEMA_VERSION: controla las migraciones estructurales de la BD
+  /// kSchemaVersion: controla las migraciones estructurales de la BD
   /// mediante onUpgrade(). Es independiente de la versión del asset
   /// (db_version.json) que controla actualizaciones de seed data.
-  static const int SCHEMA_VERSION = 7;
+  static const int kSchemaVersion = 7;
 
   /// Obtiene la instancia de la base de datos, inicializándola si es necesario.
   Future<Database> get database async {
@@ -61,7 +60,7 @@ class DatabaseHelper {
       _log.info('Debug mode: using project DB at $projectDb');
       final db = await _openDatabasePlatform(projectDb);
       _log.info(
-        'Database opened (schema v$SCHEMA_VERSION) in '
+        'Database opened (schema v$kSchemaVersion) in '
         '${stopwatch.elapsedMilliseconds}ms',
       );
       return db;
@@ -99,7 +98,7 @@ class DatabaseHelper {
 
         // 3. Restaurar datos de usuario sobre la BD nueva
         final newDb = await _openDatabaseRaw(dbPath);
-        await newDb.execute('PRAGMA user_version = $SCHEMA_VERSION;');
+        await newDb.execute('PRAGMA user_version = $kSchemaVersion;');
         await _restoreUserData(newDb, backup);
         await newDb.close();
 
@@ -120,7 +119,7 @@ class DatabaseHelper {
     }
 
     _log.info(
-      'Database opened (schema v$SCHEMA_VERSION) in '
+      'Database opened (schema v$kSchemaVersion) in '
       '${stopwatch.elapsedMilliseconds}ms',
     );
     return db;
@@ -177,32 +176,32 @@ class DatabaseHelper {
 
       for (final row in backup['Configuracion'] ?? []) {
         await db.insert('Configuracion', row,
-            conflictAlgorithm: ConflictAlgorithm.replace);
+            conflictAlgorithm: ConflictAlgorithm.replace,);
         count++;
       }
       for (final row in backup['Usuario'] ?? []) {
         await db.insert('Usuario', row,
-            conflictAlgorithm: ConflictAlgorithm.ignore);
+            conflictAlgorithm: ConflictAlgorithm.ignore,);
         count++;
       }
       for (final row in backup['Fondo_Pantalla'] ?? []) {
         await db.insert('Fondo_Pantalla', row,
-            conflictAlgorithm: ConflictAlgorithm.ignore);
+            conflictAlgorithm: ConflictAlgorithm.ignore,);
         count++;
       }
       for (final row in backup['Arreglo_Musical'] ?? []) {
         await db.insert('Arreglo_Musical', row,
-            conflictAlgorithm: ConflictAlgorithm.ignore);
+            conflictAlgorithm: ConflictAlgorithm.ignore,);
         count++;
       }
       for (final row in backup['Estrofa_Arreglo'] ?? []) {
         await db.insert('Estrofa_Arreglo', row,
-            conflictAlgorithm: ConflictAlgorithm.ignore);
+            conflictAlgorithm: ConflictAlgorithm.ignore,);
         count++;
       }
       for (final row in backup['Historial_Reproduccion'] ?? []) {
         await db.insert('Historial_Reproduccion', row,
-            conflictAlgorithm: ConflictAlgorithm.ignore);
+            conflictAlgorithm: ConflictAlgorithm.ignore,);
         count++;
       }
 
@@ -254,7 +253,7 @@ class DatabaseHelper {
     final db = await databaseFactoryFfi.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: SCHEMA_VERSION,
+        version: kSchemaVersion,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       ),

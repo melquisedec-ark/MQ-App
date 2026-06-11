@@ -42,17 +42,17 @@ ProviderContainer createTestContainer({
 
 /// Datos bíblicos de prueba.
 class TestBibleData {
-  static final version = BibliaVersion(
+  static const version = BibliaVersion(
     id: 1, nombre: 'Reina-Valera 1909', abreviatura: 'RVR1909',
     idioma: 'es', activa: true,
   );
 
-  static final libro = Libro(
+  static const libro = Libro(
     id: 1, versionId: 1, nombre: 'Génesis', abreviatura: 'Gn',
     testamento: Testamento.at, numero: 1, totalCapitulos: 50,
   );
 
-  static final libroExodo = Libro(
+  static const libroExodo = Libro(
     id: 2, versionId: 1, nombre: 'Éxodo', abreviatura: 'Ex',
     testamento: Testamento.at, numero: 2, totalCapitulos: 40,
   );
@@ -146,7 +146,7 @@ void main() {
           any(that: isA<Map<String, dynamic>>()
               .having((m) => m['type'], 'type', 'LOAD_VERSE')
               .having((m) => m['libroNombre'], 'libroNombre', 'Génesis')
-              .having((m) => m['capitulo'], 'capitulo', 1)),
+              .having((m) => m['capitulo'], 'capitulo', 1),),
         ),
       ).called(1);
 
@@ -155,7 +155,7 @@ void main() {
         () => mockWindowService.sendMessage(
           any(that: isA<Map<String, dynamic>>()
               .having((m) => m['type'], 'type', 'GO_TO_SLIDE')
-              .having((m) => m['index'], 'index', 2)),
+              .having((m) => m['index'], 'index', 2),),
         ),
       ).called(1);
     });
@@ -218,7 +218,7 @@ void main() {
         () => mockWindowService.sendMessage(
           any(that: isA<Map<String, dynamic>>().having(
             (m) => m['type'], 'type', 'LOAD_VERSE',
-          )),
+          ),),
         ),
       ).called(1);
     });
@@ -251,7 +251,7 @@ void main() {
         () => mockWindowService.sendMessage(
           any(that: isA<Map<String, dynamic>>().having(
             (m) => m['type'], 'type', 'LOAD_VERSE',
-          )),
+          ),),
         ),
       ).called(1);
     });

@@ -63,7 +63,7 @@ void main() {
     });
 
     test('AmenSlide se crea sin parámetros', () {
-      final slide = const ProjectionSlide.amen();
+      const slide = ProjectionSlide.amen();
 
       expect(slide, isA<AmenSlide>());
       expect(slide.displayLabel, 'Amén');
@@ -219,20 +219,20 @@ void main() {
 
   group('ProjectionSlide — tipos bíblicos', () {
     test('BibleTitleSlide se crea con libro y capítulo', () {
-      final slide = ProjectionSlide.bibleTitle(
+      const slide = ProjectionSlide.bibleTitle(
         libroNombre: 'Génesis',
         capitulo: 1,
       );
 
       expect(slide, isA<BibleTitleSlide>());
-      final title = slide as BibleTitleSlide;
+      const title = slide as BibleTitleSlide;
       expect(title.libroNombre, 'Génesis');
       expect(title.capitulo, 1);
       expect(slide.displayLabel, '0');
     });
 
     test('VerseSlide se crea con número, texto, referencia y total', () {
-      final slide = ProjectionSlide.verse(
+      const slide = ProjectionSlide.verse(
         numero: 1,
         texto: 'En el principio creó Dios los cielos y la tierra.',
         referencia: 'Génesis 1:1',
@@ -240,7 +240,7 @@ void main() {
       );
 
       expect(slide, isA<VerseSlide>());
-      final verse = slide as VerseSlide;
+      const verse = slide as VerseSlide;
       expect(verse.numero, 1);
       expect(verse.texto, 'En el principio creó Dios los cielos y la tierra.');
       expect(verse.referencia, 'Génesis 1:1');
@@ -249,13 +249,13 @@ void main() {
     });
 
     test('BibleEndSlide se crea con libro y capítulo', () {
-      final slide = ProjectionSlide.bibleEnd(
+      const slide = ProjectionSlide.bibleEnd(
         libroNombre: 'Génesis',
         capitulo: 1,
       );
 
       expect(slide, isA<BibleEndSlide>());
-      final end = slide as BibleEndSlide;
+      const end = slide as BibleEndSlide;
       expect(end.libroNombre, 'Génesis');
       expect(end.capitulo, 1);
       expect(slide.displayLabel, 'Fin');
@@ -264,7 +264,7 @@ void main() {
 
   group('ProjectionSlide — helpers bíblicos', () {
     test('BibleTitleSlideHelpers.formatea referencia', () {
-      final slide = ProjectionSlide.bibleTitle(
+      const slide = ProjectionSlide.bibleTitle(
         libroNombre: 'Juan',
         capitulo: 3,
       ) as BibleTitleSlide;
@@ -273,7 +273,7 @@ void main() {
     });
 
     test('VerseSlideHelpers.formatea progreso', () {
-      final slide = ProjectionSlide.verse(
+      const slide = ProjectionSlide.verse(
         numero: 16,
         texto: 'Porque de tal manera amó Dios al mundo...',
         referencia: 'Juan 3:16',
@@ -284,7 +284,7 @@ void main() {
     });
 
     test('BibleEndSlideHelpers.formatea referencia con fin', () {
-      final slide = ProjectionSlide.bibleEnd(
+      const slide = ProjectionSlide.bibleEnd(
         libroNombre: 'Juan',
         capitulo: 3,
       ) as BibleEndSlide;
@@ -308,7 +308,7 @@ void main() {
           texto: e.value,
           referencia: 'Génesis 1:${e.key + 1}',
           totalVersiculos: versiculos.length,
-        )),
+        ),),
       ];
 
       expect(slides.length, 4); // Título + 3 versículos (sin Fin)
@@ -327,7 +327,7 @@ void main() {
           texto: e.value,
           referencia: 'Test 1:${e.key + 1}',
           totalVersiculos: versiculos.length,
-        )),
+        ),),
         const ProjectionSlide.bibleEnd(libroNombre: 'Test', capitulo: 1),
       ];
 

@@ -8,7 +8,7 @@ void main() {
       final resolved = <int, String>{};
       for (final entry in kScrollmapperToMappBookId.entries) {
         expect(lookupScrollmapperBookId(entry.key), entry.value,
-            reason: '${entry.key} debe mapear a ${entry.value}');
+            reason: '${entry.key} debe mapear a ${entry.value}',);
         resolved[entry.value] = entry.key;
       }
       expect(resolved.length, 66, reason: 'Debe haber 66 entradas únicas');
@@ -94,7 +94,7 @@ void main() {
       // 5 < 10, parseRefLine lo descarta por el check `to.verseEnd <
       // to.verseStart` → true → devuelve null.
       expect(r, isNull,
-          reason: 'El check to.verseEnd < to.verseStart filtra este caso');
+          reason: 'El check to.verseEnd < to.verseStart filtra este caso',);
     });
 
     test('skip si votos no es un entero', () {
@@ -131,7 +131,7 @@ void main() {
         () {
       final r = parseRefLine('Gen.1.1-2', 'Gen.1.3', '1');
       expect(r, isNull,
-          reason: 'El from debe ser versículo único (no rango)');
+          reason: 'El from debe ser versículo único (no rango)',);
     });
   });
 }

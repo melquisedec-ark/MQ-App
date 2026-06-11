@@ -33,19 +33,17 @@ Widget _buildTestApp({Stream<String>? stdinOverride}) {
   return ProviderScope(
     overrides: [
       // controlRepositoryProvider → mock
-      controlRepositoryProvider.overrideWithProvider(
-        Provider<ControlRepository>((ref) => MockControlRepository()),
+      controlRepositoryProvider.overrideWith(
+        (ref) => MockControlRepository(),
       ),
       // receptorInfoProvider → valor fijo (no necesita servidor gRPC real)
-      receptorInfoProvider.overrideWithProvider(
-        Provider<ReceptorInfo>(
+        receptorInfoProvider.overrideWith(
           (ref) => const ReceptorInfo(
             isRunning: false,
             port: 50051,
             displayName: 'Test',
           ),
         ),
-      ),
     ],
     child: MaterialApp(
       home: ProjectionApp(stdinOverride: stdinOverride),
@@ -283,7 +281,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_CONFIG',
           'textColor': '#FFB3261E',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         // Leer el estado del provider
@@ -306,7 +304,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_CONFIG',
           'chordColor': '#FF1A6B8A',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -327,7 +325,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_CONFIG',
           'fontFamily': 'Lora',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -349,7 +347,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_CONFIG',
           'isBold': true,
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -360,7 +358,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_CONFIG',
           'isBold': false,
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         expect(container.read(hymnAppearanceProvider).isBold, false);
@@ -378,7 +376,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_CONFIG',
           'fontScale': 1.5,
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -402,7 +400,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_CONFIG',
           'bgColor': '#FF1D6F42',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -432,7 +430,7 @@ void main() {
           'background': 'color',
           'textColor': '#FFFFFFFF',
           'fontFamily': 'Cinzel',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -465,7 +463,7 @@ void main() {
           'type': 'SET_CONFIG',
           'textColor': 'no-es-un-color',
           'bgColor': 'inválido',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         // La app no debe crashear, estado debe permanecer default
@@ -501,7 +499,7 @@ void main() {
             'En el principio creó Dios los cielos y la tierra.',
             'Y la tierra estaba desordenada y vacía.',
           ],
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         // Verificar que el estado tiene el módulo bíblico activo
@@ -532,7 +530,7 @@ void main() {
           'libroNombre': 'Juan',
           'capitulo': 3,
           'versiculos': ['Verso 1', 'Verso 2', 'Verso 3'],
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         // Avanzar al primer versículo
@@ -561,7 +559,7 @@ void main() {
           'libroNombre': 'Juan',
           'capitulo': 3,
           'versiculos': ['Verso 1', 'Verso 2'],
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         // Avanzar 2 veces
@@ -593,7 +591,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_BIBLE_THEME',
           'theme': 'noche',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -616,7 +614,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_BIBLE_FONT_SIZE',
           'scale': 2.5,
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -640,7 +638,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_BIBLE_FONT_SIZE',
           'scale': 0.1,
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         final container =
@@ -651,7 +649,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SET_BIBLE_FONT_SIZE',
           'scale': 10.0,
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         expect(container.read(bibleAppearanceProvider).fontScale, 4.0);
@@ -669,7 +667,7 @@ void main() {
         stdinCtrl.add(jsonEncode({
           'type': 'SWITCH_MODULE',
           'module': 'bible',
-        }));
+        }),);
         await tester.pumpAndSettle();
 
         // La app no debe crashear

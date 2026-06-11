@@ -445,6 +445,7 @@ class LiveControlScreen extends ConsumerWidget {
       final textos = versiculos.map((v) => v.texto).toList();
 
       if (textos.isEmpty) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Capítulo sin versículos')),
         );
@@ -608,7 +609,7 @@ class LiveControlScreen extends ConsumerWidget {
     LiveControlState liveState,
     ColorScheme colorScheme,
   ) {
-    final themes = const [
+    const themes = [
       ('papel', 'Papel', Colors.white),
       ('sepia', 'Sepia', Color(0xFFF5E6D3)),
       ('noche', 'Noche', Color(0xFF1A1A2E)),
@@ -1197,9 +1198,9 @@ class LiveControlScreen extends ConsumerWidget {
                     // Toggle principal
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      secondary: Icon(
+                      secondary: const Icon(
                         Icons.blur_on_rounded,
-                        color: const Color(0xFFCCA43B),
+                        color: Color(0xFFCCA43B),
                       ),
                       title: const Text('Efecto Glass'),
                       subtitle: Text(

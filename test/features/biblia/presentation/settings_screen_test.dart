@@ -147,7 +147,7 @@ void main() {
       defaultValue: true,
     );
     expect(stored, isFalse,
-        reason: 'auto_historial debería haberse guardado como false');
+        reason: 'auto_historial debería haberse guardado como false',);
   });
 }
 

@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/enums/estrofa_tipo.dart';
 import '../../../../core/enums/himno_tipo.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../../data/models/pais_model.dart';
+import '../../../../domain/entities/pais.dart';
 import '../../../../domain/entities/himno.dart';
-import '../../../../domain/usecases/himno/create_hymn_usecase.dart';
-import '../../../../domain/usecases/himno/update_hymn_usecase.dart';
+import '../../providers/usecases/hymn_usecase_providers.dart';
 import '../../views_admin/providers/admin_providers.dart' show getAllPaisesUseCaseProvider;
 import '../../views_personal/providers/hymn_providers.dart';
 import 'categoria_selector.dart';
@@ -43,7 +42,7 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
 
   HimnoTipo _tipo = HimnoTipo.oficial;
   int? _selectedPaisId;
-  List<PaisModel> _paises = [];
+  List<Pais> _paises = [];
   List<int> _selectedCategoriaIds = [];
   List<_StanzaDraft> _estrofas = [];
   bool _saving = false;
@@ -222,6 +221,7 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
           versiones,
           estrofas,
           _selectedCategoriaIds,
+          isAdmin: true,
         );
       } else {
         // Modo creación
@@ -231,6 +231,7 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
           versiones,
           estrofas,
           _selectedCategoriaIds,
+          isAdmin: true,
         );
       }
 
@@ -352,7 +353,7 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
               )
             else
               DropdownButtonFormField<int>(
-                value: _selectedPaisId,
+                initialValue: _selectedPaisId,
                 decoration: const InputDecoration(
                   labelText: 'País',
                   prefixIcon: Icon(Icons.public),
@@ -367,7 +368,7 @@ class _HymnFormScreenState extends ConsumerState<HymnFormScreen> {
                   ..._paises.map((p) => DropdownMenuItem<int>(
                         value: p.id,
                         child: Text(p.nombre),
-                      )),
+                      ),),
                 ],
                 onChanged: (v) {
                   setState(() => _selectedPaisId = v);

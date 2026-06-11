@@ -103,7 +103,7 @@ class AudioLocalDataSource {
       rethrow;
     } catch (e) {
       _log.severe('Error al reproducir archivo $filePath: $e');
-      throw AudioException(
+      throw const AudioException(
         'Error al reproducir el audio. Verifique que el archivo exista.',
       );
     }

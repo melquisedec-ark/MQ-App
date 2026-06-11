@@ -178,7 +178,7 @@ void main() {
         'nombre': 'Músico',
         'rol': 'Musico',
       });
-      final arrId = await db.insert('Arreglo_Musical', {
+      await db.insert('Arreglo_Musical', {
         'version_pais_id': 1,
         'usuario_id': userId,
         'nombre_arreglo': 'Versión Acústica',

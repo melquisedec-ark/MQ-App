@@ -36,7 +36,7 @@ void main() {
         .thenAnswer((_) async {});
   });
 
-  Widget _buildTestApp({
+  Widget buildTestApp({
     bool isPresenting = false,
     int libroId = 1,
     int capitulo = 1,
@@ -81,7 +81,7 @@ void main() {
     testWidgets(
       'Muestra botón Presentar (screen_share_outlined) en AppBar',
       (tester) async {
-        await tester.pumpWidget(_buildTestApp(isPresenting: false));
+        await tester.pumpWidget(buildTestApp(isPresenting: false));
         await tester.pumpAndSettle();
 
         expect(
@@ -95,7 +95,7 @@ void main() {
     testWidgets(
       'Oculta botón Presentar cuando está presentando (overlay maneja Salir)',
       (tester) async {
-        await tester.pumpWidget(_buildTestApp(isPresenting: true));
+        await tester.pumpWidget(buildTestApp(isPresenting: true));
         await tester.pumpAndSettle();
 
         // El botón del AppBar se oculta cuando isPresenting=true;
@@ -116,7 +116,7 @@ void main() {
     testWidgets(
       'Al tocar Presentar abre ventana de proyección',
       (tester) async {
-        await tester.pumpWidget(_buildTestApp(isPresenting: false));
+        await tester.pumpWidget(buildTestApp(isPresenting: false));
         await tester.pumpAndSettle();
 
         await tester.tap(find.byIcon(Icons.screen_share_outlined));
@@ -135,7 +135,7 @@ void main() {
     testWidgets(
       'Al presentar, el botón Presentar del AppBar se oculta (overlay maneja Salir)',
       (tester) async {
-        await tester.pumpWidget(_buildTestApp(isPresenting: true));
+        await tester.pumpWidget(buildTestApp(isPresenting: true));
         await tester.pumpAndSettle();
 
         // El botón del AppBar está oculto cuando se está presentando;
@@ -151,7 +151,7 @@ void main() {
     testWidgets(
       'Al iniciar presentación envía LOAD_VERSE al subproceso',
       (tester) async {
-        await tester.pumpWidget(_buildTestApp(isPresenting: false));
+        await tester.pumpWidget(buildTestApp(isPresenting: false));
         await tester.pumpAndSettle();
 
         await tester.tap(find.byIcon(Icons.screen_share_outlined));
@@ -167,7 +167,7 @@ void main() {
               (m) => m['type'],
               'type',
               'LOAD_VERSE',
-            )),
+            ),),
           ),
         ).called(1);
       },

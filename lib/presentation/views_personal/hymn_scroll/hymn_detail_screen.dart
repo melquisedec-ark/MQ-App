@@ -323,7 +323,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
                     IconButton(
                       icon: Icon(isPresenting
                           ? Icons.stop_screen_share
-                          : Icons.screen_share),
+                          : Icons.screen_share,),
                       tooltip:
                           isPresenting ? 'Detener presentación' : 'Presentar',
                       onPressed: _presentCurrentHymn,
@@ -654,7 +654,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
     if (!appearance.showChords) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Container(
+        child: SizedBox(
           width: double.infinity,
           child: AdaptiveStanzaText(
             // stripChords conserva los \n, el widget decide si colapsarlos
@@ -690,7 +690,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
           left: 16,
           right: 16,
           top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 8),
+          bottom: MediaQuery.of(context).viewInsets.bottom + 8,),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
@@ -711,7 +711,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
         child: _isPlaying
             ? _buildPlayerBar(context, colorScheme, textTheme)
             : _buildTransposeBar(context, transposeValue, transposedKey,
-                colorScheme, textTheme, isPhone),
+                colorScheme, textTheme, isPhone,),
       ),
     );
   }
@@ -722,7 +722,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
       String transposedKey,
       ColorScheme colorScheme,
       TextTheme textTheme,
-      bool isPhone) {
+      bool isPhone,) {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Reduce gap between buttons on very narrow screens (<360px)
@@ -753,11 +753,11 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
                           children: [
                             Text('Tono',
                                 style: textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant)),
+                                    color: colorScheme.onSurfaceVariant,),),
                             Text(transposedKey,
                                 style: textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: colorScheme.onSurface)),
+                                    color: colorScheme.onSurface,),),
                           ],
                         ),
                       ),
@@ -798,7 +798,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
   }
 
   Widget _buildPlayerBar(
-      BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {
+      BuildContext context, ColorScheme colorScheme, TextTheme textTheme,) {
     return _AudioPlayerBar(
       key: const ValueKey('player_bar'),
       repo: ref.read(audioRepositoryProvider),
@@ -820,7 +820,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
       behavior: HitTestBehavior.translucent,
       child: _FondoBackground(
         key: ValueKey(
-            'fondo_bg_${appearance.selectedFondo?.rutaArchivo ?? appearance.selectedFondo?.id}'),
+            'fondo_bg_${appearance.selectedFondo?.rutaArchivo ?? appearance.selectedFondo?.id}',),
         fondo: appearance.selectedFondo,
         bgColor: appearance.bgColor,
         appearance: appearance,
@@ -850,7 +850,7 @@ class _HymnDetailScreenState extends ConsumerState<HymnDetailScreen>
         Expanded(
           child: _FondoBackground(
             key: ValueKey(
-                'fondo_bg_${appearance.selectedFondo?.rutaArchivo ?? appearance.selectedFondo?.id}'),
+                'fondo_bg_${appearance.selectedFondo?.rutaArchivo ?? appearance.selectedFondo?.id}',),
             fondo: appearance.selectedFondo,
             bgColor: appearance.bgColor,
             appearance: appearance,
@@ -1067,15 +1067,15 @@ class _AudioPlayerBarState extends State<_AudioPlayerBar> {
           children: [
             Text(_fmt(positionSec),
                 style: textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant, fontSize: 11)),
+                    color: colorScheme.onSurfaceVariant, fontSize: 11,),),
             Expanded(
               child: SliderTheme(
-                data: SliderThemeData(
+                data: const SliderThemeData(
                   trackHeight: 3,
                   thumbShape:
-                      const RoundSliderThumbShape(enabledThumbRadius: 5),
+                      RoundSliderThumbShape(enabledThumbRadius: 5),
                   overlayShape:
-                      const RoundSliderOverlayShape(overlayRadius: 10),
+                      RoundSliderOverlayShape(overlayRadius: 10),
                 ),
                 child: Slider(
                   value: progress.clamp(0.0, 1.0),
@@ -1086,7 +1086,7 @@ class _AudioPlayerBarState extends State<_AudioPlayerBar> {
                   },
                   onChangeEnd: (v) {
                     widget.repo.seek(Duration(
-                        milliseconds: (v * durationSec * 1000).round()));
+                        milliseconds: (v * durationSec * 1000).round(),),);
                     setState(() => _isSliding = false);
                   },
                 ),
@@ -1094,7 +1094,7 @@ class _AudioPlayerBarState extends State<_AudioPlayerBar> {
             ),
             Text(_fmt(durationSec),
                 style: textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant, fontSize: 11)),
+                    color: colorScheme.onSurfaceVariant, fontSize: 11,),),
           ],
         ),
         const SizedBox(height: 4),

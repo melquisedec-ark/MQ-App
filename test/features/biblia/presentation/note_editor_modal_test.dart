@@ -183,6 +183,6 @@ void main() {
     final nota = await notasRepo.getNota(1, 1, 1, 1);
     expect(nota, isNotNull);
     expect(nota!.color, NotaColor.verde,
-        reason: 'B1: debe usar el default del provider (verde), no amarillo');
+        reason: 'B1: debe usar el default del provider (verde), no amarillo',);
   });
 }

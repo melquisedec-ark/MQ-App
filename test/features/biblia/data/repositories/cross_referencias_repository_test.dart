@@ -425,7 +425,7 @@ void main() {
                 (version_id, from_libro_id, from_capitulo, from_versiculo,
                  to_libro_id, to_capitulo, to_versiculo_inicio, to_versiculo_fin, votos)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', [999, 1, 1, 1, 1, 1, 1, 1, 1]),
+            ''', [999, 1, 1, 1, 1, 1, 1, 1, 1],),
             throwsA(isA<dynamic>()),
           );
         } finally {
@@ -448,7 +448,7 @@ void main() {
                 (version_id, from_libro_id, from_capitulo, from_versiculo,
                  to_libro_id, to_capitulo, to_versiculo_inicio, to_versiculo_fin, votos)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', [2, 4, 3, 16, 1, 1, 1, 1, 1]),
+            ''', [2, 4, 3, 16, 1, 1, 1, 1, 1],),
             throwsA(isA<dynamic>()),
           );
         } finally {
@@ -470,7 +470,7 @@ void main() {
                 (version_id, from_libro_id, from_capitulo, from_versiculo,
                  to_libro_id, to_capitulo, to_versiculo_inicio, to_versiculo_fin, votos)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', [1, 1, 1, 1, 1, 1, 5, 3, 1]),
+            ''', [1, 1, 1, 1, 1, 1, 5, 3, 1],),
             throwsA(isA<dynamic>()),
           );
         } finally {

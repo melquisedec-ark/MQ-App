@@ -283,7 +283,7 @@ class _FondoTabState extends ConsumerState<FondoTab> {
                       Expanded(
                         child: TextField(
                           controller: _rutaController,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Ruta de imagen',
                             hintText: 'Selecciona un archivo...',
                             isDense: true,
@@ -314,7 +314,7 @@ class _FondoTabState extends ConsumerState<FondoTab> {
                               });
                             }
                           } catch (e) {
-                            if (mounted) {
+                            if (context.mounted) {
                               showAppSnackBar(
                                 context,
                                 'Error al copiar archivo: $e',
@@ -777,14 +777,14 @@ class _FondoTabState extends ConsumerState<FondoTab> {
                             ),
                             foregroundDecoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              gradient: LinearGradient(
+                              gradient: const LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
                                   Colors.black,
                                 ],
-                                stops: const [0.0, 0.5],
+                                stops: [0.0, 0.5],
                               ),
                             ),
                             child: CustomPaint(

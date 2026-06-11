@@ -46,7 +46,7 @@ void main() {
 
       test('lanza FormatException con color inválido', () {
         expect(
-          () => Nota.fromMap({
+          () => Nota.fromMap(const {
             'id': 1, 'version_id': 1, 'libro_id': 1, 'capitulo': 1,
             'numero': 1, 'contenido': 'x', 'color': 'rojo',
             'fecha_creacion': 0, 'fecha_modificacion': 0,
@@ -56,7 +56,7 @@ void main() {
       });
 
       test('acepta fechas en epoch 0 (caso borde)', () {
-        final n = Nota.fromMap({
+        final n = Nota.fromMap(const {
           'id': 1, 'version_id': 1, 'libro_id': 1, 'capitulo': 1,
           'numero': 1, 'contenido': 'x', 'color': 'ninguno',
           'fecha_creacion': 0, 'fecha_modificacion': 0,

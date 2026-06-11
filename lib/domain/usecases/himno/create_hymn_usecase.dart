@@ -1,11 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/errors/auth_exception.dart';
 import '../../../core/errors/failures.dart';
 import '../../entities/himno.dart';
 import '../../repositories/hymn_repository.dart';
-import '../../../presentation/views_admin/providers/auth_providers.dart';
-import '../../../presentation/views_personal/providers/hymn_providers.dart';
 
 /// Caso de uso para crear un himno completo con versiones, estrofas
 /// y categorías.
@@ -13,9 +9,8 @@ import '../../../presentation/views_personal/providers/hymn_providers.dart';
 /// Requiere que el usuario esté autenticado (administrador).
 class CreateHymnUseCase {
   final HymnRepository _repository;
-  final Ref _ref;
 
-  CreateHymnUseCase(this._repository, this._ref);
+  CreateHymnUseCase(this._repository);
 
   /// Crea un himno y todos sus datos asociados.
   ///
@@ -24,6 +19,7 @@ class CreateHymnUseCase {
   /// [estrofas] lista de mapas con datos de estrofas (cada una debe incluir
   ///   `version_idx` apuntando al índice en [versiones]).
   /// [categoriaIds] IDs de categorías a asociar.
+  /// [isAdmin] indica si el usuario tiene permisos de administrador.
   ///
   /// Retorna el ID del himno creado.
   ///
@@ -34,9 +30,9 @@ class CreateHymnUseCase {
     Himno himno,
     List<Map<String, dynamic>> versiones,
     List<Map<String, dynamic>> estrofas,
-    List<int> categoriaIds,
-  ) async {
-    final isAdmin = _ref.read(isAuthenticatedProvider);
+    List<int> categoriaIds, {
+    required bool isAdmin,
+  }) async {
     if (!isAdmin) {
       throw const AuthException('Solo administradores pueden crear himnos');
     }
@@ -55,8 +51,4 @@ class CreateHymnUseCase {
   }
 }
 
-/// Provider de [CreateHymnUseCase].
-final createHymnUseCaseProvider = Provider<CreateHymnUseCase>((ref) {
-  final repo = ref.read(hymnRepositoryProvider);
-  return CreateHymnUseCase(repo, ref);
-});
+

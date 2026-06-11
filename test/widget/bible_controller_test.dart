@@ -387,7 +387,7 @@ void main() {
     testWidgets('Muestra título del himno en modo hymnal', (tester) async {
       final notifier = LiveControlNotifier();
       notifier.loadHymn(
-        Himno(
+        const Himno(
           id: 1,
           titulo: 'Santo, Santo, Santo',
           numero: 1,
@@ -431,7 +431,7 @@ void main() {
     testWidgets('Muestra botón Ir al Coro en modo hymnal', (tester) async {
       final notifier = LiveControlNotifier();
       notifier.loadHymn(
-        Himno(
+        const Himno(
           id: 1,
           titulo: 'Test',
           numero: 1,
