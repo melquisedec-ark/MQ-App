@@ -15,7 +15,7 @@ import 'package:mqapp/presentation/views_projection/controller/present_control_b
 import 'package:mqapp/presentation/views_projection/providers/connection_providers.dart';
 import 'package:mqapp/presentation/views_projection/providers/live_control_providers.dart';
 import 'package:mqapp/presentation/views_projection/providers/presentation_providers.dart';
-import 'package:mqapp/features/biblia/application/providers/biblia_config_provider.dart';
+import '../test_providers.dart';
 
 /// Mock de GrpcControlDataSource para ConnectionNotifier.
 class _MockGrpcControlDataSource extends Mock implements GrpcControlDataSource {}
@@ -64,13 +64,6 @@ GoRouter _buildRouter() {
 
 /// Construye la app de prueba con [PresentControlBar] centralizado igual que
 /// `MqApp.build()` en `lib/app.dart`.
-  /// Override para themeModeProvider — evita que ThemeModeNotifier acceda a
-  /// la base de datos (sqflite) durante los tests de widgets, eliminando
-  /// el timer pendiente de 10s que hacía fallar los tests en CI.
-  final _themeModeOverride = themeModeProvider.overrideWith(
-    (ref) => ThemeModeNotifier(ref)..setThemeMode(ThemeMode.light),
-  );
-
   Widget _buildTestApp({
     List<Override> overrides = const [],
   }) {
@@ -78,7 +71,7 @@ GoRouter _buildRouter() {
       overrides: [
         _disconnectedOverride,
         _hymnListOverride,
-        _themeModeOverride,
+        themeModeTestOverride,
         ...overrides,
       ],
     child: Consumer(

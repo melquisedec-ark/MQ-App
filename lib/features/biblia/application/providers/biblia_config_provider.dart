@@ -26,8 +26,8 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   // inicial sobrescriba un setThemeMode() del usuario.
   bool _hydrated = false;
 
-  ThemeModeNotifier(this._ref) : super(ThemeMode.system) {
-    _loadFromDb();
+  ThemeModeNotifier(this._ref, {bool autoLoad = true}) : super(ThemeMode.system) {
+    if (autoLoad) _loadFromDb();
   }
 
   Future<void> _loadFromDb() async {

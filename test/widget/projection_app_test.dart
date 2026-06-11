@@ -16,7 +16,7 @@ import 'package:mqapp/presentation/views_projection/providers/projection_provide
 import 'package:mqapp/presentation/views_projection/providers/bible_appearance_provider.dart';
 import 'package:mqapp/presentation/views_projection/providers/presentation_providers.dart';
 import 'package:mqapp/presentation/views_projection/providers/live_control_providers.dart';
-import 'package:mqapp/features/biblia/application/providers/biblia_config_provider.dart';
+import '../test_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Mocks
@@ -27,13 +27,6 @@ class MockControlRepository extends Mock implements ControlRepository {}
 // ═══════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════
-
-  /// Override para themeModeProvider — evita que ThemeModeNotifier acceda a
-  /// la base de datos (sqflite) durante los tests de widgets, eliminando
-  /// el timer pendiente de 10s que hacía fallar los tests en CI.
-  final _themeModeOverride = themeModeProvider.overrideWith(
-    (ref) => ThemeModeNotifier(ref)..setThemeMode(ThemeMode.light),
-  );
 
   /// Construye el widget de prueba con [ProjectionApp] y overrides
   /// para los providers que dependen de servicios externos.
@@ -52,7 +45,7 @@ class MockControlRepository extends Mock implements ControlRepository {}
               displayName: 'Test',
             ),
           ),
-        _themeModeOverride,
+        themeModeTestOverride,
       ],
     child: MaterialApp(
       home: ProjectionApp(stdinOverride: stdinOverride),

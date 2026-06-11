@@ -13,8 +13,8 @@ import 'package:mqapp/domain/entities/version_pais.dart';
 import 'package:mqapp/features/himnario/presentation/screens/admin_himnario_screen.dart';
 import 'package:mqapp/presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import 'package:mqapp/presentation/views_personal/dashboard/home_screen.dart';
-import 'package:mqapp/features/biblia/application/providers/biblia_config_provider.dart';
 import 'package:mqapp/presentation/views_personal/providers/hymn_providers.dart';
+import '../test_providers.dart';
 import 'package:mqapp/presentation/views_projection/providers/connection_providers.dart';
 
 /// Mock de un himno de prueba.
@@ -89,13 +89,6 @@ GoRouter _buildRouter() {
   );
 }
 
-  /// Override para themeModeProvider — evita que ThemeModeNotifier acceda a
-  /// la base de datos (sqflite) durante los tests de widgets, eliminando
-  /// el timer pendiente de 10s que hacía fallar los tests en CI.
-  final _themeModeOverride = themeModeProvider.overrideWith(
-    (ref) => ThemeModeNotifier(ref)..setThemeMode(ThemeMode.light),
-  );
-
   Widget _buildTestApp({
     List<Override> overrides = const [],
   }) {
@@ -104,7 +97,7 @@ GoRouter _buildRouter() {
         _disconnectedOverride,
         _hymnListOverride,
         _phoneModeOverride,
-        _themeModeOverride,
+        themeModeTestOverride,
         ...overrides,
       ],
       child: MaterialApp.router(routerConfig: _buildRouter()),
