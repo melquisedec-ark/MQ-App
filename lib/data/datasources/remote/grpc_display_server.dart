@@ -838,7 +838,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       try {
         _container!.read(windowServiceProvider).sendMessage({
           'type': 'GO_TO_SLIDE',
-          'index': versiculo,
+          'index': versiculo - 1,
         });
       } catch (e) {
         _log.warning('Error enviando GO_TO_SLIDE al subproceso: $e');
@@ -850,7 +850,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         await _sendCurrentChapterToSubprocess();
         _container!.read(windowServiceProvider).sendMessage({
           'type': 'GO_TO_SLIDE',
-          'index': versiculo,
+          'index': versiculo - 1,
         });
       } catch (e) {
         _log.warning('Error enviando GO_TO_VERSE al subproceso: $e');

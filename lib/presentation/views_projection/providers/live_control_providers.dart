@@ -267,20 +267,16 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
     );
   }
 
-  /// Construye slides bíblicos: título + versículos. Sin slide de fin.
+  /// Construye slides bíblicos: solo versículos, sin portada ni fin.
   List<ProjectionSlide> _buildBibleSlides(
     String libro, int cap, List<String> versos,
   ) {
-    final slides = <ProjectionSlide>[
-      ProjectionSlide.bibleTitle(libroNombre: libro, capitulo: cap),
-      ...versos.asMap().entries.map((e) => ProjectionSlide.verse(
-        numero: e.key + 1,
-        texto: e.value,
-        referencia: '$libro $cap:${e.key + 1}',
-        totalVersiculos: versos.length,
-      )),
-    ];
-    return slides;
+    return versos.asMap().entries.map((e) => ProjectionSlide.verse(
+      numero: e.key + 1,
+      texto: e.value,
+      referencia: '$libro $cap:${e.key + 1}',
+      totalVersiculos: versos.length,
+    )).toList();
   }
 
   /// Cambia tema bíblico en proyección.
@@ -296,9 +292,9 @@ class LiveControlNotifier extends StateNotifier<LiveControlState> {
   /// Salta a un versículo específico dentro del capítulo cargado.
   void goToVerse(int verseNumber) {
     if (verseNumber >= 1 && verseNumber <= state.versiculos.length) {
-      // +1 porque el slide 0 es el título del capítulo
+      // Sin portada: verso 1 = slide 0
       state = state.copyWith(
-        currentSlideIndex: verseNumber,
+        currentSlideIndex: verseNumber - 1,
         versiculoActual: verseNumber - 1,
         isBlackout: false,
       );

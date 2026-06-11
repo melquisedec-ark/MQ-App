@@ -688,10 +688,9 @@ void main() {
       );
 
       final slides = container.read(liveControlProvider).slides;
-      expect(slides.length, 3); // Título + 2 versículos (sin Fin)
-      expect(slides[0], isA<BibleTitleSlide>());
+      expect(slides.length, 2); // 2 versículos (sin portada ni Fin)
+      expect(slides[0], isA<VerseSlide>());
       expect(slides[1], isA<VerseSlide>());
-      expect(slides[2], isA<VerseSlide>());
     });
 
     test('Hymnal slides are correct type after loadHymn', () {

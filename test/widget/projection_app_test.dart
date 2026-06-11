@@ -512,10 +512,9 @@ void main() {
         expect(liveState.module, ProjectionModule.bible);
         expect(liveState.libroNombre, 'Génesis');
         expect(liveState.capitulo, 1);
-        expect(liveState.slides.length, 3); // Título + 2 versículos (sin Fin)
-        expect(liveState.slides[0], isA<BibleTitleSlide>());
+        expect(liveState.slides.length, 2); // 2 versículos (sin portada ni Fin)
+        expect(liveState.slides[0], isA<VerseSlide>());
         expect(liveState.slides[1], isA<VerseSlide>());
-        expect(liveState.slides[2], isA<VerseSlide>());
 
         await stdinCtrl.close();
       });
@@ -579,7 +578,7 @@ void main() {
             ProviderScope.containerOf(tester.element(find.byType(ProjectionApp)));
         final liveState = container.read(liveControlProvider);
 
-        expect(liveState.currentSlideIndex, 1);
+        expect(liveState.currentSlideIndex, 0);
 
         await stdinCtrl.close();
       });

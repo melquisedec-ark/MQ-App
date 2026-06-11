@@ -195,8 +195,8 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
         (liveState.module != ProjectionModule.bible || liveState.slides.isEmpty)) {
       return;
     }
-    // El slide del versículo N está en el índice N (slide 0 = título)
-    final targetIndex = nuevoVersiculo;
+    // El slide del versículo N está en el índice N-1 (sin portada)
+    final targetIndex = nuevoVersiculo - 1;
     if (targetIndex >= 0 && targetIndex < liveState.slides.length) {
       ref.read(liveControlProvider.notifier).goToSlide(targetIndex);
       try {

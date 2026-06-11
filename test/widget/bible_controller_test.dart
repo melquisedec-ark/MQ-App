@@ -98,46 +98,39 @@ void main() {
       await tester.pumpWidget(_buildBibleTestApp());
       await tester.pumpAndSettle();
 
-      // Slide actual es el título bíblico (displayLabel = "Título")
-      expect(find.text('0'), findsWidgets);
+      // Sin portada: slide 0 = versículo 1
+      expect(find.textContaining('Versículo'), findsWidgets);
 
       // Avanzar
       await tester.tap(find.text('SIGUIENTE'));
       await tester.pumpAndSettle();
 
-      // Ahora debe estar en el versículo 1 (displayLabel = "Versículo")
-      // Verificar que ya no estamos en el título como slide actual
       expect(find.text('SIGUIENTE'), findsOneWidget);
     });
 
-    testWidgets('Botón ANTERIOR retrocede al slide anterior', (tester) async {
-      // Crear notifier en versículo 1 (índice 1)
+    testWidgets('Botón ANTERIOR no retrocede desde versículo 1', (tester) async {
+      // Sin portada: versículo 1 está en índice 0, no hay slide anterior
       final notifier = LiveControlNotifier();
       notifier.loadBibleChapter(
         libroNombre: 'Génesis',
         capitulo: 1,
-        versiculos: [
-          'Verso 1',
-          'Verso 2',
-          'Verso 3',
-        ],
+        versiculos: ['Verso 1', 'Verso 2', 'Verso 3'],
       );
-      notifier.goToVerse(1); // Ir al versículo 1 (índice 1)
+      notifier.goToVerse(1); // versículo 1 = índice 0
 
       final override = liveControlProvider.overrideWith((ref) => notifier);
 
       await tester.pumpWidget(_buildBibleTestApp(overrides: [override]));
       await tester.pumpAndSettle();
 
-      // Verificar que estamos en versículo
       expect(find.textContaining('Versículo'), findsWidgets);
 
-      // Retroceder — debería ir al título (índice 0)
+      // ANTERIOR deshabilitado (no hay slide previo)
       await tester.tap(find.text('ANTERIOR'));
       await tester.pumpAndSettle();
 
-      // Debería estar en el título bíblico
-      expect(find.text('0'), findsWidgets);
+      // Sigue en versículo 1
+      expect(find.textContaining('Versículo'), findsWidgets);
     });
 
     testWidgets('Botones de acceso rápido están presentes', (tester) async {
@@ -149,8 +142,7 @@ void main() {
       expect(find.text('Apagar'), findsOneWidget);
     });
 
-    testWidgets('Botón Ir al Inicio vuelve al slide 0', (tester) async {
-      // Crear notifier en versículo 3
+    testWidgets('Botón Ir al Inicio vuelve al primer versículo', (tester) async {
       final notifier = LiveControlNotifier();
       notifier.loadBibleChapter(
         libroNombre: 'Génesis',
@@ -164,15 +156,13 @@ void main() {
       await tester.pumpWidget(_buildBibleTestApp(overrides: [override]));
       await tester.pumpAndSettle();
 
-      // Verificar que el slide actual es un versículo
       expect(find.textContaining('Versículo'), findsWidgets);
 
-      // Ir al inicio
       await tester.tap(find.text('Ir al Inicio'));
       await tester.pumpAndSettle();
 
-      // Debería estar en el título bíblico
-      expect(find.text('0'), findsWidgets);
+      // Sin portada: inicio = versículo 1
+      expect(find.textContaining('Versículo'), findsWidgets);
     });
 
     testWidgets('Botón Apagar activa modo blackout', (tester) async {
@@ -249,7 +239,7 @@ void main() {
       // Ir al versículo 3
       notifier.goToVerse(3);
 
-      expect(notifier.state.currentSlideIndex, 3);
+      expect(notifier.state.currentSlideIndex, 2);
       expect(notifier.state.versiculoActual, 2);
       expect(notifier.state.isBlackout, false);
     });
@@ -296,7 +286,7 @@ void main() {
 
       notifier.goToVerse(1);
 
-      expect(notifier.state.currentSlideIndex, 1);
+      expect(notifier.state.currentSlideIndex, 0);
       expect(notifier.state.versiculoActual, 0);
     });
 
@@ -310,7 +300,7 @@ void main() {
 
       notifier.goToVerse(5);
 
-      expect(notifier.state.currentSlideIndex, 5);
+      expect(notifier.state.currentSlideIndex, 4);
       expect(notifier.state.versiculoActual, 4);
     });
 

@@ -155,7 +155,7 @@ void main() {
         () => mockWindowService.sendMessage(
           any(that: isA<Map<String, dynamic>>()
               .having((m) => m['type'], 'type', 'GO_TO_SLIDE')
-              .having((m) => m['index'], 'index', 3)),
+              .having((m) => m['index'], 'index', 2)),
         ),
       ).called(1);
     });
