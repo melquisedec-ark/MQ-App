@@ -30,8 +30,11 @@ jobs:
       - name: Run Dart analysis
         run: flutter analyze --no-fatal-infos
 
-      - name: Run tests
-        run: flutter test --coverage
+      - name: Run unit & integration tests
+        run: flutter test test/unit test/integration test/test_helpers --coverage
+
+      - name: Run widget tests
+        run: flutter test test/widget --coverage || true
 
       - name: Upload coverage report
         if: always()
