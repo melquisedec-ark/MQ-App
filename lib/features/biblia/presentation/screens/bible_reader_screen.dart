@@ -1600,10 +1600,6 @@ class _ReaderBottomBar extends ConsumerWidget {
         dataSource.sendPrevChapter().catchError((_) => false);
     }
   }
-}
-
-/// FIX 4: Enum interno para comandos de navegación bíblica remota.
-enum _RemoteCommand { nextVerse, prevVerse, nextChapter, prevChapter }
 
   /// Abre NoteEditorModal desde el bottom bar (accesibilidad).
   void _openNoteFromBottomBar(BuildContext context, WidgetRef ref) {
@@ -1693,6 +1689,9 @@ enum _RemoteCommand { nextVerse, prevVerse, nextChapter, prevChapter }
     ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
   }
 }
+
+/// FIX 4: Enum interno para comandos de navegación bíblica remota.
+enum _RemoteCommand { nextVerse, prevVerse, nextChapter, prevChapter }
 
 /// Botón "ENVIAR" en el AppBar: envía el versículo actual al display
 /// remoto. Solo es visible cuando hay un emisor conectado.

@@ -29,7 +29,11 @@ class GrpcControlDataSource {
   bool get isConnected => _client != null;
 
   /// Establece conexión gRPC con un display remoto.
+  ///
+  /// FIX 2: Timeout de handshake aumentado a 15s para redes lentas
+  /// (especialmente Windows con firewall). Log detallado de la IP:puerto.
   Future<void> connect(String host, int port) async {
+    _log.info('Intentando conectar a display en $host:$port...');
     try {
       // Cerrar conexión previa si existe
       await disconnect();
@@ -44,13 +48,14 @@ class GrpcControlDataSource {
             timeout: Duration(seconds: 10),
             permitWithoutCalls: true,
           ),
-          connectTimeout: Duration(seconds: 10),
+          connectTimeout: Duration(seconds: 15),
         ),
       );
 
       final client = HymnControlClient(_channel!);
 
       // Realizar handshake para verificar conexión
+      // FIX 2: Timeout aumentado de 5s a 15s para redes lentas/firewall.
       final response = await client
           .handshake(
             HandshakeRequest(
@@ -59,7 +64,7 @@ class GrpcControlDataSource {
               protocolVersion: 1,
             ),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
 
       if (!response.accepted) {
         await disconnect();
@@ -75,26 +80,26 @@ class GrpcControlDataSource {
 
       _log.info(
         'Conectado a display: ${response.displayName} '
-        '(${response.serverName} v${response.serverVersion})',
+        '(${response.serverName} v${response.serverVersion}) en $host:$port',
       );
     } on NetworkException {
       rethrow;
     } on GrpcError catch (e) {
-      _log.severe('Error gRPC al conectar: $e');
+      _log.severe('Error gRPC al conectar a $host:$port: $e');
       await disconnect();
       throw NetworkException(
         'Error de conexión gRPC: ${e.message}',
         statusCode: e.code,
       );
     } on TimeoutException {
-      _log.severe('Timeout al conectar con $host:$port');
+      _log.severe('Timeout al conectar con $host:$port (15s)');
       await disconnect();
       throw const NetworkException(
         'Timeout de conexión: el display no respondió',
         statusCode: -1,
       );
     } catch (e) {
-      _log.severe('Error inesperado al conectar: $e');
+      _log.severe('Error inesperado al conectar a $host:$port: $e');
       await disconnect();
       throw NetworkException('Error al conectar: $e');
     }

@@ -122,9 +122,20 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         );
         _actualPort = tryPort;
         _isRunning = true;
+
+        // FIX 2: Log detallado de la IP y puerto en que está escuchando.
+        // En Windows, esto ayuda a diagnosticar problemas de firewall/red.
+        final interfaces = await NetworkInterface.list(
+          includeLinkLocal: false,
+          type: InternetAddressType.IPv4,
+        );
+        final ips = interfaces
+            .expand((iface) => iface.addresses)
+            .map((addr) => addr.address)
+            .toList();
         _log.info(
           'Servidor gRPC iniciado en 0.0.0.0:$tryPort '
-          '(displayName: $displayName, sessionId: $sessionId)',
+          '(IPs: ${ips.join(", ")}, displayName: $displayName, sessionId: $sessionId)',
         );
         return;
       } catch (e) {

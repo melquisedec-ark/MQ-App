@@ -139,25 +139,30 @@ void main() {
       // Verificar la estructura del mensaje SET_CONFIG
       expect(capturedMessage, isNotNull);
       expect(capturedMessage!['type'], 'SET_CONFIG');
-      // Nuevos campos
+      // FIX 3: Campos de apariencia (sin fondo)
       for (final key in [
         'textColor',
         'chordColor',
         'fontFamily',
         'isBold',
         'fontScale',
-        'bgColor',
+        'projectionFontScale',
+        'showChords',
+        'cardOpacity',
+        'glassBlurSigma',
+        'glassEnabled',
+        'glassOverlayColor',
       ]) {
         expect(capturedMessage!.containsKey(key), true,
             reason: 'Falta campo $key en SET_CONFIG',);
       }
-      // Campos legacy
-      for (final key in [
-        'backgroundColor',
-        'fontSize',
-        'transitionSpeed',
-        'background',
-      ]) {
+      // FIX 3: El fondo NO debe transportarse en SET_CONFIG
+      for (final key in ['bgColor', 'backgroundColor', 'background']) {
+        expect(capturedMessage!.containsKey(key), false,
+            reason: 'El campo $key no debe enviarse en SET_CONFIG (evita reset del fondo)',);
+      }
+      // Campos legacy que sí se mantienen
+      for (final key in ['fontSize', 'transitionSpeed']) {
         expect(capturedMessage!.containsKey(key), true,
             reason: 'Falta campo legacy $key en SET_CONFIG',);
       }
