@@ -712,7 +712,11 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (cap != null) {
       if (_bibleState.versiculoNumero < cap.totalVersiculos) {
         await _updateBibleVerse(_bibleState.versiculoNumero + 1);
-        await _updateLiveControlFromBibleState();
+        // FIX 2b: Solo cambiar slide, no recargar capítulo completo.
+        // _updateLiveControlFromBibleState() recarga el capítulo y resetea
+        // currentSlideIndex a 0, causando que el versículo mostrado no
+        // coincida con el slide enviado al subproceso.
+        _container.read(liveControlProvider.notifier).goToVerse(_bibleState.versiculoNumero);
         // Enviar NEXT_SLIDE al subproceso de proyección
         try {
           _container.read(windowServiceProvider).sendMessage({'type': 'NEXT_SLIDE'});
@@ -747,7 +751,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
     if (_container == null) return;
     if (_bibleState.versiculoNumero > 1) {
       await _updateBibleVerse(_bibleState.versiculoNumero - 1);
-      _updateLiveControlFromBibleState();
+      // FIX 2b: Solo cambiar slide, no recargar capítulo completo.
+      _container.read(liveControlProvider.notifier).goToVerse(_bibleState.versiculoNumero);
       try {
         _container.read(windowServiceProvider).sendMessage({'type': 'PREV_SLIDE'});
       } catch (e) {
