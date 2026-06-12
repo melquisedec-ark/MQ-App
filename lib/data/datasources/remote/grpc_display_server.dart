@@ -636,6 +636,10 @@ class GrpcDisplayServer extends HymnControlServiceBase {
   /// Envía un mensaje SET_CONFIG al [WindowService] para que el subproceso
   /// de proyección reciba los cambios de apariencia que llegaron por gRPC.
   /// bgFondoId se omite intencionalmente (se maneja vía SET_BACKGROUND).
+  ///
+  /// NOTA: El fondo NO se sincroniza aquí. El fondo solo se sincroniza
+  /// cuando se recibe un comando SET_BACKGROUND explícito o cuando el
+  /// usuario cambia el fondo localmente. Ver _syncBackgroundToSubprocess().
   void _syncAppearanceToSubprocess() {
     if (_container == null) return;
     try {
@@ -656,16 +660,6 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       };
       _log.info('Enviando SET_CONFIG a subproceso: ${message.keys.join(", ")}');
       _container.read(windowServiceProvider).sendMessage(message);
-
-      // FIX v2.1.7 (cambio #2): SIEMPRE sincronizar fondo, incluso cuando
-      // selectedFondo es null (envía '0' como "sin fondo"). Esto evita que
-      // el subproceso se desincronice cuando el receptor no tiene fondo pero
-      // el subproceso sí (por ejemplo, después de una recarga de BD).
-      // Documentado en doc/BUG_FONDO_RESET.md.
-      final bgId = appearance.selectedFondo?.id;
-      _log.info('Sincronizando fondo a subproceso: ${bgId?.toString() ?? "0 (sin fondo)"}');
-      _syncBackgroundToSubprocess(bgId ?? 0);
-
       _log.fine('Apariencia sincronizada con subproceso');
     } catch (e) {
       _log.warning('Error al sincronizar apariencia con subproceso: $e');

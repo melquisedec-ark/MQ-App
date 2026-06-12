@@ -1,8 +1,10 @@
 # Bug: Fondo de proyección se resetea al cambiar apariencia
 
-> :warning: **ESTE BUG HA OCURRIDO 4 VECES.** La causa raíz #1 (transporte) se
-> parchó en v2.1.4, pero la causa raíz #2 (persistencia) persistió hasta v2.1.7.
-> **Si vuelve a aparecer, buscar en `_saveToDb()` antes que en mensajes.**
+> :warning: **ESTE BUG HA OCURRIDO 5 VECES.** Las causas raíz #1 (transporte) y
+> #2 (persistencia) se parchaban parcialmente, pero #3 (reenvío redundante)
+> persistió hasta v2.1.8.
+> **Si vuelve a aparecer, buscar en `_syncAppearanceToProjection()` y
+> `_syncAppearanceToSubprocess()` — funciones que envían fondo sin motivo.**
 
 ## Historial completo
 
@@ -11,7 +13,8 @@
 | **#1 (v2.0.1)** | Fondo se vuelve BLANCO al cambiar tamaño de letra | Agregar `bgColor` a `sendSetAppearance()` | ❌ Ahora se vuelve NEGRO |
 | **#2 (v2.0.2)** | Fondo se vuelve NEGRO al cambiar tamaño de letra | El "fix" anterior | ❌ El fondo sigue cambiando |
 | **#3 (v2.1.4)** | Fondo se vuelve NEGRO al cambiar apariencia desde celular | Eliminar `bgColor` y `bgFondoId` de SET_CONFIG y SET_APPEARANCE | ❌ El fondo SIGUE cambiando (causa REAL era otra) |
-| **#4 (v2.1.6 → v2.1.7)** | Fondo se vuelve NEGRO al cambiar CUALQUIER apariencia | [v2.1.6] Eliminar `sendSetFontSize`, sync gRPC→subproceso. [v2.1.7] **Sacar `bg_fondo_id` de `_saveToDb()`** | ✅ **FIX DEFINITIVO** |
+| **#4 (v2.1.6 → v2.1.7)** | Fondo se vuelve NEGRO al cambiar CUALQUIER apariencia | [v2.1.6] Eliminar `sendSetFontSize`, sync gRPC→subproceso. [v2.1.7] **Sacar `bg_fondo_id` de `_saveToDb()`** | ❌ **Todavía se re-envía fondo** |
+| **#5 (v2.1.8)** | Fondo se RE-ENVÍA al cambiar apariencia (letra, color, etc.) | **Separar `_syncBackgroundToProjection()` de `_syncAppearanceToProjection()`** | ✅ **FIX COMPLETO** |
 
 ## Causa Raíz #1 (v2.0.1 – v2.1.4): Transporte
 
@@ -104,75 +107,113 @@ Cuando el subproceso se reinicia o hay una condición de carrera durante el proc
 
 ---
 
-## Fix Definitivo (v2.1.7)
+## Causa Raíz #3 (v2.1.8): Transporte redundante de fondo
 
-### Principio
+**`_syncAppearanceToProjection()` y `_syncAppearanceToSubprocess()` re-enviaban el fondo en CADA cambio de apariencia.**
 
-> `_saveToDb()` debe guardar SOLO los campos que el setter específico modificó.
-> `bg_fondo_id` NO debe escribirse al cambiar `textColor`, `fontScale`, etc.
-> Solo debe persistirse mediante los setters DEDICADOS de fondo.
+Incluso después de los fixes de persistencia (v2.1.7), cada vez que el usuario cambiaba cualquier campo de apariencia (fuente, color de letra, tamaño, etc.) desde el emisor móvil, se enviaban mensajes `SET_BACKGROUND` y `sendSetBackground` redundantes al receptor.
 
-### Cambios aplicados
+### Mecanismo
 
-#### 1. `appearance_provider.dart` — Separar persistencia de fondo
+```
+Emisor móvil cambia fuente:
+  → hymnAppearanceProvider.setFontFamily()
+  → _syncAppearanceToProjection()
+    → (correcto) sendSetAppearance() — sin fondo
+    → (incorrecto) sendSetBackground(id) — fondo reenviado ← BUG
+    → (correcto) SET_CONFIG via WindowService — sin fondo
+    → (incorrecto) SET_BACKGROUND via WindowService — fondo reenviado ← BUG
 
-**Antes** (línea 165 dentro de `_saveToDb()`):
-```dart
-await _dbHelper.setConfig('bg_fondo_id', state.selectedFondo?.id.toString() ?? '');
+PC recibe sendSetBackground() + sendSetAppearance():
+  → SET_BACKGROUND handler: setFondo(fondo) + _syncBackgroundToSubprocess()
+  → SET_APPEARANCE handler: setters de apariencia + _syncAppearanceToSubprocess()
+    → (incorrecto) _syncBackgroundToSubprocess() otra vez ← BUG
 ```
 
-**Después**: `bg_fondo_id` eliminado de `_saveToDb()`. Nueva función exclusiva:
+Aunque el ID del fondo era el mismo, el reenvío causaba:
+1. Tráfico gRPC innecesario
+2. Escrituras redundantes a la BD compartida (`_saveToDb()` en cada `setFondo`)
+3. Posibles condiciones de carrera al procesar dos comandos de fondo seguidos
+4. El receptor cambiaba el fondo aunque el usuario solo hubiera cambiado la letra
 
+### Fix aplicado (v2.1.8)
+
+> **Principio**: El fondo solo debe enviarse al receptor cuando el usuario CAMBIA explícitamente el fondo. Cambiar apariencia (fuente, color, tamaño) NO debe disparar ningún mensaje relacionado al fondo.
+
+#### 1. `control_sheets.dart` — Separar `_syncBackgroundToProjection()`
+
+**Antes**: `_syncAppearanceToProjection()` enviaba SET_BACKGROUND + sendSetBackground en cada llamada:
 ```dart
-Future<void> _saveBgFondoId(String? id) async {
-  try {
-    await _dbHelper.setConfig('bg_fondo_id', id ?? '');
-  } catch (e) { /* Silent fail */ }
+void _syncAppearanceToProjection(WidgetRef ref) {
+  // ... envía SET_CONFIG ...
+  // ... envía sendSetAppearance ...
+
+  // ⚠️ Fondo reenviado en cada cambio de apariencia:
+  if (appearance.selectedFondo != null) {
+    ref.read(windowServiceProvider).sendMessage({'type': 'SET_BACKGROUND', ...});
+    dataSource.sendSetBackground(appearance.selectedFondo!.id.toString());
+  }
 }
 ```
 
-Llamada SOLO desde los setters dedicados:
-
-| Setter | Llama `_saveBgFondoId` con |
-|--------|---------------------------|
-| `setFondo(fondo)` | `fondo.id.toString()` |
-| `setBgColor(color)` | `null` (borra fondo) |
-| `clearFondo()` | `null` (borra fondo) |
-
-#### 2. `grpc_display_server.dart` — SET_BACKGROUND incondicional
-
-`_syncAppearanceToSubprocess()` ahora SIEMPRE envía SET_BACKGROUND:
+**Después**: Nueva función separada que SOLO se llama desde setters de fondo:
 ```dart
-_syncBackgroundToSubprocess(appearance.selectedFondo?.id ?? 0);
+void _syncBackgroundToProjection(WidgetRef ref) {
+  final bgId = appearance.selectedFondo?.id.toString();
+  ref.read(windowServiceProvider).sendMessage({
+    'type': 'SET_BACKGROUND', 'bgFondoId': bgId ?? '0',
+  });
+  if (isConnected && bgId != null) {
+    dataSource.sendSetBackground(bgId);
+  }
+}
 ```
-Antes era condicional (`if (selectedFondo != null)`). Ahora siempre se envía (con `'0'` como "sin fondo").
 
-#### 3. `projection_app.dart` — Manejo robusto de errores
+Llamada solo desde:
+| Acción | Llama |
+|--------|-------|
+| `_FondoItem.onTap` → `setFondo(fondo)` | `_syncBackgroundToProjection(ref)` |
+| `reset()` | `_syncBackgroundToProjection(ref)` |
 
-`_handleSetBackground` protegido con `.catchError()` para errores asíncronos de BD.
+#### 2. `grpc_display_server.dart` — Eliminar fondo de `_syncAppearanceToSubprocess()`
 
-### Arquitectura final del flujo
+**Antes**: `_syncAppearanceToSubprocess()` reenviaba SET_BACKGROUND al subproceso:
+```dart
+void _syncAppearanceToSubprocess() {
+  // ... envía SET_CONFIG ...
+  // ⚠️ Fondo reenviado en cada cambio de apariencia:
+  _syncBackgroundToSubprocess(bgId ?? 0);
+}
+```
+
+**Después**: Solo envía SET_CONFIG. El fondo se maneja exclusivamente vía SET_BACKGROUND.
+
+### Arquitectura final del flujo (v2.1.8)
 
 ```
-Celular cambia textColor:
+Emisor móvil cambia textColor/fontFamily/etc:
+  → hymnAppearanceProvider.setXxx()
   → _syncAppearanceToProjection()
-    → SET_CONFIG (11 campos, SIN bgColor, SIN bgFondoId) → WindowService (no-op en celular)
-    → sendSetAppearance (gRPC, SIN bgColor)
-    → sendSetBackground (gRPC, SOLO si selectedFondo != null)
+    → SET_CONFIG (WindowService, sin fondo)
+    → sendSetAppearance (gRPC, sin fondo)
+    → NO envía background ← FIX v2.1.8
+
+Emisor móvil cambia FONDO (toca un fondo):
+  → hymnAppearanceProvider.setFondo(fondo)
+    → _saveToDb() + _saveBgFondoId()
+  → _syncBackgroundToProjection(ref)
+    → SET_BACKGROUND (WindowService, con bgId)
+    → sendSetBackground (gRPC, con bgId) ← SOLO cuando cambia fondo
 
 PC recibe SET_APPEARANCE (gRPC):
-  → notifier.setTextColor(color)            ← NO toca bg_fondo_id en BD
+  → setters de apariencia
   → _syncAppearanceToSubprocess()
-    → SET_CONFIG (11 campos, SIN bgColor)   → Subproceso: 11 setters, NO contaminan BD
-    → SET_BACKGROUND (SIEMPRE)              → Subproceso: mantiene/actualiza fondo
+    → SET_CONFIG (sin fondo, sin SET_BACKGROUND) ← FIX v2.1.8
 
-PC cambia fondo localmente (brush sheet):
-  → setFondo(fondo)
-    → _saveToDb()                           ← Guarda apariencia normal
-    → _saveBgFondoId(fondo.id)              ← Guarda bg_fondo_id
-  → _syncAppearanceToProjection()
-    → SET_CONFIG (11 campos, SIN fondo)
-    → SET_BACKGROUND (con bgFondoId)        → Subproceso: actualiza fondo
+PC recibe SET_BACKGROUND (gRPC):
+  → setFondo(fondo) + _saveBgFondoId()
+  → _syncBackgroundToSubprocess(bgId)
+    → SET_BACKGROUND al subproceso
 ```
 
 ### Lecciones aprendidas
@@ -198,8 +239,8 @@ PC cambia fondo localmente (brush sheet):
 
 | Archivo | Rol |
 |---------|-----|
-| `lib/presentation/shared_widgets/providers/appearance_provider.dart` | `_saveToDb()` (línea 148), `_saveBgFondoId()` (línea 175) — **el fix real** |
-| `lib/presentation/shared_widgets/control_sheets.dart` | `_syncAppearanceToProjection` (línea 104) — emisor |
-| `lib/data/datasources/remote/grpc_display_server.dart` | `_syncAppearanceToSubprocess()` (línea 525), `_syncBackgroundToSubprocess()` (línea 559) |
-| `lib/presentation/views_projection/display/projection_app.dart` | `_handleSetConfig` (línea 157), `_handleSetBackground` (línea 235) |
+| `lib/presentation/shared_widgets/providers/appearance_provider.dart` | `_saveToDb()` sin `bg_fondo_id`, `_saveBgFondoId()` separada — fix persistencia (v2.1.7) |
+| `lib/presentation/shared_widgets/control_sheets.dart` | `_syncAppearanceToProjection()` sin fondo, nueva `_syncBackgroundToProjection()` — **fix transporte redundante (v2.1.8)** |
+| `lib/data/datasources/remote/grpc_display_server.dart` | `_syncAppearanceToSubprocess()` sin fondo, `_syncBackgroundToSubprocess()` solo llamada desde SET_BACKGROUND handler |
+| `lib/presentation/views_projection/display/projection_app.dart` | `_handleSetConfig` con safeguard, `_handleSetBackground` con manejo de errores |
 | `lib/presentation/views_projection/providers/projection_actions.dart` | `_buildSetConfigMessage` (línea 84) |

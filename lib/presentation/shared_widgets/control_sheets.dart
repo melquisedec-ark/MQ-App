@@ -142,14 +142,6 @@ void _syncAppearanceToProjection(WidgetRef ref) {
   // Fire-and-forget silencioso
   ref.read(windowServiceProvider).sendMessage(message);
 
-  // Sincronizar fondo seleccionado por separado (SET_CONFIG no transporta fondo)
-  if (appearance.selectedFondo != null) {
-    ref.read(windowServiceProvider).sendMessage({
-      'type': 'SET_BACKGROUND',
-      'bgFondoId': appearance.selectedFondo!.id.toString(),
-    });
-  }
-
   // NUEVO: Enviar por gRPC si estamos conectados como emisor
   final isConnected = ref.read(isConnectedProvider);
   if (isConnected) {
@@ -164,18 +156,38 @@ void _syncAppearanceToProjection(WidgetRef ref) {
       projectionFontScale: appearance.projectionFontScale,
     ).catchError((_) => false);
 
-    // NUEVO: Enviar fondo seleccionado
-    if (appearance.selectedFondo != null) {
-      dataSource.sendSetBackground(
-        appearance.selectedFondo!.id.toString(),
-      ).catchError((_) => false);
-    }
-
     // NOTA: fontScale se envía en SET_CONFIG (WindowService → subproceso).
     // No se envía sendSetFontSize separado porque:
     // 1. El subproceso ya recibe fontScale vía SET_CONFIG
     // 2. sendSetFontSize en el proceso principal dispara _saveToDb()
     //    que sobreescribe bg_fondo_id = '' en la BD (contaminación)
+  }
+  // NOTA: El fondo NO se sincroniza aquí. El fondo solo debe enviarse
+  // cuando el usuario cambia explícitamente el fondo (toca un fondo,
+  // cambia color de fondo, o limpia fondo). Ver _syncBackgroundToProjection().
+}
+
+/// Envía el fondo seleccionado actualmente a la ventana de proyección
+/// (WindowService) y por gRPC (si estamos conectados como emisor).
+///
+/// Solo debe llamarse cuando el fondo CAMBIA explícitamente por acción
+/// del usuario (seleccionar fondo, cambiar color de fondo, limpiar fondo).
+/// NO debe llamarse al cambiar apariencia (fuente, color de letra, etc.).
+void _syncBackgroundToProjection(WidgetRef ref) {
+  final appearance = ref.read(hymnAppearanceProvider);
+  final bgId = appearance.selectedFondo?.id.toString();
+
+  // Enviar a ventana de proyección local (WindowService)
+  ref.read(windowServiceProvider).sendMessage({
+    'type': 'SET_BACKGROUND',
+    'bgFondoId': bgId ?? '0',
+  });
+
+  // Enviar por gRPC si conectado como emisor
+  final isConnected = ref.read(isConnectedProvider);
+  if (isConnected && bgId != null) {
+    final dataSource = ref.read(controlDataSourceProvider);
+    dataSource.sendSetBackground(bgId).catchError((_) => false);
   }
 }
 
@@ -381,7 +393,7 @@ List<Widget> _brushSheetChildren({
                 isSelected: isSelected,
                 onTap: () {
                   ref.read(hymnAppearanceProvider.notifier).setFondo(fondo);
-                  _syncAppearanceToProjection(ref);
+                  _syncBackgroundToProjection(ref);
                 },
               );
             }).toList(),
@@ -799,7 +811,7 @@ List<Widget> _brushSheetChildren({
               .read(hymnAppearanceProvider.notifier)
               .reset();
           _syncAppearanceToProjection(ref);
-          
+          _syncBackgroundToProjection(ref);
         },
         icon: const Icon(Icons.restart_alt),
         label: const Text('Restablecer valores'),
