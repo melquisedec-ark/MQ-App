@@ -179,55 +179,13 @@ void main() {
       expect(capturedSetConfig!['fontFamily'], 'Lora');
       expect(capturedSetConfig!['isBold'], true);
       expect(capturedSetConfig!['fontScale'], 1.3);
-      expect(capturedSetConfig!['bgColor'], '#FF1D6F42');
-      // Campos legacy
-      expect(capturedSetConfig!['backgroundColor'], '#FF1D6F42');
+      // FIX 1: bgColor, backgroundColor y background eliminados de SET_CONFIG
+      expect(capturedSetConfig!.containsKey('bgColor'), false);
+      expect(capturedSetConfig!.containsKey('backgroundColor'), false);
+      expect(capturedSetConfig!.containsKey('background'), false);
+      // Campos legacy que se mantienen
       expect(capturedSetConfig!['fontSize'], 'large'); // 1.3 → large
       expect(capturedSetConfig!['transitionSpeed'], 0.5);
-      expect(capturedSetConfig!['background'], 'color');
-    });
-
-    testWidgets('SET_CONFIG envía "black" cuando bgColor es transparente',
-        (tester) async {
-      const himno = Himno(
-        id: 3,
-        titulo: 'Test',
-        tipo: HimnoTipo.oficial,
-      );
-
-      when(() => mockRepo.getHymnById(3)).thenAnswer((_) async => himno);
-      when(() => mockRepo.getStanzas(any())).thenAnswer((_) async => []);
-      when(() => mockWindowService.sendMessage(any()))
-          .thenAnswer((_) async {});
-
-      Map<String, dynamic>? capturedSetConfig;
-      when(() => mockWindowService.sendMessage(any()))
-          .thenAnswer((invocation) async {
-        final msg =
-            invocation.positionalArguments[0] as Map<String, dynamic>;
-        if (msg['type'] == 'SET_CONFIG') capturedSetConfig = msg;
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            hymnRepositoryProvider.overrideWithValue(mockRepo),
-            windowServiceProvider.overrideWithValue(mockWindowService),
-          ],
-          child: MaterialApp(
-            home: _ProjectHymnLauncher(
-              himno: himno,
-              onResult: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(capturedSetConfig, isNotNull);
-      expect(capturedSetConfig!['background'], 'black');
     });
 
     testWidgets('retorna null en éxito y mensaje de error en fallo',
