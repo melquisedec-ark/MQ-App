@@ -115,36 +115,29 @@ String _fontScaleToLegacySize(double fontScale) {
 /// Envía el estado actual de [hymnAppearanceProvider] a la ventana
 /// de proyección vía [WindowService.sendMessage] (silencioso).
 ///
-/// Phase 2a.4: el payload ahora incluye los campos NUEVOS (textColor,
-/// chordColor, fontFamily, isBold, fontScale, bgColor, showChords,
-/// cardOpacity, glass*) Y los LEGACY (backgroundColor, fontSize,
-/// transitionSpeed, background) que el receptor de proyección aún
-/// consume para retrocompatibilidad. Ver BUG_FONDO_RESET.md — el bug
-/// del fondo negro NO se reproduce al añadir bgColor de vuelta porque
-/// el receptor no procesa bgColor (solo el bg_fondo_id dedicado).
+/// FIX v2.1.7: NO envía bgColor, backgroundColor ni background en
+/// SET_CONFIG para evitar que el fondo se resetee al cambiar
+/// apariencia (texto, fuente, color, etc.). El fondo se maneja
+/// exclusivamente vía mensajes SET_BACKGROUND dedicados.
 void _syncAppearanceToProjection(WidgetRef ref) {
   final appearance = ref.read(hymnAppearanceProvider);
-  final bgColor = appearance.bgColor;
   final message = <String, dynamic>{
     'type': 'SET_CONFIG',
-    // Nuevos campos de apariencia
+    // Campos de apariencia (sin fondo)
     'textColor': _colorToHex(appearance.textColor),
     'chordColor': _colorToHex(appearance.chordColor),
     'fontFamily': appearance.fontFamily,
     'isBold': appearance.isBold,
     'fontScale': appearance.fontScale,
-    'bgColor': _colorToHex(bgColor),
     'projectionFontScale': appearance.projectionFontScale,
     'showChords': appearance.showChords,
     'cardOpacity': appearance.cardOpacity,
     'glassBlurSigma': appearance.glassBlurSigma,
     'glassEnabled': appearance.glassEnabled,
     'glassOverlayColor': _colorToHex(appearance.glassOverlayColor),
-    // Campos legacy (compatibilidad con receptor)
-    'backgroundColor': _colorToHex(bgColor),
+    // Campos legacy (sin backgroundColor ni background)
     'fontSize': _fontScaleToLegacySize(appearance.fontScale),
     'transitionSpeed': 0.5,
-    'background': bgColor == Colors.transparent ? 'black' : 'color',
   };
   // Fire-and-forget silencioso
   ref.read(windowServiceProvider).sendMessage(message);
