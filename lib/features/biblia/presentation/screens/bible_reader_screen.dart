@@ -1475,7 +1475,7 @@ class _ReaderBottomBar extends ConsumerWidget {
                         minWidth: 36,
                         minHeight: 36,
                       ),
-                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.prevVerse),
+                      onPressed: () => _sendRemoteCommand(context, ref, _RemoteCommand.prevVerse),
                       tooltip: 'Versículo anterior (remoto)',
                     ),
                     IconButton(
@@ -1486,7 +1486,7 @@ class _ReaderBottomBar extends ConsumerWidget {
                         minWidth: 36,
                         minHeight: 36,
                       ),
-                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.nextVerse),
+                      onPressed: () => _sendRemoteCommand(context, ref, _RemoteCommand.nextVerse),
                       tooltip: 'Versículo siguiente (remoto)',
                     ),
                     IconButton(
@@ -1497,7 +1497,7 @@ class _ReaderBottomBar extends ConsumerWidget {
                         minWidth: 36,
                         minHeight: 36,
                       ),
-                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.prevChapter),
+                      onPressed: () => _sendRemoteCommand(context, ref, _RemoteCommand.prevChapter),
                       tooltip: 'Capítulo anterior (remoto)',
                     ),
                     IconButton(
@@ -1508,7 +1508,7 @@ class _ReaderBottomBar extends ConsumerWidget {
                         minWidth: 36,
                         minHeight: 36,
                       ),
-                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.nextChapter),
+                      onPressed: () => _sendRemoteCommand(context, ref, _RemoteCommand.nextChapter),
                       tooltip: 'Capítulo siguiente (remoto)',
                     ),
                   ],
@@ -1586,17 +1586,28 @@ class _ReaderBottomBar extends ConsumerWidget {
     );
   }
 
-  /// FIX 4: Envía un comando gRPC al display remoto cuando estamos en modo emisor.
-  void _sendRemoteCommand(WidgetRef ref, _RemoteCommand command) {
+  /// FIX 2a: Envía un comando gRPC al display remoto y también actualiza
+  /// el estado local del emisor para que la UI refleje la navegación.
+  void _sendRemoteCommand(BuildContext context, WidgetRef ref, _RemoteCommand command) {
     final dataSource = ref.read(controlDataSourceProvider);
     switch (command) {
       case _RemoteCommand.nextVerse:
+        // Actualizar estado local antes de enviar comando remoto
+        _goNextVerse(ref);
         dataSource.sendNextVerse().catchError((_) => false);
       case _RemoteCommand.prevVerse:
+        // Actualizar estado local antes de enviar comando remoto
+        if (versiculoNum > 1) {
+          ref.read(currentVersiculoNumeroProvider.notifier).state = versiculoNum - 1;
+        }
         dataSource.sendPrevVerse().catchError((_) => false);
       case _RemoteCommand.nextChapter:
+        // Actualizar estado local antes de enviar comando remoto
+        _goNextChapter(context, ref).catchError((_) {});
         dataSource.sendNextChapter().catchError((_) => false);
       case _RemoteCommand.prevChapter:
+        // Actualizar estado local antes de enviar comando remoto
+        _goPrevChapter(context, ref).catchError((_) {});
         dataSource.sendPrevChapter().catchError((_) => false);
     }
   }
