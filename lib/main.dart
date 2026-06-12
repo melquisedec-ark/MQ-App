@@ -58,6 +58,16 @@ void main(List<String> args) async {
 /// desde [desktop_multi_window]. Se comunica con la ventana principal
 /// vía stdin/stdout (protocolo JSON).
 Future<void> _startProjectionWindow() async {
+  // FIX 1: Inicializar window_manager para que FullscreenHandler
+  // (F11 toggle) funcione en la ventana de proyección secundaria.
+  if (!kIsWeb) {
+    try {
+      await windowManager.ensureInitialized();
+    } catch (_) {
+      // window_manager no disponible en esta plataforma
+    }
+  }
+
   final container = ProviderContainer();
   // El subproceso NO necesita servidor gRPC (se comunica por stdin/stdout)
   await AppInitializer.initialize(container: container, skipNetwork: true);
