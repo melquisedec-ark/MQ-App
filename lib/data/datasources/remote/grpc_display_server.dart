@@ -657,16 +657,14 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       _log.info('Enviando SET_CONFIG a subproceso: ${message.keys.join(", ")}');
       _container.read(windowServiceProvider).sendMessage(message);
 
-      // FIX 1: Solo sincronizar fondo cuando realmente se cambió.
-      // Si selectedFondo es null, NO enviar nada al subproceso para evitar
-      // race condition que resetea el fondo actual (el subproceso mantiene
-      // su fondo anterior).
-      if (appearance.selectedFondo != null) {
-        _log.info('Sincronizando fondo a subproceso: ${appearance.selectedFondo!.id}');
-        _syncBackgroundToSubprocess(appearance.selectedFondo!.id);
-      } else {
-        _log.info('No hay fondo seleccionado — omitiendo SET_BACKGROUND');
-      }
+      // FIX v2.1.7 (cambio #2): SIEMPRE sincronizar fondo, incluso cuando
+      // selectedFondo es null (envía '0' como "sin fondo"). Esto evita que
+      // el subproceso se desincronice cuando el receptor no tiene fondo pero
+      // el subproceso sí (por ejemplo, después de una recarga de BD).
+      // Documentado en doc/BUG_FONDO_RESET.md.
+      final bgId = appearance.selectedFondo?.id;
+      _log.info('Sincronizando fondo a subproceso: ${bgId?.toString() ?? "0 (sin fondo)"}');
+      _syncBackgroundToSubprocess(bgId ?? 0);
 
       _log.fine('Apariencia sincronizada con subproceso');
     } catch (e) {

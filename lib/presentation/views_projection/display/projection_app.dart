@@ -184,10 +184,18 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
   /// Procesa un mensaje SET_CONFIG: actualiza la configuración visual
   /// de la proyección (color de fondo, tamaño de fuente, velocidad de
   /// transición, fondo seleccionado, y apariencia de texto).
+  ///
+  /// SAFEGUARD: Preserva explícitamente selectedFondo y bgColor para
+  /// evitar que cualquier setter los modifique inadvertidamente.
   void _handleSetConfig(Map<String, dynamic> message) {
     final appearanceNotifier = ref.read(hymnAppearanceProvider.notifier);
     final appearanceBefore = ref.read(hymnAppearanceProvider);
     _log.info('SET_CONFIG recibido. Claves: ${message.keys.join(", ")}. Antes: bgColor=${appearanceBefore.bgColor}, selectedFondo=${appearanceBefore.selectedFondo?.nombre ?? "null"}');
+    debugPrint('[PROJECTION_APP] SET_CONFIG recibido. Antes: bgColor=${appearanceBefore.bgColor}, selectedFondo=${appearanceBefore.selectedFondo?.nombre ?? "null"}');
+
+    // SAFEGUARD: Guardar fondo actual antes de procesar los campos
+    final savedBgColor = appearanceBefore.bgColor;
+    final savedFondo = appearanceBefore.selectedFondo;
 
     // ── Campos de apariencia (Brocha) ──
 
@@ -317,8 +325,24 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
     // mensajes dedicados: SET_BACKGROUND (gRPC) o bgFondoId en SET_CONFIG
     // desde la ventana de proyección. SET_CONFIG del emisor NO transporta
     // fondo para evitar que se borre al cambiar apariencia.
+
+    // SAFEGUARD: Verificar que el fondo no se haya modificado
     final appearanceAfter = ref.read(hymnAppearanceProvider);
-    _log.info('SET_CONFIG aplicado. Después: bgColor=${appearanceAfter.bgColor}, selectedFondo=${appearanceAfter.selectedFondo?.nombre ?? "null"}');
+    if (appearanceAfter.selectedFondo != savedFondo ||
+        appearanceAfter.bgColor != savedBgColor) {
+      _log.severe('🚨 SET_CONFIG MODIFICÓ EL FONDO! savedFondo=$savedFondo, savedBgColor=$savedBgColor, nowFondo=${appearanceAfter.selectedFondo?.id}, nowBgColor=${appearanceAfter.bgColor}');
+      debugPrint('[PROJECTION_APP] 🚨 SET_CONFIG modificó el fondo!');
+      // Restaurar fondo original
+      if (savedFondo != null) {
+        appearanceNotifier.setFondo(savedFondo);
+      } else {
+        appearanceNotifier.setBgColor(savedBgColor);
+      }
+      _log.info('Fondo restaurado.');
+    }
+    final appearanceFinal = ref.read(hymnAppearanceProvider);
+    _log.info('SET_CONFIG aplicado. Después: bgColor=${appearanceFinal.bgColor}, selectedFondo=${appearanceFinal.selectedFondo?.nombre ?? "null"}');
+    debugPrint('[PROJECTION_APP] SET_CONFIG aplicado. Después: bgColor=${appearanceFinal.bgColor}, selectedFondo=${appearanceFinal.selectedFondo?.nombre ?? "null"}');
   }
 
   /// Procesa un mensaje SET_BACKGROUND: carga y aplica el fondo
@@ -326,11 +350,24 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
   ///
   /// Busca el [FondoPantalla] en el repositorio local y lo asigna
   /// al [hymnAppearanceProvider] para que se renderice en pantalla.
+  ///
+  /// Si bgId es "0", se interpreta como "sin fondo" (no se hace nada,
+  /// el subproceso mantiene su fondo actual). Esto ocurre cuando el
+  /// receptor no tiene ningún fondo seleccionado y envía SET_BACKGROUND
+  /// con id=0 por el cambio de `_syncAppearanceToSubprocess` a
+  /// incondicional (FIX v2.1.7, doc/BUG_FONDO_RESET.md).
   void _handleSetBackground(String bgId) {
     _log.info('SET_BACKGROUND recibido: bgId=$bgId');
+    debugPrint('[PROJECTION_APP] SET_BACKGROUND recibido: bgId=$bgId');
     final id = int.tryParse(bgId);
-    if (id == null) {
-      _log.warning('SET_BACKGROUND: ID inválido: $bgId');
+    if (id == null || id == 0) {
+      if (id == 0) {
+        _log.fine('SET_BACKGROUND con id=0 (sin fondo) — el subproceso mantiene su fondo actual');
+        debugPrint('[PROJECTION_APP] SET_BACKGROUND con id=0 — manteniendo fondo actual');
+      } else {
+        _log.warning('SET_BACKGROUND: ID inválido: $bgId');
+        debugPrint('[PROJECTION_APP] SET_BACKGROUND: ID inválido: $bgId');
+      }
       return;
     }
     try {
@@ -339,15 +376,19 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
         final fondo = fondos.where((f) => f.id == id).firstOrNull;
         if (fondo != null) {
           _log.info('SET_BACKGROUND: Aplicando fondo ${fondo.nombre} (id=$id)');
+          debugPrint('[PROJECTION_APP] SET_BACKGROUND: Aplicando fondo ${fondo.nombre} (id=$id)');
           ref.read(hymnAppearanceProvider.notifier).setFondo(fondo);
         } else {
           _log.warning('SET_BACKGROUND: Fondo id=$id no encontrado en BD local');
+          debugPrint('[PROJECTION_APP] SET_BACKGROUND: Fondo id=$id NO encontrado en BD local');
         }
       }).catchError((e) {
         _log.warning('SET_BACKGROUND: Error al cargar fondos: $e');
+        debugPrint('[PROJECTION_APP] SET_BACKGROUND: Error al cargar fondos: $e');
       });
     } catch (e) {
       _log.warning('SET_BACKGROUND: Error inesperado: $e');
+      debugPrint('[PROJECTION_APP] SET_BACKGROUND: Error inesperado: $e');
     }
   }
 

@@ -151,6 +151,7 @@ class HymnAppearanceNotifier extends StateNotifier<HymnAppearanceState> {
     try {
       final bgColorHex = _colorToHex(state.bgColor);
       _log.info('_saveToDb: bgColor=$bgColorHex, selectedFondo=${state.selectedFondo?.id ?? "null"}, textColor=${_colorToHex(state.textColor)}, fontScale=${state.fontScale}');
+      debugPrint('[APPEARANCE] _saveToDb: bgColor=$bgColorHex, selectedFondo=${state.selectedFondo?.id ?? "null"}, fontScale=${state.fontScale}');
       await _dbHelper.setConfig('font_family', state.fontFamily);
       await _dbHelper.setConfig('is_bold', state.isBold.toString());
       await _dbHelper.setConfig('bg_color', bgColorHex);
@@ -203,6 +204,9 @@ class HymnAppearanceNotifier extends StateNotifier<HymnAppearanceState> {
   }
 
   void setFondo(FondoPantalla fondo) {
+    final logMsg = 'setFondo: id=${fondo.id}, nombre=${fondo.nombre}, tipo=${fondo.tipo}';
+    _log.info(logMsg);
+    debugPrint('[APPEARANCE] $logMsg');
     Color resolvedColor;
     switch (fondo.tipo) {
       case FondoPantallaTipo.colorSolido:
