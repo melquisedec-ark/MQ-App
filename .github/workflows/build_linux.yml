@@ -50,13 +50,23 @@ jobs:
           tar -czf MQ_App-linux-x64.tar.gz -C build/linux/x64/release bundle/
           ls -lh MQ_App-linux-x64.tar.gz
 
-      - name: Upload to GitHub Release
+      - name: Upload to GitHub Release (solo en tags o workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ github.ref_name }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ github.event.inputs.version }}"
+          fi
+          # Crear release si no existe (ej. workflow_dispatch con version='latest')
+          if ! gh release view "$TAG" &>/dev/null; then
+            echo "🆕 Release '$TAG' no existe. Creándolo..."
+            gh release create "$TAG" \
+              --title "Build $TAG" \
+              --notes "Build automático desde branch ${{ github.ref_name }}" \
+              --latest=false
           fi
           gh release upload "$TAG" MQ_App-linux-x64.tar.gz --clobber
 
