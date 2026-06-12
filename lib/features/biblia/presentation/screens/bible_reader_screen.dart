@@ -1370,6 +1370,7 @@ class _ReaderBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isEmitter = ref.watch(connectionRoleProvider) == ConnectionRole.emitter;
 
     return Container(
       decoration: BoxDecoration(
@@ -1385,7 +1386,7 @@ class _ReaderBottomBar extends ConsumerWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-          // v1.0.4b: 2 filas — navegación arriba, acción abajo.
+          // v1.0.4b: 2-3 filas — navegación arriba, control emisor (si aplica), acción abajo.
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1459,6 +1460,60 @@ class _ReaderBottomBar extends ConsumerWidget {
                   const _ViewModeToggleButton(),
                 ],
               ),
+              // FIX 4: Controles de emisor para navegación bíblica remota.
+              // Solo visibles cuando estamos conectados como emisor.
+              if (isEmitter) ...[
+                const Divider(height: 4, thickness: 0.5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_upward_rounded),
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.prevVerse),
+                      tooltip: 'Versículo anterior (remoto)',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_downward_rounded),
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.nextVerse),
+                      tooltip: 'Versículo siguiente (remoto)',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded),
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.prevChapter),
+                      tooltip: 'Capítulo anterior (remoto)',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_ios_rounded),
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      onPressed: () => _sendRemoteCommand(ref, _RemoteCommand.nextChapter),
+                      tooltip: 'Capítulo siguiente (remoto)',
+                    ),
+                  ],
+                ),
+              ],
               const Divider(height: 4, thickness: 0.5),
               // Fila 2: acción (Nota | Configuración | Pantalla completa)
               Row(
@@ -1530,6 +1585,25 @@ class _ReaderBottomBar extends ConsumerWidget {
       ),
     );
   }
+
+  /// FIX 4: Envía un comando gRPC al display remoto cuando estamos en modo emisor.
+  void _sendRemoteCommand(WidgetRef ref, _RemoteCommand command) {
+    final dataSource = ref.read(controlDataSourceProvider);
+    switch (command) {
+      case _RemoteCommand.nextVerse:
+        dataSource.sendNextVerse().catchError((_) => false);
+      case _RemoteCommand.prevVerse:
+        dataSource.sendPrevVerse().catchError((_) => false);
+      case _RemoteCommand.nextChapter:
+        dataSource.sendNextChapter().catchError((_) => false);
+      case _RemoteCommand.prevChapter:
+        dataSource.sendPrevChapter().catchError((_) => false);
+    }
+  }
+}
+
+/// FIX 4: Enum interno para comandos de navegación bíblica remota.
+enum _RemoteCommand { nextVerse, prevVerse, nextChapter, prevChapter }
 
   /// Abre NoteEditorModal desde el bottom bar (accesibilidad).
   void _openNoteFromBottomBar(BuildContext context, WidgetRef ref) {
