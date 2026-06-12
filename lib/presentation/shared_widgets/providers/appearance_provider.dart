@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart';
 
 import '../../../core/database/database_helper.dart';
 import '../../../data/datasources/local/catalog_local_datasource.dart';
@@ -78,6 +79,7 @@ class HymnAppearanceState {
 }
 
 class HymnAppearanceNotifier extends StateNotifier<HymnAppearanceState> {
+  static final _log = Logger('HymnAppearanceNotifier');
   final DatabaseHelper _dbHelper;
 
   HymnAppearanceNotifier(this._dbHelper) : super(const HymnAppearanceState()) {
@@ -147,9 +149,11 @@ class HymnAppearanceNotifier extends StateNotifier<HymnAppearanceState> {
   /// Guarda las preferencias actuales en la BD
   Future<void> _saveToDb() async {
     try {
+      final bgColorHex = _colorToHex(state.bgColor);
+      _log.info('_saveToDb: bgColor=$bgColorHex, selectedFondo=${state.selectedFondo?.id ?? "null"}, textColor=${_colorToHex(state.textColor)}, fontScale=${state.fontScale}');
       await _dbHelper.setConfig('font_family', state.fontFamily);
       await _dbHelper.setConfig('is_bold', state.isBold.toString());
-      await _dbHelper.setConfig('bg_color', _colorToHex(state.bgColor));
+      await _dbHelper.setConfig('bg_color', bgColorHex);
       await _dbHelper.setConfig('text_color', _colorToHex(state.textColor));
       await _dbHelper.setConfig('chord_color', _colorToHex(state.chordColor));
       await _dbHelper.setConfig('font_scale', state.fontScale.toString());
@@ -163,7 +167,7 @@ class HymnAppearanceNotifier extends StateNotifier<HymnAppearanceState> {
       await _dbHelper.setConfig('glass_enabled', state.glassEnabled.toString());
       await _dbHelper.setConfig('glass_overlay_color', _colorToHex(state.glassOverlayColor));
     } catch (e) {
-      // Silent fail en escritura
+      _log.warning('Error en _saveToDb: $e');
     }
   }
 

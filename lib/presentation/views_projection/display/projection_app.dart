@@ -4,6 +4,7 @@ import 'dart:io' show stdin;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart';
 
 import '../../../core/enums/estrofa_tipo.dart';
 import '../../../core/enums/himno_tipo.dart';
@@ -63,6 +64,7 @@ class ProjectionApp extends ConsumerStatefulWidget {
 }
 
 class _ProjectionAppState extends ConsumerState<ProjectionApp> {
+  static final _log = Logger('ProjectionApp');
   StreamSubscription<String>? _stdinSubscription;
 
   @override
@@ -184,6 +186,8 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
   /// transición, fondo seleccionado, y apariencia de texto).
   void _handleSetConfig(Map<String, dynamic> message) {
     final appearanceNotifier = ref.read(hymnAppearanceProvider.notifier);
+    final appearanceBefore = ref.read(hymnAppearanceProvider);
+    _log.info('SET_CONFIG recibido. Claves: ${message.keys.join(", ")}. Antes: bgColor=${appearanceBefore.bgColor}, selectedFondo=${appearanceBefore.selectedFondo?.nombre ?? "null"}');
 
     // ── Campos de apariencia (Brocha) ──
 
@@ -313,6 +317,8 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
     // mensajes dedicados: SET_BACKGROUND (gRPC) o bgFondoId en SET_CONFIG
     // desde la ventana de proyección. SET_CONFIG del emisor NO transporta
     // fondo para evitar que se borre al cambiar apariencia.
+    final appearanceAfter = ref.read(hymnAppearanceProvider);
+    _log.info('SET_CONFIG aplicado. Después: bgColor=${appearanceAfter.bgColor}, selectedFondo=${appearanceAfter.selectedFondo?.nombre ?? "null"}');
   }
 
   /// Procesa un mensaje SET_BACKGROUND: carga y aplica el fondo
@@ -321,20 +327,27 @@ class _ProjectionAppState extends ConsumerState<ProjectionApp> {
   /// Busca el [FondoPantalla] en el repositorio local y lo asigna
   /// al [hymnAppearanceProvider] para que se renderice en pantalla.
   void _handleSetBackground(String bgId) {
+    _log.info('SET_BACKGROUND recibido: bgId=$bgId');
     final id = int.tryParse(bgId);
-    if (id == null) return;
+    if (id == null) {
+      _log.warning('SET_BACKGROUND: ID inválido: $bgId');
+      return;
+    }
     try {
       final repo = ref.read(fondoRepositoryProvider);
       repo.getAll().then((fondos) {
         final fondo = fondos.where((f) => f.id == id).firstOrNull;
         if (fondo != null) {
+          _log.info('SET_BACKGROUND: Aplicando fondo ${fondo.nombre} (id=$id)');
           ref.read(hymnAppearanceProvider.notifier).setFondo(fondo);
+        } else {
+          _log.warning('SET_BACKGROUND: Fondo id=$id no encontrado en BD local');
         }
-      }).catchError((_) {
-        // Ignorar errores asíncronos de carga del fondo
+      }).catchError((e) {
+        _log.warning('SET_BACKGROUND: Error al cargar fondos: $e');
       });
-    } catch (_) {
-      // Ignorar errores de carga del fondo
+    } catch (e) {
+      _log.warning('SET_BACKGROUND: Error inesperado: $e');
     }
   }
 

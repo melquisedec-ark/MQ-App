@@ -291,6 +291,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
           if (_container != null) {
             try {
               final notifier = _container.read(hymnAppearanceProvider.notifier);
+              final appearanceBefore = _container.read(hymnAppearanceProvider);
+              _log.info('SET_APPEARANCE recibido. Antes: bgColor=${appearanceBefore.bgColor}, selectedFondo=${appearanceBefore.selectedFondo?.nombre ?? "null"}');
               if (request.hasTextColor()) notifier.setTextColor(_parseHexColor(request.textColor));
               if (request.hasChordColor()) notifier.setChordColor(_parseHexColor(request.chordColor));
               if (request.hasFontFamily()) notifier.setFontFamily(request.fontFamily);
@@ -298,7 +300,8 @@ class GrpcDisplayServer extends HymnControlServiceBase {
               if (request.hasShowChords()) notifier.setShowChords(request.showChords);
               if (request.hasCardOpacity()) notifier.setCardOpacity(request.cardOpacity);
               if (request.hasProjectionFontScale()) notifier.setProjectionFontScale(request.projectionFontScale);
-              _log.info('Apariencia actualizada desde control remoto');
+              final appearanceAfter = _container.read(hymnAppearanceProvider);
+              _log.info('SET_APPEARANCE aplicado. Después: bgColor=${appearanceAfter.bgColor}, selectedFondo=${appearanceAfter.selectedFondo?.nombre ?? "null"}');
               _syncAppearanceToSubprocess();
             } catch (e) {
               _log.severe('Error al aplicar apariencia remota: $e');
@@ -651,6 +654,7 @@ class GrpcDisplayServer extends HymnControlServiceBase {
         'glassEnabled': appearance.glassEnabled,
         'glassOverlayColor': _colorToHex(appearance.glassOverlayColor),
       };
+      _log.info('Enviando SET_CONFIG a subproceso: ${message.keys.join(", ")}');
       _container.read(windowServiceProvider).sendMessage(message);
 
       // FIX 1: Solo sincronizar fondo cuando realmente se cambió.
@@ -658,7 +662,10 @@ class GrpcDisplayServer extends HymnControlServiceBase {
       // race condition que resetea el fondo actual (el subproceso mantiene
       // su fondo anterior).
       if (appearance.selectedFondo != null) {
+        _log.info('Sincronizando fondo a subproceso: ${appearance.selectedFondo!.id}');
         _syncBackgroundToSubprocess(appearance.selectedFondo!.id);
+      } else {
+        _log.info('No hay fondo seleccionado — omitiendo SET_BACKGROUND');
       }
 
       _log.fine('Apariencia sincronizada con subproceso');

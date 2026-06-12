@@ -35,6 +35,7 @@ import '../widgets/referencias_cruzadas_section.dart';
 import '../widgets/verse_card.dart';
 import '../widgets/reading_settings_sheet.dart';
 import '../widgets/version_picker_sheet.dart';
+import '../../../../presentation/shared_widgets/control_sheets.dart';
 
 /// Pantalla principal del Bible reader: muestra 1 versículo a la vez.
 ///
@@ -326,6 +327,21 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
             libroId: libroId,
             capitulo: capitulo,
             versiculoNum: versiculoNum,
+          ),
+          // Botón de brocha (modo emisor) — cambiar apariencia del receptor
+          Consumer(
+            builder: (context, ref, _) {
+              final isEmitter = ref.watch(connectionRoleProvider) == ConnectionRole.emitter;
+              if (!isEmitter) return const SizedBox.shrink();
+              return IconButton(
+                icon: const Icon(Icons.brush_outlined),
+                tooltip: 'Brocha',
+                onPressed: () => showBrushSheet(
+                  context,
+                  ref: ref,
+                ),
+              );
+            },
           ),
           _VersionSelector(versionId: versionId),
           IconButton(
@@ -1543,6 +1559,22 @@ class _ReaderBottomBar extends ConsumerWidget {
                     onPressed: () => ReadingSettingsSheet.show(context),
                     tooltip: 'Ajustes de lectura',
                   ),
+                  // Brocha (solo emisor).
+                  if (isEmitter)
+                    IconButton(
+                      icon: const Icon(Icons.brush_outlined),
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      onPressed: () => showBrushSheet(
+                        context,
+                        ref: ref,
+                      ),
+                      tooltip: 'Brocha',
+                    ),
                   // Fullscreen toggle.
                   Consumer(
                     builder: (context, ref, _) {
