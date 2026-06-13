@@ -54,6 +54,9 @@ jobs:
           CXXFLAGS: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
           CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
 
+      - name: Remove Mark of the Web (trust files for Windows Firewall)
+        run: Get-ChildItem -Recurse build/windows/x64/runner/Release | Unblock-File
+
       - name: Zip build output
         run: |
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath MQ_App-windows-x64.zip
