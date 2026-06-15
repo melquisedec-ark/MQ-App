@@ -85,14 +85,16 @@ jobs:
             $sfx = "${env:ProgramFiles(x86)}\7-Zip\7z.sfx"
           }
           if (-not (Test-Path $sfx)) {
-            throw "7z.sfx not found — 7-Zip may not be installed"
+            throw "7z.sfx module not found"
           }
-          Write-Host "Using SFX module: $sfx"
-          $bytes = [System.IO.File]::ReadAllBytes($sfx) +
-                   [System.IO.File]::ReadAllBytes("config.txt") +
-                   [System.IO.File]::ReadAllBytes("MQ_App.7z")
-          [System.IO.File]::WriteAllBytes("MQ_App-windows-x64.exe", $bytes)
-          Write-Host "SFX created: MQ_App-windows-x64.exe ($([System.Math]::Round((Get-Item MQ_App-windows-x64.exe).Length / 1MB, 1)) MB)"
+          Write-Host "Using SFX: $sfx"
+          $raw = [System.IO.File]::ReadAllBytes($sfx)
+          $raw += [System.IO.File]::ReadAllBytes("config.txt")
+          $raw += [System.IO.File]::ReadAllBytes("MQ_App.7z")
+          [System.IO.File]::WriteAllBytes("MQ_App-windows-x64.exe", $raw)
+          $size = (Get-Item "MQ_App-windows-x64.exe").Length
+          $mb = [System.Math]::Round($size / 1MB, 1)
+          Write-Host "SFX size: $mb MB"
 
       - name: Upload SFX to GitHub Release (solo en tags o workflow_dispatch)
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
