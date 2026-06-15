@@ -57,11 +57,42 @@ jobs:
       - name: Remove Mark of the Web (trust files for Windows Firewall)
         run: Get-ChildItem -Recurse build/windows/x64/runner/Release | Unblock-File
 
-      - name: Zip build output
+      - name: Zip build output (for artifact / debug)
         run: |
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath MQ_App-windows-x64.zip
 
-      - name: Upload to GitHub Release (solo en tags o workflow_dispatch)
+      - name: Create 7z archive (for SFX)
+        run: 7z a -mx0 MQ_App.7z .\build\windows\x64\runner\Release\*
+
+      - name: Create SFX config
+        run: |
+          @"
+;!@Install@!UTF-8!
+Title="MQ App — Extracting..."
+BeginPrompt="MQ App will be extracted to a folder named 'MQ_App' next to this file. Continue?"
+ExtractPath=".\MQ_App"
+ExtractDialogText="Extracting MQ App, please wait..."
+RunProgram=".\MQ_App\MQ_App.exe"
+;!@End@!
+"@ | Out-File -FilePath config.txt -Encoding utf8
+
+      - name: Build SFX executable (self-extracting)
+        run: |
+          $sfx = "C:\Program Files\7-Zip\7z.sfx"
+          if (-not (Test-Path $sfx)) {
+            $sfx = "${env:ProgramFiles(x86)}\7-Zip\7z.sfx"
+          }
+          if (-not (Test-Path $sfx)) {
+            throw "7z.sfx not found — 7-Zip may not be installed"
+          }
+          Write-Host "Using SFX module: $sfx"
+          $bytes = [System.IO.File]::ReadAllBytes($sfx) +
+                   [System.IO.File]::ReadAllBytes("config.txt") +
+                   [System.IO.File]::ReadAllBytes("MQ_App.7z")
+          [System.IO.File]::WriteAllBytes("MQ_App-windows-x64.exe", $bytes)
+          Write-Host "SFX created: MQ_App-windows-x64.exe ($([System.Math]::Round((Get-Item MQ_App-windows-x64.exe).Length / 1MB, 1)) MB)"
+
+      - name: Upload SFX to GitHub Release (solo en tags o workflow_dispatch)
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         shell: bash
         env:
@@ -71,7 +102,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ github.event.inputs.version }}"
           fi
-          # Crear release si no existe (ej. workflow_dispatch con version='latest')
+          # Crear release si no existe
           if ! gh release view "$TAG" &>/dev/null; then
             echo "🆕 Release '$TAG' no existe. Creándolo..."
             gh release create "$TAG" \
@@ -79,9 +110,9 @@ jobs:
               --notes "Build automático desde branch ${{ github.ref_name }}" \
               --latest=false
           fi
-          gh release upload "$TAG" MQ_App-windows-x64.zip --clobber
+          gh release upload "$TAG" MQ_App-windows-x64.exe --clobber
 
-      - name: Upload build artifact
+      - name: Upload build artifact (ZIP for debugging)
         uses: actions/upload-artifact@v4
         with:
           name: MQ_App-windows-x64_${{ github.event.inputs.version || github.ref_name }}
