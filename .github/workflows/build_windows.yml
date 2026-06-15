@@ -65,16 +65,18 @@ jobs:
         run: 7z a -mx0 MQ_App.7z .\build\windows\x64\runner\Release\*
 
       - name: Create SFX config
+        shell: powershell
         run: |
-          @"
-;!@Install@!UTF-8!
-Title="MQ App — Extracting..."
-BeginPrompt="MQ App will be extracted to a folder named 'MQ_App' next to this file. Continue?"
-ExtractPath=".\MQ_App"
-ExtractDialogText="Extracting MQ App, please wait..."
-RunProgram=".\MQ_App\MQ_App.exe"
-;!@End@!
-"@ | Out-File -FilePath config.txt -Encoding utf8
+          $config = @'
+          ;!@Install@!UTF-8!
+          Title="MQ App - Extracting..."
+          BeginPrompt="MQ App will be extracted to a folder named 'MQ_App' next to this file. Continue?"
+          ExtractPath=".\MQ_App"
+          ExtractDialogText="Extracting MQ App, please wait..."
+          RunProgram=".\MQ_App\MQ_App.exe"
+          ;!@End@!
+          '@
+          $config | Out-File -FilePath config.txt -Encoding utf8
 
       - name: Build SFX executable (self-extracting)
         run: |
