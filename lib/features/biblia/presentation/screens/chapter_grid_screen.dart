@@ -8,6 +8,7 @@ import '../../../../presentation/shared_widgets/glass_card.dart';
 import '../../../../presentation/dual_mode_wrapper/dual_mode_providers.dart';
 import '../../application/providers/biblia_version_provider.dart';
 import '../../application/providers/current_libro_provider.dart';
+import '../../application/providers/current_versiculo_provider.dart';
 import '../../application/providers/derived_providers.dart';
 import '../../application/providers/favoritos_provider.dart';
 import '../../data/models/capitulo.dart';
@@ -29,6 +30,10 @@ class ChapterGridScreen extends ConsumerWidget {
   void _navigateToChapter(BuildContext context, WidgetRef ref, int chapterNum) {
     ref.read(currentLibroIdProvider.notifier).state = libroId;
     ref.read(currentCapituloProvider.notifier).state = chapterNum;
+    // Resetear versículo a 1 al cambiar de capítulo — si no se resetea,
+    // el reader hereda el versículo del capítulo anterior y hace focus
+    // en el mismo número en vez de empezar desde el versículo 1.
+    ref.read(currentVersiculoNumeroProvider.notifier).state = 1;
     // El reader abre en modo `chapter` (default) y muestra todos los
     // versículos del capítulo. El usuario hace tap en el que quiere leer;
     // `_ChapterVerseList` hace auto-scroll al versículo target vía

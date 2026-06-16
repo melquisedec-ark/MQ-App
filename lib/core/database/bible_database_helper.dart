@@ -121,23 +121,39 @@ class BibleDatabaseHelper {
       _log.info('No existe biblia.db local, copiando desde assets...');
       await _copyAssetDb(localFile);
     } else if (BibleSchemaVersion.needsUpdate(assetVersion, localVersion)) {
-      // ── Actualización: reemplazar BD completa ──
-      // Las tablas de usuario (favorito_versiculo, nota, historial_versiculo)
-      // NO se respaldan a nivel de este helper: las decisiones arquitectónicas
-      // #5 y #12 asumen que la Biblia es un módulo "de solo lectura" en
-      // cuando a contenido sagrado; los datos del usuario persisten porque
-      // se respaldan desde la app completa (ver `user_data_backup.dart`).
-      // Aquí simplemente reemplazamos.
+      // ── Actualización: backup → reemplazar → restore ──
+      // Las tablas de usuario (nota, favorito_versiculo, historial_versiculo,
+      // config) SÍ se respaldan antes de reemplazar la BD, y se restauran
+      // después para preservar los datos del usuario a través de actualizaciones.
       _log.info(
         'biblia.db desactualizada: assetVersion=$assetVersion > '
-        'localVersion=$localVersion',
+        'localVersion=$localVersion — realizando backup/restore',
       );
-      await _database?.close();
-      _database = null;
-      if (localFile.existsSync()) {
-        await localFile.delete();
+      try {
+        // 1. Backup datos de usuario desde la BD actual
+        _log.info('Respaldando datos de usuario de biblia.db...');
+        final backup = await _backupBibleUserData(dbPath);
+
+        // 2. Cerrar conexión y reemplazar BD
+        await _database?.close();
+        _database = null;
+        if (localFile.existsSync()) {
+          await localFile.delete();
+        }
+        await _copyAssetDb(localFile);
+
+        // 3. Restaurar datos de usuario sobre la BD nueva
+        final newDb = await _openDatabaseRaw(dbPath);
+        await newDb.execute('PRAGMA user_version = $kSchemaVersion;');
+        await _restoreBibleUserData(newDb, backup);
+        await newDb.close();
+
+        _log.info('biblia.db actualizada — datos de usuario restaurados');
+      } catch (e, st) {
+        _log.severe('Error en backup/restore de biblia.db: $e\n$st');
+        // Si falla, la app continúa con la BD nueva sin datos de usuario.
+        // Es preferible a tener una BD corrupta con datos inconsistentes.
       }
-      await _copyAssetDb(localFile);
     }
 
     // Abrir BD (actualizada o recién copiada)
@@ -153,6 +169,111 @@ class BibleDatabaseHelper {
       '${stopwatch.elapsedMilliseconds}ms',
     );
     return db;
+  }
+
+  /// Nombres de las tablas de usuario en biblia.db que deben respaldarse
+  /// antes de una actualización completa del asset.
+  static const _bibleUserTables = [
+    'nota',
+    'favorito_versiculo',
+    'historial_versiculo',
+    'config',
+  ];
+
+  /// Respaldar datos de usuario de biblia.db antes de reemplazar el asset.
+  ///
+  /// Abre la BD actual en modo raw (sin gestión de versiones) y extrae
+  /// todas las tablas de usuario para restaurarlas luego.
+  Future<Map<String, List<Map<String, dynamic>>>> _backupBibleUserData(
+    String dbPath,
+  ) async {
+    final db = await _openDatabaseRaw(dbPath);
+    try {
+      final backup = <String, List<Map<String, dynamic>>>{};
+
+      for (final table in _bibleUserTables) {
+        try {
+          backup[table] = await db.query(table);
+          _log.info('Backup biblia.$table: ${backup[table]!.length} filas');
+        } catch (e) {
+          // La tabla puede no existir en versiones antiguas
+          _log.warning('No se pudo respaldar biblia.$table: $e');
+          backup[table] = [];
+        }
+      }
+
+      return backup;
+    } finally {
+      await db.close();
+    }
+  }
+
+  /// Restaurar datos de usuario en la BD recién copiada del asset.
+  ///
+  /// El orden restaura primero `config` (sin FK), luego las tablas con FK.
+  /// Usa INSERT OR REPLACE para nota (UNIQUE constraint) e INSERT OR IGNORE
+  /// para favorito_versiculo e historial_versiculo (para no duplicar si
+  /// el asset ya contiene algunos datos semilla).
+  ///
+  /// La restauración se hace con PRAGMA foreign_keys = OFF para evitar
+  /// errores de orden (ej: un favorito cuya FK versión/libro aún no se
+  /// ha insertado en la nueva BD).
+  Future<void> _restoreBibleUserData(
+    Database db,
+    Map<String, List<Map<String, dynamic>>> backup,
+  ) async {
+    await db.execute('PRAGMA foreign_keys = OFF;');
+    try {
+      int count = 0;
+
+      // config: sin FK, simple key-value. REEMPLAZAR si ya existe.
+      for (final row in backup['config'] ?? []) {
+        await db.insert('config', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+        count++;
+      }
+
+      // favorito_versiculo: UNIQUE(version_id, libro_id, capitulo, numero).
+      // Usar IGNORE para no duplicar si el_asset ya trae algún favorito.
+      for (final row in backup['favorito_versiculo'] ?? []) {
+        try {
+          await db.insert('favorito_versiculo', row,
+              conflictAlgorithm: ConflictAlgorithm.ignore);
+          count++;
+        } catch (e) {
+          _log.warning('No se pudo restaurar favorito: $e');
+        }
+      }
+
+      // nota: UNIQUE(version_id, libro_id, capitulo, numero).
+      // Usar REPLACE para mantener las notas del usuario si el asset
+      // trae alguna nota por defecto (poco probable pero defensivo).
+      for (final row in backup['nota'] ?? []) {
+        try {
+          await db.insert('nota', row,
+              conflictAlgorithm: ConflictAlgorithm.replace);
+          count++;
+        } catch (e) {
+          _log.warning('No se pudo restaurar nota: $e');
+        }
+      }
+
+      // historial_versiculo: sin UNIQUE constraint más allá de id.
+      // Usar IGNORE para evitar conflictos de PK.
+      for (final row in backup['historial_versiculo'] ?? []) {
+        try {
+          await db.insert('historial_versiculo', row,
+              conflictAlgorithm: ConflictAlgorithm.ignore);
+          count++;
+        } catch (e) {
+          _log.warning('No se pudo restaurar historial: $e');
+        }
+      }
+
+      _log.info('Restore biblia.db completo: $count registros restaurados');
+    } finally {
+      await db.execute('PRAGMA foreign_keys = ON;');
+    }
   }
 
   /// Copia la BD del asset empaquetado al sistema de archivos local.
@@ -186,6 +307,18 @@ class BibleDatabaseHelper {
     );
     await db.execute('PRAGMA foreign_keys = ON;');
     await _checkSqliteVersion(db);
+    return db;
+  }
+
+  /// Abre una base de datos SQLite SIN gestión de versiones (raw mode).
+  ///
+  /// Útil para operaciones de backup/restore donde no se necesita onCreate/
+  /// onUpgrade. Activa PRAGMA foreign_keys para mantener integridad
+  /// referencial durante el restore.
+  Future<Database> _openDatabaseRaw(String path) async {
+    _ensureFfiInit();
+    final db = await databaseFactoryFfi.openDatabase(path);
+    await db.execute('PRAGMA foreign_keys = ON;');
     return db;
   }
 

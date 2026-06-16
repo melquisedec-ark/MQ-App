@@ -212,16 +212,44 @@ class PrevVersiculoQuery {
 }
 
 /// Provider de la nota de un versículo (o `null` si no existe).
-final currentNotaProvider = FutureProvider.family
-    .autoDispose<Nota?, NotaQuery>((ref, query) async {
-  final repo = ref.watch(notasRepositoryProvider);
-  return repo.getNota(
-    query.versionId,
-    query.libroId,
-    query.capitulo,
-    query.numero,
-  );
-});
+///
+/// **REACTIVO**: Derivado de [notasStreamProvider] para que la UI se
+/// actualice al instante al crear/editar/eliminar una nota.
+///
+/// Usa [Provider] (no [StreamProvider]) para derivar síncronamente del
+/// `AsyncValue` cacheado de [notasStreamProvider]. Así siempre hay datos
+/// disponibles inmediatamente — sin esperar a que un broadcast stream
+/// emita (el problema con StreamProvider.family era que el segundo
+/// suscriptor no recibía la emisión inicial).
+final currentNotaProvider = Provider.autoDispose.family<AsyncValue<Nota?>, NotaQuery>(
+  (ref, query) {
+    final notasAsync = ref.watch(notasStreamProvider);
+
+    // Si el stream está cargando, propagar loading
+    if (notasAsync.isLoading) {
+      return const AsyncLoading();
+    }
+
+    // Si hay error, propagar error
+    if (notasAsync.hasError) {
+      return AsyncError(notasAsync.error!, notasAsync.stackTrace!);
+    }
+
+    // Filtrar la nota que coincide con la query
+    final notas = notasAsync.value ?? [];
+    Nota? found;
+    for (final n in notas) {
+      if (n.versionId == query.versionId &&
+          n.libroId == query.libroId &&
+          n.capitulo == query.capitulo &&
+          n.numero == query.numero) {
+        found = n;
+        break;
+      }
+    }
+    return AsyncData(found);
+  },
+);
 
 class NotaQuery {
   final int versionId;

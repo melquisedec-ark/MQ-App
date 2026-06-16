@@ -5,7 +5,7 @@ import '../../core/enums/fondo_pantalla_tipo.dart';
 part 'fondo_pantalla.freezed.dart';
 
 /// Entidad de dominio que representa un fondo de pantalla
-/// (imagen, video o color sólido) para la interfaz de proyección.
+/// (imagen o color sólido) para la interfaz de proyección.
 @freezed
 class FondoPantalla with _$FondoPantalla {
   const factory FondoPantalla({
