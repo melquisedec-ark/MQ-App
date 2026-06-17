@@ -58,11 +58,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${{ github.event.inputs.version }}"
-          if [ "$TAG" = "latest" ]; then
-            TAG="build-${{ github.run_number }}"
+          TAG="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.version }}"
           fi
-          # Crear release si no existe
+          # Crear release si no existe (ej. workflow_dispatch con version='latest')
           if ! gh release view "$TAG" &>/dev/null; then
             echo "🆕 Release '$TAG' no existe. Creándolo..."
             gh release create "$TAG" \
@@ -124,11 +124,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${{ github.event.inputs.version }}"
-          if [ "$TAG" = "latest" ]; then
-            TAG="build-${{ github.run_number }}"
+          TAG="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.version }}"
           fi
-          # Crear release si no existe
+          # Crear release si no existe (ej. workflow_dispatch con version='latest')
           if ! gh release view "$TAG" &>/dev/null; then
             echo "🆕 Release '$TAG' no existe. Creándolo..."
             gh release create "$TAG" \
